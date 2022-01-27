@@ -8,7 +8,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cron = require('node-cron');
 app.use(cors());
+const path = require('path');
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
+app.use(express.static(path.join(__dirname, '../public')));
 
 mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
     if(err) throw err;
