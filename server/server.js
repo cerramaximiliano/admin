@@ -25,16 +25,10 @@ app.listen(process.env.PORT, () => {
 });
 
 
-cron.schedule('00 20 * * *', () => {
+cron.schedule('15 05 * * *', () => {
     console.log(moment())
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-
-
-
-
-
-

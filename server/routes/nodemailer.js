@@ -76,7 +76,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       to: email,
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
-      <p>Tasa de interés Actualizada: ${calculo[2]}</p>
+      <p>Tasa de interés actualizada: ${calculo[2]}</p>
       <p>Fecha: ${moment(calculo[0], "YYYYMMDD").format('DD/MM/YYYY')}</p>
       <p>Valor: ${calculo[1]}</p>
       <br></br>`,
