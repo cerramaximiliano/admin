@@ -20,9 +20,8 @@ app.listen(process.env.PORT, () => {
     console.log('Escuchando el puerto', process.env.PORT);
 });
 
-downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 
-cron.schedule('15 05 * * *', () => {
+cron.schedule('30 19 * * *', () => {
     console.log(moment())
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
