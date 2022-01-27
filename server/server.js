@@ -23,7 +23,7 @@ app.listen(process.env.PORT, () => {
 });
 
 
-cron.schedule('30 19 * * *', () => {
+cron.schedule('40 19 * * *', () => {
     console.log(moment())
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
