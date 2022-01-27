@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cron = require('node-cron');
 app.use(cors());
-
+const downloadBCRADDBB = require('./routes/scrapingweb.js');
 
 mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
     if(err) throw err;
@@ -20,6 +20,7 @@ app.listen(process.env.PORT, () => {
     console.log('Escuchando el puerto', process.env.PORT);
 });
 
+downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 
 cron.schedule('15 05 * * *', () => {
     console.log(moment())
