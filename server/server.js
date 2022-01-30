@@ -30,5 +30,10 @@ cron.schedule('15 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
+cron.schedule('20 05 * * *', () => {
+    downloadBCRADDBB.downloadBCRADDBB('cer');
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
 
-downloadBCRADDBB.downloadBCRADDBB('cer');
