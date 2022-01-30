@@ -17,6 +17,9 @@ let tasasSchema = new Schema({
     tasaActivaBNA: {
     type: Number
     },
+    cer: {
+    type: Number
+    },
 
   });
 

@@ -21,14 +21,14 @@ mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: 
 
 app.listen(process.env.PORT, () => {
     console.log('Escuchando el puerto', process.env.PORT);
-    console.log(moment());
 });
 
 
 cron.schedule('15 05 * * *', () => {
-    console.log(moment())
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
+
+downloadBCRADDBB.downloadBCRADDBB('cer');
