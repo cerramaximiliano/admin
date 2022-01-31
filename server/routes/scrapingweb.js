@@ -42,6 +42,9 @@ function downloadBCRADDBB(tasa){
     }else if(tasa === 'cer'){
         file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer2022.xls'
         file_name = 'dataCER.xls';
+    }else if(tasa === 'icl'){
+        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl2022.xls'
+        file_name = 'dataICL.xls';
     }
     
     let file = fs.createWriteStream(DOWNLOAD_DIR + file_name, {'flags': 'w'});
@@ -53,6 +56,8 @@ function downloadBCRADDBB(tasa){
                 convertExcelFileToJsonUsingXlsx();
             }else if(tasa === 'cer'){
                 convertXlsCER();
+            }else if(tasa === 'icl'){
+                convertXlsICL();
             }
         });
     
@@ -137,6 +142,109 @@ async function convertExcelFileToJsonUsingXlsx () {
         return generateJSONFile(parsedData, 'dataBCRATasaPasiva2022.json');
     };
 
+async function convertXlsICL (){
+    let file_read = 'dataICL.xls';
+    const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
+    const sheetNames = file.SheetNames;
+    const totalSheets = sheetNames.length;
+    const tempData = xlsx.utils.sheet_to_json(file.Sheets['ICL']);
+    let parsedData = [];
+    let data = [];
+    let dataIndex = [];
+    tempData.forEach(function(x){
+        Object.keys(x).forEach(function(arr){
+            if(isInt(x[arr]) === true){
+                if(getlength(x[arr]) === 8 && moment(x[arr], "YYYYMMDD").isValid()){
+                    data.push(x[arr]);
+                 }
+            }else if(typeof x[arr] === 'number' && arr === 'INTEREST RATES AND ADJUSTMENT COEFFICIENTS ESTABLISHED BY THE BCRA'){
+                countDecimals(x[arr]) >= 1 ? dataIndex.push(x[arr]) : false
+            }
+        })
+        data[0] != undefined && dataIndex[0] != undefined ? parsedData.push([data[0], dataIndex[0]]) : false
+        data = [];
+        dataIndex = [];
+    });
+    console.log(parsedData);
+    Tasas.findOne({'icl': {$gte: 0}})
+    .sort({'fecha': -1})
+    .exec((err, datos) => {
+        if(err) {
+          console.log(err)
+          return {
+          ok: false,
+          err
+          };
+        }else{
+            //Busca un resultado de la ultima fecha para ese indice
+            console.log(datos);
+            let actualizaciones = [];
+            parsedData.forEach(function(e){
+                if (moment(moment(e[0], "YYYYMMDD").format("YYYY-MM-DD") + 'T00:00').utc(true).isAfter(moment(datos.fecha))) {
+                    actualizaciones.push(e);
+                }else{
+                    false;
+                }
+            });
+                if (actualizaciones.length === 0){
+                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesND', ['ICL'])
+                        .then(result => {
+                          if(result === true){
+                              return true
+                          }else{
+                              console.log('Envio de mail incorrecto')
+                          }
+                        })
+                        .catch(err => {
+                            console.log('Envio de mail incorrecto', err)
+                        })
+
+                }else{
+                    console.log('enviar mail con actualizaciones');
+                    let find = [];
+                    actualizaciones.forEach(function(ele){
+                            let date = (moment(ele[0], "YYYYMMDD").format('YYYY-MM-DD')) + 'T00:00'
+                            find.push({
+                                        updateOne: {
+                                                    filter: {
+                                                        fecha: moment(date).utc(true), 
+                                                    },
+                                                    update: {
+                                                        icl: Number(ele[1]), 
+                                                    },
+                                                    upsert: true
+                                                }
+                                            })
+                        });
+                        Tasas.bulkWrite(find).then(result => {
+                            function arrayToText(array, position){
+                                let string = ''
+                                array.forEach(function(x){
+                                    console.log(x)
+                                    string += `[ Fecha: ${moment(x[0], 'YYYYMMDD').format('DD/MM/YYYY')} - Indice: ${x[1]} ]`
+                                });
+                                return string
+                            }
+                            let arrayText = arrayToText(actualizaciones,1);
+                            let dataToSend = ['ICL', arrayText];
+                            //Enviar mail con todas las tasas actualizadas
+                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
+                        .then(result => {
+                          if(result === true){
+                              return true
+                          }else{
+                              console.log('Envio de mail incorrecto')
+                          }
+                        })
+                        .catch(err => {
+                            console.log('Envio de mail incorrecto', err)
+                        })
+                })                
+            }
+        }
+    });
+}
+
 async function convertXlsCER (){
     let file_read = 'dataCER.xls'
     const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
@@ -159,7 +267,6 @@ async function convertXlsCER (){
         data = [];
         dataIndex = [];
     });
-    console.log(parsedData)
     Tasas.findOne({'cer': {$gte: 0}})
     .sort({'fecha': -1})
     .exec((err, datos) => {
@@ -170,7 +277,6 @@ async function convertXlsCER (){
           err
           };
         }else{
-            console.log(datos)
             if(datos === null){
                 let find = [];
                 parsedData.forEach(function(el) {

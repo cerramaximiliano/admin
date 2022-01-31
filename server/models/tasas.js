@@ -21,6 +21,9 @@ let tasasSchema = new Schema({
     type: Number
     },
 
+    icl: {
+      type: Number
+      },
   });
 
 
