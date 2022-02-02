@@ -43,7 +43,6 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-downloadBCRADDBB.downloadBCRADDBB('icl');
 
 // let find = [];
 // data2021.forEach(function(x,index){
