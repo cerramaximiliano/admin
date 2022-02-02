@@ -44,23 +44,18 @@ cron.schedule('25 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-// let find = [];
-// data2021.forEach(function(x,index){
-//     console.log(x[1])
-//     let date = moment(x[0], "DD/MM/YYYY").format('YYYY-MM-DD') + 'T00:00';
-//     let dateFormat = moment(date).utc(true);
-//     find.push({
-//         updateOne: {
-//                     filter: {
-//                         fecha: dateFormat, 
-//                     },
-//                     update: {
-//                         icl: Number(x[1]), 
-//                     },
-//                     upsert: true
-//                 }
-//             })
-// });
+
+
+
+
+// console.log(find)
+// console.log(find.length)
+// console.log(tasas.length)
+// console.log(newDates.length)
+// console.log(find[500].updateMany.filter.fecha)
+// console.log(find[501].updateMany.filter.fecha)
+// console.log(find[500].updateMany.update)
+
 // Tasas.bulkWrite(find).then(result => {
 // console.log(result)
 // });
