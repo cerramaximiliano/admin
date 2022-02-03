@@ -12,7 +12,9 @@ const cron = require('node-cron');
 app.use(cors());
 const path = require('path');
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
+const puppeteer = require('puppeteer');
 app.use(express.static(path.join(__dirname, '../public')));
+
 
 mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
     if(err) throw err;
@@ -44,21 +46,31 @@ cron.schedule('25 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
+// const chromeOptions = {
+//     headless:true, 
+//     slowMo:18,
+//     defaultViewport: null
+//   };
 
 
+// (async () => {
+//     const browser = await puppeteer.launch(chromeOptions);
+//     const page = await browser.newPage();
+//     await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
+//     const ele = await page.evaluate(() => {
+//         const tag = document.querySelectorAll("#collapseTwo ul li");
+//         const title = document.querySelector("#collapseTwo h3");
+//         let text = [];
+//         text.push(title.innerText);
+//         tag.forEach((tag) => {
+//             text.push(tag.innerText)
+//         })
+
+//         return text
+//     })
+    
 
 
-// console.log(find)
-// console.log(find.length)
-// console.log(tasas.length)
-// console.log(newDates.length)
-// console.log(find[500].updateMany.filter.fecha)
-// console.log(find[501].updateMany.filter.fecha)
-// console.log(find[500].updateMany.update)
-
-// Tasas.bulkWrite(find).then(result => {
-// console.log(result)
-// });
-
-
-
+//     console.log(ele);
+//     // await browser.close();
+// }) ();

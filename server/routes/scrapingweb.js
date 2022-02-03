@@ -165,7 +165,6 @@ async function convertXlsICL (){
         data = [];
         dataIndex = [];
     });
-    console.log(parsedData);
     Tasas.findOne({'icl': {$gte: 0}})
     .sort({'fecha': -1})
     .exec((err, datos) => {
@@ -177,7 +176,6 @@ async function convertXlsICL (){
           };
         }else{
             //Busca un resultado de la ultima fecha para ese indice
-            console.log(datos);
             let actualizaciones = [];
             parsedData.forEach(function(e){
                 if (moment(moment(e[0], "YYYYMMDD").format("YYYY-MM-DD") + 'T00:00').utc(true).isAfter(moment(datos.fecha))) {
