@@ -391,7 +391,8 @@ function generateJSONFile(data, file) {
 const chromeOptions = {
     headless:true, 
     slowMo:18,
-    defaultViewport: null
+    defaultViewport: null,
+    args: ['--no-sandbox']
   };
 
 async function scrapingTasaActiva () {
