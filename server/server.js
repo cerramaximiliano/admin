@@ -117,6 +117,7 @@ cron.schedule('30 05 * * *', () => {
             };
         });
     }) ();
+
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
