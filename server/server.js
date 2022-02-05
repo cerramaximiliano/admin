@@ -46,7 +46,7 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('00 12 * * *', () => {
+cron.schedule('05 12 * * *', () => {
     (async () => {
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
         let regexTasa = new RegExp(/tasa activa/i)
