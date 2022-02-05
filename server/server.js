@@ -46,7 +46,7 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('30 05 * * *', () => {
+cron.schedule('30 10 * * *', () => {
     (async () => {
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
         let regexTasa = new RegExp(/tasa activa/i)
@@ -76,6 +76,7 @@ cron.schedule('30 05 * * *', () => {
             }else{
             if ( moment(datos.fecha).utc().isSame( moment(moment().format('YYYY-MM-DD') + 'T00:00').utc(true), 'day') ) {
                 //Ultima fecha de la DDBB es igual a la fecha actual de actualizacion. No hay accion requerida.
+                console.log(false)
                 false
             }else{
                 if(moment().isSame(dateData, 'day')){
