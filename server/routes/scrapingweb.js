@@ -9,6 +9,7 @@ const xlsx = require('xlsx');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const puppeteer = require('puppeteer');
 //==============================================================================
 //===================CONFIGURACION WEB SCRAPING=================================
 //==============================================================================
@@ -387,4 +388,34 @@ function generateJSONFile(data, file) {
 };
 };
 
+const chromeOptions = {
+    headless:true, 
+    slowMo:18,
+    defaultViewport: null
+  };
+
+async function scrapingTasaActiva () {
+    const browser = await puppeteer.launch(chromeOptions);
+    const page = await browser.newPage();
+    await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
+    const ele = await page.evaluate(() => {
+        const tag = document.querySelectorAll("#collapseTwo ul li");
+        const title = document.querySelector("#collapseTwo h3");
+        let text = [];
+        text.push(title.innerText);
+        tag.forEach((tag) => {
+            text.push(tag.innerText)
+        })
+
+        return text
+    });
+    await browser.close();
+    return ele
+}
+
+
+
+
+
 exports.downloadBCRADDBB = downloadBCRADDBB;
+exports.scrapingTasaActiva = scrapingTasaActiva;
