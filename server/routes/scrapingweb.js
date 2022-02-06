@@ -412,11 +412,62 @@ async function scrapingTasaActiva () {
     });
     await browser.close();
     return ele
+};
+async function regexDates(tasaActiva){
+    let myRegexp = /(\d{2}|\d{1})[-.\/](\d{2}|\d{1})(?:[-.\/]\d{2}(\d{2})?)?/g; //Check pattern only
+    let validDate = /(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])?|(?:(?:16|[2468][048]|[3579][26])00)?)))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))(\4)?(?:(?:1[6-9]|[2-9]\d)?\d{2})?$/g;
+    tasaActiva[0] = myRegexp.exec(tasaActiva[0])
+    tasaActiva[0][0] = validDate.exec(tasaActiva[0][0])
+    return moment(moment(tasaActiva[0][0][0],"DD/MM/YYYY").format('YYYY-MM-DD') + 'T00:00').utc(true);
+};
+async function regexTextCheck(regex, text){
+    let regexToUse;
+    if (regex === 1) {
+        regexToUse = new RegExp(/tasa activa/i);
+    };
+    let check = regexToUse.test(text);
+    return check
+};
+async function findTasa(regex, iterator){
+    let regexToUse;
+    let check;
+    let dataIndex;
+    if(regex === 1){
+        regexToUse = new RegExp(/tasa efectiva mensual/i);
+    }
+    iterator.forEach(function(x, index){
+        if(regexToUse.test(x) === true){
+            check = true
+            dataIndex = index
+        }else{
+            false
+        }
+    })
+    return [check, dataIndex]
+};
+async function dataTasa(tasa, index){
+    let regexNumber = /\d*(\.|\,)?\d*/;
+    let check;
+    let words = tasa[index].split(' ');
+    let checkMensual = words.some(value => (/mensual/i).test(value));
+    words.forEach(function(x) {
+        let checkWords = x.match(regexNumber);
+        if (checkWords[0] != undefined && checkWords[0] != '') {
+            check = parseFloat(checkWords[0].replace(',','.').replace(' ',''))
+        }else{
+            false
+        }
+    })
+    checkMensual === true ? check = check / 30 : false;
+    return check
 }
-
 
 
 
 
 exports.downloadBCRADDBB = downloadBCRADDBB;
 exports.scrapingTasaActiva = scrapingTasaActiva;
+exports.regexDates = regexDates;
+exports.regexTextCheck = regexTextCheck;
+exports.findTasa = findTasa;
+exports.dataTasa = dataTasa;

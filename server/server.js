@@ -46,24 +46,14 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('05 12 * * *', () => {
-    (async () => {
+cron.schedule('15 10 * * *', () => {
+(async () => {
+        let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
-        let regexTasa = new RegExp(/tasa activa/i)
-        let myRegexp = /(\d{2}|\d{1})[-.\/](\d{2}|\d{1})(?:[-.\/]\d{2}(\d{2})?)?/g; //Check pattern only
-        let validDate = /(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])?|(?:(?:16|[2468][048]|[3579][26])00)?)))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))(\4)?(?:(?:1[6-9]|[2-9]\d)?\d{2})?$/g; //Check the validity of the date
-        tasaActiva[0] = myRegexp.exec(tasaActiva[0])
-        tasaActiva[0][0] = validDate.exec(tasaActiva[0][0])
-        let dateData = moment(moment(tasaActiva[0][0][0],"DD/MM/YYYY").format('YYYY-MM-DD') + 'T00:00').utc(true);
-        tasaActiva.forEach(function(x, index){
-            console.log(x)
-            let regExpInteres = new RegExp(/Tasa Efectiva Mensual/i)
-            let check = regExpInteres.test(x);
-            if(check === true){
-                //buscar el porcentaje
-            }
-        });
-        console.log('Fecha del sitio',dateData)
+        let checkTasa = await downloadBCRADDBB.regexTextCheck(1, tasaActiva[0]);
+        let dateData = await downloadBCRADDBB.regexDates(tasaActiva);
+        let findTasaMensual = await downloadBCRADDBB.findTasa(1, tasaActiva);
+        let tasaData = await downloadBCRADDBB.dataTasa(tasaActiva, findTasaMensual[1]);
         Tasas.findOne({'tasaActivaBNA': {$gte: 0}})
         .sort({'fecha': -1})
         .exec((err, datos) => {
@@ -74,18 +64,46 @@ cron.schedule('05 12 * * *', () => {
               err
               };
             }else{
-            if ( moment(datos.fecha).utc().isSame( moment(moment().format('YYYY-MM-DD') + 'T00:00').utc(true), 'day') ) {
+            if (moment(datos.fecha).utc().isSame(today, 'day')) {
                 //Ultima fecha de la DDBB es igual a la fecha actual de actualizacion. No hay accion requerida.
-                console.log(false)
+                console.log('Fecha la DDBB es igual a la fecha actual de actualizacion. No hacer nada.')
                 false
             }else{
-                if(moment().isSame(dateData, 'day')){
+                if(today.isSame(dateData, 'day')){
                     //Actualizar con la fecha del sitio el dia de hoy
-                    console.log('La fecha del sitio es igual a hoy')
-                }else if(moment().isBefore(dateData, 'day')){
+                    console.log('La fecha del sitio es igual a hoy. Actualizar la fecha actual con la data del sitio.')
+                    let filter = {fecha: today};
+                    let update = {tasaActivaBNA: Number(tasaData)};
+                    Tasas.findOneAndUpdate(filter, update, {
+                        new: true,
+                        upsert: true
+                    })
+                    .exec((err, datos) => {
+                        if(err) {
+                            console.log(err)
+                          return {
+                          ok: false,
+                          err
+                          };
+                        }else{
+                         let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
+                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         .then(result => {
+                           if(result === true){
+                               return true
+                           }else{
+                               console.log('Envio de mail incorrecto')
+                           }
+                         })
+                         .catch(err => {
+                             console.log('Envio de mail incorrecto', err)
+                         })
+                        }
+                    });
+                }else if(today.isBefore(dateData, 'day')){
                     //es mayor la fecha del sitio, entonces copiar la fecha del dia de ayer.
-                    console.log('La fecha del sitio es mayor a hoy');
-                    let filter = {fecha: moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true)};
+                    console.log('La fecha del sitio es mayor a hoy. Actualizar con la data del dia anterior.');
+                    let filter = {fecha: today};
                     let update = {tasaActivaBNA: Number(datos.tasaActivaBNA)};
                     Tasas.findOneAndUpdate(filter, update, {
                         new: true,
@@ -113,12 +131,42 @@ cron.schedule('05 12 * * *', () => {
                          })
                         }
                     });
-                }    
+                }else{
+                    //La fecha de hoy es mayor a la fecha del sitio. Actualizar hoy con la fecha del sitio
+                    console.log('Actualizar la fecha del dia con la fecha del sitio (de fecha anterior)')
+                    let filter = {fecha: today};
+                    let update = {tasaActivaBNA: Number(tasaData)};
+                    Tasas.findOneAndUpdate(filter, update, {
+                        new: true,
+                        upsert: true
+                    })
+                    .exec((err, datos) => {
+                        if(err) {
+                            console.log(err)
+                          return {
+                          ok: false,
+                          err
+                          };
+                        }else{
+                         let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
+                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         .then(result => {
+                           if(result === true){
+                               return true
+                           }else{
+                               console.log('Envio de mail incorrecto')
+                           }
+                         })
+                         .catch(err => {
+                             console.log('Envio de mail incorrecto', err)
+                         })
+                        }
+                    });
+                }
                 };
             };
         });
     }) ();
-
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
