@@ -46,7 +46,8 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('25 10 * * *', () => {
+
+cron.schedule('00 05 * * *', () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
@@ -54,6 +55,7 @@ cron.schedule('25 10 * * *', () => {
         let dateData = await downloadBCRADDBB.regexDates(tasaActiva);
         let findTasaMensual = await downloadBCRADDBB.findTasa(1, tasaActiva);
         let tasaData = await downloadBCRADDBB.dataTasa(tasaActiva, findTasaMensual[1]);
+
         Tasas.findOne({'tasaActivaBNA': {$gte: 0}})
         .sort({'fecha': -1})
         .exec((err, datos) => {
@@ -172,27 +174,3 @@ cron.schedule('25 10 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-
-
-
-
-
-
-// (async () => {
-//     const browser = await puppeteer.launch(chromeOptions);
-//     const page = await browser.newPage();
-//     await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
-//     const ele = await page.evaluate(() => {
-//         const tag = document.querySelectorAll("#collapseTwo ul li");
-//         const title = document.querySelector("#collapseTwo h3");
-//         let text = [];
-//         text.push(title.innerText);
-//         tag.forEach((tag) => {
-//             text.push(tag.innerText)
-//         })
-
-//         return text
-//     });
-
-//     // await browser.close();
-// }) ();
