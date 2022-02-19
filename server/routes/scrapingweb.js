@@ -608,9 +608,11 @@ const chromeOptions = {
 };
 
 async function scrapingSubPages(page, link){
-    await page.goto('http://servicios.infoleg.gob.ar' + link);
+    await page.goto(link);
     const ele = await page.content();
-    console.log(ele)
+    const $ = cheerio.load(ele);
+    const text = $('#Textos_Completos > p > a');
+    console.log(text)
 }
 
 
@@ -645,7 +647,7 @@ async function scrapingInfoleg(){
             let momentDates = datesSpanish(text);
             let momentDate = moment(moment(momentDates, 'DD-MM-YYYY').format('YYYY-MM-DD') + 'T00:00').utc(true);
             if( momentDate.isSameOrAfter(findDate.fecha) ){
-                let link = $(this).prev().children().attr('href');
+                let link = 'http://servicios.infoleg.gob.ar' + $(this).prev().children().attr('href');
                 let data = $(this).next().text();
                 let movilidadData = data.match(/movilidad/i);
                 let haberData = data.match(/haber/i);
@@ -661,21 +663,20 @@ async function scrapingInfoleg(){
             }
         }
     });
-
-    for (let i = 0; i < results.length; i++) {
-        console.log(results[i])
-        
-    }
-    // .forEach(function(x){
-    //     console.log(x.text())
-    // });
-
-
-    // await page.screenshot({                      // Screenshot the website using defined options
-    //     path: "./screenshot.png",                   // Save the screenshot in current directory
-    //     fullPage: true                              // take a fullpage screenshot
-    //   });
-    
+    for (let i = 0; i < results.length; i++) {  
+            await page.goto(`${results[i].link}`), {
+                waitUntil: 'load',
+                timeout: 0
+            };
+            let element = await page.content();
+            let $$ = cheerio.load(element);
+            let text = $$('#Textos_Completos > p > a').filter(function(){
+                return $(this).text().trim() === 'Texto completo de la norma'
+            });
+            results[i].textLinks = 'http://servicios.infoleg.gob.ar/infolegInternet/'+ text.attr('href')
+    };
+    await browser.close();
+    return results
 };
 
 async function scrapingTasaActiva () {
