@@ -186,6 +186,9 @@ cron.schedule('10 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
+
+downloadBCRADDBB.downloadPBNA();
+
 // let data = 
 // [			
 //     [	0.10685	]	,

@@ -18,7 +18,7 @@ const cheerio = require('cheerio');
 //============================RUTAS --------=================================
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
-
+//============================FUNCIONES TASA PASIVA BNA======================
 function parseBNAPasiva(){
 let tasasList = [];
 async function dataTasaPasiva(data, ind){
@@ -148,6 +148,7 @@ pdf(dataBuffer).then(function(data){
 });
 }
 async function downloadPBNA(){
+<<<<<<< HEAD
     const browser = await puppeteer.launch(chromeOptions);
     const page = await browser.newPage();
     await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
@@ -167,7 +168,7 @@ async function downloadPBNA(){
     });
     let file_url = 'https://www.bna.com.ar' + url
     let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
-    console.log(file_name);
+
     let file = fs.createWriteStream(DOWNLOAD_DIR + file_name, {'flags': 'w'});
     const request = https.get(file_url, function(response) {
         response.pipe(file);
@@ -325,7 +326,7 @@ async function convertXlsICL (){
             if(isInt(x[arr]) === true){
                 if(getlength(x[arr]) === 8 && moment(x[arr], "YYYYMMDD").isValid()){
                     data.push(x[arr]);
-                 }
+                }
             }else if(typeof x[arr] === 'number' && arr === 'INTEREST RATES AND ADJUSTMENT COEFFICIENTS ESTABLISHED BY THE BCRA'){
                 countDecimals(x[arr]) >= 1 ? dataIndex.push(x[arr]) : false
             }
@@ -338,11 +339,11 @@ async function convertXlsICL (){
     .sort({'fecha': -1})
     .exec((err, datos) => {
         if(err) {
-          console.log(err)
-          return {
-          ok: false,
-          err
-          };
+        console.log(err)
+        return {
+        ok: false,
+        err
+        };
         }else{
             //Busca un resultado de la ultima fecha para ese indice
             let actualizaciones = [];
@@ -478,16 +479,15 @@ async function convertXlsCER (){
                     console.log('enviar mail sin actualizaciones')
                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesND', ['CER'])
                         .then(result => {
-                          if(result === true){
-                              return true
-                          }else{
-                              console.log('Envio de mail incorrecto')
-                          }
+                        if(result === true){
+                            return true
+                        }else{
+                            console.log('Envio de mail incorrecto')
+                        }
                         })
                         .catch(err => {
                             console.log('Envio de mail incorrecto', err)
                         })
-
                 }else if(actualizaciones.length > 0){
                     console.log('enviar mail con actualizaciones');
                     console.log(actualizaciones)
@@ -520,11 +520,11 @@ async function convertXlsCER (){
                             //Enviar mail con todas las tasas actualizadas
                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
                         .then(result => {
-                          if(result === true){
-                              return true
-                          }else{
-                              console.log('Envio de mail incorrecto')
-                          }
+                        if(result === true){
+                            return true
+                        }else{
+                            console.log('Envio de mail incorrecto')
+                        }
                         })
                         .catch(err => {
                             console.log('Envio de mail incorrecto', err)
