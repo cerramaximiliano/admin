@@ -187,8 +187,6 @@ cron.schedule('10 05 * * *', () => {
 });
 
 
-downloadBCRADDBB.downloadPBNA();
-
 // let data = 
 // [			
 //     [	0.10685	]	,
