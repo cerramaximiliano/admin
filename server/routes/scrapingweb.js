@@ -148,7 +148,6 @@ pdf(dataBuffer).then(function(data){
 });
 }
 async function downloadPBNA(){
-<<<<<<< HEAD
     const browser = await puppeteer.launch(chromeOptions);
     const page = await browser.newPage();
     await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
