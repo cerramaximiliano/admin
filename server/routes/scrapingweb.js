@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 const transporter = require('nodemailer-smtp-transport');
 const sendEmail = require('./nodemailer');
 const Tasas = require('../models/tasas');
+const DatosPrev = require('../models/datosprevisionales')
 const moment = require('moment');
 const xlsx = require('xlsx');
 const http = require('http');
@@ -13,6 +14,7 @@ const fs = require('fs');
 const puppeteer = require('puppeteer');
 const pdf = require('pdf-parse');
 const lineReader = require('line-reader');
+const cheerio = require('cheerio');
 //============================RUTAS --------=================================
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
@@ -146,8 +148,26 @@ pdf(dataBuffer).then(function(data){
 });
 }
 async function downloadPBNA(){
-    let file_url = 'https://www.bna.com.ar/BackOffice/dataBase/tasas_ope_1274.pdf'
-    let file_name = 'tasa_pasiva_BNA.pdf';
+    const browser = await puppeteer.launch(chromeOptions);
+    const page = await browser.newPage();
+    await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
+    const ele = await page.content();
+    const $ = cheerio.load(ele);
+    let url;
+    const table = $('#collapseTwo > .panel-body > .plazoTable > ul > li').each(function(x, ele){
+        $(this).each(function(i,element){
+            // console.log($(this).text())
+            let matchPasivas = $(this).text().match(/tasas de operaciones pasivas/i);
+            if(matchPasivas != null){
+                // console.log($(this).children().attr('href'));
+                url = $(this).children().attr('href')
+            }
+
+        })
+    });
+    let file_url = 'https://www.bna.com.ar' + url
+    let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
+    console.log(file_name);
     let file = fs.createWriteStream(DOWNLOAD_DIR + file_name, {'flags': 'w'});
     const request = https.get(file_url, function(response) {
         response.pipe(file);
@@ -543,6 +563,122 @@ const chromeOptions = {
     args: ['--no-sandbox']
   };
 
+  function datesSpanish(date){
+    let dateArray = date.split('-');
+    switch (dateArray[1]) {
+        case 'ene':
+            dateArray[1] = 1;
+            break
+        case 'feb':
+            dateArray[1] = 2;
+            break
+        case 'mar':
+            dateArray[1] = 3;
+            break
+        case 'abr':
+            dateArray[1] = 4;
+            break
+        case 'may':
+            dateArray[1] = 5;
+            break
+        case 'jun':
+            dateArray[1] = 6;
+            break
+        case 'jul':
+            dateArray[1] = 7;
+            break
+        case 'ago':
+            dateArray[1] = 8;
+            break
+        case 'sep':
+            dateArray[1] = 9;
+            break
+        case 'oct':
+            dateArray[1] = 10;
+            break
+        case 'nov':
+            dateArray[1] = 11;
+            break
+        case 'dic':
+            dateArray[1] = 12;
+            break
+        default:
+            break;
+    };
+    return dateArray.join('-');
+};
+
+async function scrapingSubPages(page, link){
+    await page.goto('http://servicios.infoleg.gob.ar' + link);
+    const ele = await page.content();
+    console.log(ele)
+}
+
+
+const findLastRecord = DatosPrev.findOne({'estado': true})
+.sort({'fecha': -1})
+.select('fecha');
+
+class Pages {
+    constructor(date, link, tag){
+        this.date = date;
+        this.link = link;
+        this.tag = tag;
+    }
+};
+
+async function scrapingInfoleg(){
+    let results = [];
+    let findDate = await findLastRecord;
+
+    const browser = await puppeteer.launch(chromeOptions);
+    const page = await browser.newPage();
+    await page.goto('http://servicios.infoleg.gob.ar/infolegInternet/verVinculos.do?modo=2&id=639');
+    const ele = await page.content();
+    const $ = cheerio.load(ele);
+    const title = $('#detalles > strong').text().match(/\d+/)[0];
+    console.log(title);
+    let dtRegex = new RegExp(/^(([1-9]|0[1-9]|1[0-9]|2[1-9]|3[0-1])[-](ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[-](\d{4}))$/gi);
+        const data = $('.vr_azul11').each(function(x,i){
+        let text = ($(this).text()).replace(/\s/g, "");
+        let check = (dtRegex).test(text);
+        if(check === true){
+            let momentDates = datesSpanish(text);
+            let momentDate = moment(moment(momentDates, 'DD-MM-YYYY').format('YYYY-MM-DD') + 'T00:00').utc(true);
+            if( momentDate.isSameOrAfter(findDate.fecha) ){
+                let link = $(this).prev().children().attr('href');
+                let data = $(this).next().text();
+                let movilidadData = data.match(/movilidad/i);
+                let haberData = data.match(/haber/i);
+                if(movilidadData != null){
+                    let result = new Pages (momentDate, link, movilidadData[0])
+                    results.push(result)
+                }else if(haberData != null){
+                    let result = new Pages (momentDate, link, haberData[0])
+                    results.push(result)
+                }else{
+                    false
+                }
+            }
+        }
+    });
+
+    for (let i = 0; i < results.length; i++) {
+        console.log(results[i])
+        
+    }
+    // .forEach(function(x){
+    //     console.log(x.text())
+    // });
+
+
+    // await page.screenshot({                      // Screenshot the website using defined options
+    //     path: "./screenshot.png",                   // Save the screenshot in current directory
+    //     fullPage: true                              // take a fullpage screenshot
+    //   });
+    
+};
+
 async function scrapingTasaActiva () {
     const browser = await puppeteer.launch(chromeOptions);
     const page = await browser.newPage();
@@ -623,3 +759,4 @@ exports.findTasa = findTasa;
 exports.dataTasa = dataTasa;
 exports.downloadPBNA = downloadPBNA;
 exports.parseBNAPasiva = parseBNAPasiva;
+exports.scrapingInfoleg = scrapingInfoleg;

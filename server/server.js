@@ -27,6 +27,10 @@ app.listen(process.env.PORT, () => {
     console.log('Escuchando el puerto', process.env.PORT);
 });
 
+
+// downloadBCRADDBB.scrapingInfoleg();
+
+
 cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
