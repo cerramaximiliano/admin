@@ -5,6 +5,7 @@ const transporter = require('nodemailer-smtp-transport');
 const sendEmail = require('./nodemailer');
 const Tasas = require('../models/tasas');
 const DatosPrev = require('../models/datosprevisionales')
+const Normas = require('../models/normas')
 const moment = require('moment');
 const xlsx = require('xlsx');
 const http = require('http');
@@ -603,41 +604,58 @@ const chromeOptions = {
     return dateArray.join('-');
 };
 
-async function scrapingSubPages(page, link){
-    await page.goto(link);
-    const ele = await page.content();
-    const $ = cheerio.load(ele);
-    const text = $('#Textos_Completos > p > a');
-    console.log(text)
-}
-
 
 const findLastRecord = DatosPrev.findOne({'estado': true})
 .sort({'fecha': -1})
 .select('fecha');
 
 class Pages {
-    constructor(date, link, tag){
-        this.date = date;
+    constructor(fecha, link, tag, norma){
+        this.fecha = fecha;
         this.link = link;
         this.tag = tag;
+        this.norma = norma;
     }
 };
-
+//========================SCRAPING INFOLEG=========================================
+async function saveInfolegData(data){
+    let find = [];
+    data.forEach(function(ele){
+            find.push({
+                        updateOne: {
+                                    filter: {
+                                        norma: (ele.norma), 
+                                    },
+                                    update: {
+                                        fecha: (ele.fecha),
+                                        link: (ele.link),
+                                        textLink: (ele.textLink),
+                                        tag: (ele.tag)
+                                    },
+                                    upsert: true
+                                }
+                            })
+        });
+        console.log(find)
+        Normas.bulkWrite(find).then(result => {
+            console.log(result)
+        }).catch(err => {
+            console.log(err)
+        })
+};
 async function scrapingInfoleg(){
     let results = [];
     let findDate = await findLastRecord;
-
     const browser = await puppeteer.launch(chromeOptions);
     const page = await browser.newPage();
     await page.goto('http://servicios.infoleg.gob.ar/infolegInternet/verVinculos.do?modo=2&id=639');
     const ele = await page.content();
     const $ = cheerio.load(ele);
     const title = $('#detalles > strong').text().match(/\d+/)[0];
-    console.log(title);
     let dtRegex = new RegExp(/^(([1-9]|0[1-9]|1[0-9]|2[1-9]|3[0-1])[-](ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[-](\d{4}))$/gi);
         const data = $('.vr_azul11').each(function(x,i){
         let text = ($(this).text()).replace(/\s/g, "");
+        let norma = ($(this).prev().children().text()).replace(/\s\s+/g, " ")
         let check = (dtRegex).test(text);
         if(check === true){
             let momentDates = datesSpanish(text);
@@ -648,10 +666,10 @@ async function scrapingInfoleg(){
                 let movilidadData = data.match(/movilidad/i);
                 let haberData = data.match(/haber/i);
                 if(movilidadData != null){
-                    let result = new Pages (momentDate, link, movilidadData[0])
+                    let result = new Pages (momentDate, link, movilidadData[0], norma)
                     results.push(result)
                 }else if(haberData != null){
-                    let result = new Pages (momentDate, link, haberData[0])
+                    let result = new Pages (momentDate, link, haberData[0], norma)
                     results.push(result)
                 }else{
                     false
@@ -669,12 +687,14 @@ async function scrapingInfoleg(){
             let text = $$('#Textos_Completos > p > a').filter(function(){
                 return $(this).text().trim() === 'Texto completo de la norma'
             });
-            results[i].textLinks = 'http://servicios.infoleg.gob.ar/infolegInternet/'+ text.attr('href')
+            results[i].textLink = 'http://servicios.infoleg.gob.ar/infolegInternet/'+ text.attr('href')
     };
     await browser.close();
     return results
 };
 
+
+//========================SCRAPING TASA ACTIVA=========================================
 async function scrapingTasaActiva () {
     const browser = await puppeteer.launch(chromeOptions);
     const page = await browser.newPage();
@@ -756,3 +776,4 @@ exports.dataTasa = dataTasa;
 exports.downloadPBNA = downloadPBNA;
 exports.parseBNAPasiva = parseBNAPasiva;
 exports.scrapingInfoleg = scrapingInfoleg;
+exports.saveInfolegData = saveInfolegData;

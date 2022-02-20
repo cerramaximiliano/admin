@@ -189,12 +189,14 @@ cron.schedule('10 05 * * *', () => {
 cron.schedule('30 05 * * *', () => {
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
-    console.log(results)
+    await downloadBCRADDBB.saveInfolegData(results);
     })();
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
+
+
 
 // let data = 
 // [			
