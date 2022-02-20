@@ -190,15 +190,6 @@ cron.schedule('30 05 * * *', () => {
 });
 
 
-<<<<<<< HEAD
-(async () => {
-    let results = await downloadBCRADDBB.scrapingInfoleg();
-    console.log(results)
-    })();
-
-=======
->>>>>>> 334c3ec74dce9584ef9fb645804b161478dae544
-
 // let data = 
 // [			
 //     [	0.10685	]	,
