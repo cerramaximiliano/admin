@@ -26,12 +26,6 @@ app.listen(process.env.PORT, () => {
 });
 
 cron.schedule('15 05 * * *', () => {
-    downloadBCRADDBB.scrapingInfoleg();
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
-cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
     scheduled: true,
@@ -49,7 +43,6 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-
 cron.schedule('00 05 * * *', () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
@@ -195,6 +188,13 @@ cron.schedule('30 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
+
+
+(async () => {
+    let results = await downloadBCRADDBB.scrapingInfoleg();
+    console.log(results)
+    })();
+
 
 // let data = 
 // [			
