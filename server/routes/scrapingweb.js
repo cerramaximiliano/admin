@@ -5,6 +5,7 @@ const transporter = require('nodemailer-smtp-transport');
 const sendEmail = require('./nodemailer');
 const Tasas = require('../models/tasas');
 const DatosPrev = require('../models/datosprevisionales')
+const Normas = require('../models/normas')
 const moment = require('moment');
 const xlsx = require('xlsx');
 const http = require('http');
@@ -19,7 +20,7 @@ const cheerio = require('cheerio');
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
 //============================FUNCIONES TASA PASIVA BNA======================
-function parseBNAPasiva(){
+function parseBNAPasiva(routeFile){
 let tasasList = [];
 async function dataTasaPasiva(data, ind){
     let regexNumber = /\d*(\.|\,)?\d*/;
@@ -51,11 +52,11 @@ async function dataTasaPasiva(data, ind){
 
 let arrayLine = [];
 let datesTasas = [];
-let dataBuffer = fs.readFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA.pdf');
+let dataBuffer = fs.readFileSync(routeFile);
 pdf(dataBuffer).then(function(data){
     let text = data.text;
-    fs.writeFileSync(DOWNLOAD_DIR + 'tasaPasivaBNA.txt',text)
-    arrayLine = fs.readFileSync(DOWNLOAD_DIR + 'tasaPasivaBNA.txt').toString().split("\n");
+    fs.writeFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + 'tasaPasivaBNA.txt',text)
+    arrayLine = fs.readFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + 'tasaPasivaBNA.txt').toString().split("\n");
     arrayLine.forEach(function(x, index){
         let resultNumbers = dataTasaPasiva(x, index);
         let myRegexp = /(\d{2}|\d{1})[-.\/](\d{2}|\d{1})(?:[-.\/]\d{2}(\d{2})?)?/g; //Check pattern only
@@ -71,8 +72,6 @@ pdf(dataBuffer).then(function(data){
     tasasList = tasasList.filter(x => x.length != 0);
     if(typeof tasasList[0][0] === 'number' && moment(datesTasas[0], 'DD-MM-YY').isValid() === true){
         let dateToSave = moment(moment(datesTasas[0], "DD-MM-YY").format('YYYY-MM-DD') + 'T00:00').utc(true);
-        console.log(dateToSave);
-        console.log(tasasList[0][0]);
         Tasas.findOne({'tasaPasivaBNA': {$gte: 0}})
         .sort({'fecha': -1})
         .exec((err, datos) => {
@@ -156,24 +155,22 @@ async function downloadPBNA(){
     let url;
     const table = $('#collapseTwo > .panel-body > .plazoTable > ul > li').each(function(x, ele){
         $(this).each(function(i,element){
-            // console.log($(this).text())
+
             let matchPasivas = $(this).text().match(/tasas de operaciones pasivas/i);
             if(matchPasivas != null){
-                // console.log($(this).children().attr('href'));
                 url = $(this).children().attr('href')
             }
-
         })
     });
-    let file_url = 'https://www.bna.com.ar' + url
+    let file_url = 'https://www.bna.com.ar' + url;
     let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
-
-    let file = fs.createWriteStream(DOWNLOAD_DIR + file_name, {'flags': 'w'});
+    let fileRoute = DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + file_name
+    let file = fs.createWriteStream(fileRoute, {'flags': 'w'});
     const request = https.get(file_url, function(response) {
         response.pipe(file);
         file.on('finish', () => {
             file.close();
-            parseBNAPasiva();
+            parseBNAPasiva(fileRoute);
 });
 });
 };
@@ -607,41 +604,58 @@ const chromeOptions = {
     return dateArray.join('-');
 };
 
-async function scrapingSubPages(page, link){
-    await page.goto(link);
-    const ele = await page.content();
-    const $ = cheerio.load(ele);
-    const text = $('#Textos_Completos > p > a');
-    console.log(text)
-}
-
 
 const findLastRecord = DatosPrev.findOne({'estado': true})
 .sort({'fecha': -1})
 .select('fecha');
 
 class Pages {
-    constructor(date, link, tag){
-        this.date = date;
+    constructor(fecha, link, tag, norma){
+        this.fecha = fecha;
         this.link = link;
         this.tag = tag;
+        this.norma = norma;
     }
 };
-
+//========================SCRAPING INFOLEG=========================================
+async function saveInfolegData(data){
+    let find = [];
+    data.forEach(function(ele){
+            find.push({
+                        updateOne: {
+                                    filter: {
+                                        norma: (ele.norma), 
+                                    },
+                                    update: {
+                                        fecha: (ele.fecha),
+                                        link: (ele.link),
+                                        textLink: (ele.textLink),
+                                        tag: (ele.tag)
+                                    },
+                                    upsert: true
+                                }
+                            })
+        });
+        console.log(find)
+        Normas.bulkWrite(find).then(result => {
+            console.log(result)
+        }).catch(err => {
+            console.log(err)
+        })
+};
 async function scrapingInfoleg(){
     let results = [];
     let findDate = await findLastRecord;
-
     const browser = await puppeteer.launch(chromeOptions);
     const page = await browser.newPage();
     await page.goto('http://servicios.infoleg.gob.ar/infolegInternet/verVinculos.do?modo=2&id=639');
     const ele = await page.content();
     const $ = cheerio.load(ele);
     const title = $('#detalles > strong').text().match(/\d+/)[0];
-    console.log(title);
     let dtRegex = new RegExp(/^(([1-9]|0[1-9]|1[0-9]|2[1-9]|3[0-1])[-](ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[-](\d{4}))$/gi);
         const data = $('.vr_azul11').each(function(x,i){
         let text = ($(this).text()).replace(/\s/g, "");
+        let norma = ($(this).prev().children().text()).replace(/\s\s+/g, " ")
         let check = (dtRegex).test(text);
         if(check === true){
             let momentDates = datesSpanish(text);
@@ -652,10 +666,10 @@ async function scrapingInfoleg(){
                 let movilidadData = data.match(/movilidad/i);
                 let haberData = data.match(/haber/i);
                 if(movilidadData != null){
-                    let result = new Pages (momentDate, link, movilidadData[0])
+                    let result = new Pages (momentDate, link, movilidadData[0], norma)
                     results.push(result)
                 }else if(haberData != null){
-                    let result = new Pages (momentDate, link, haberData[0])
+                    let result = new Pages (momentDate, link, haberData[0], norma)
                     results.push(result)
                 }else{
                     false
@@ -673,12 +687,14 @@ async function scrapingInfoleg(){
             let text = $$('#Textos_Completos > p > a').filter(function(){
                 return $(this).text().trim() === 'Texto completo de la norma'
             });
-            results[i].textLinks = 'http://servicios.infoleg.gob.ar/infolegInternet/'+ text.attr('href')
+            results[i].textLink = 'http://servicios.infoleg.gob.ar/infolegInternet/'+ text.attr('href')
     };
     await browser.close();
     return results
 };
 
+
+//========================SCRAPING TASA ACTIVA=========================================
 async function scrapingTasaActiva () {
     const browser = await puppeteer.launch(chromeOptions);
     const page = await browser.newPage();
@@ -760,3 +776,4 @@ exports.dataTasa = dataTasa;
 exports.downloadPBNA = downloadPBNA;
 exports.parseBNAPasiva = parseBNAPasiva;
 exports.scrapingInfoleg = scrapingInfoleg;
+exports.saveInfolegData = saveInfolegData;

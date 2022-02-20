@@ -182,7 +182,7 @@ cron.schedule('10 05 * * *', () => {
 cron.schedule('30 05 * * *', () => {
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
-    console.log(results)
+    await downloadBCRADDBB.saveInfolegData(results);
     })();
 }, {
     scheduled: true,
@@ -190,11 +190,14 @@ cron.schedule('30 05 * * *', () => {
 });
 
 
+<<<<<<< HEAD
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
     console.log(results)
     })();
 
+=======
+>>>>>>> 334c3ec74dce9584ef9fb645804b161478dae544
 
 // let data = 
 // [			
