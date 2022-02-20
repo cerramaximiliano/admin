@@ -19,7 +19,7 @@ const cheerio = require('cheerio');
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
 //============================FUNCIONES TASA PASIVA BNA======================
-function parseBNAPasiva(){
+function parseBNAPasiva(routeFile){
 let tasasList = [];
 async function dataTasaPasiva(data, ind){
     let regexNumber = /\d*(\.|\,)?\d*/;
@@ -51,11 +51,11 @@ async function dataTasaPasiva(data, ind){
 
 let arrayLine = [];
 let datesTasas = [];
-let dataBuffer = fs.readFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA.pdf');
+let dataBuffer = fs.readFileSync(routeFile);
 pdf(dataBuffer).then(function(data){
     let text = data.text;
-    fs.writeFileSync(DOWNLOAD_DIR + 'tasaPasivaBNA.txt',text)
-    arrayLine = fs.readFileSync(DOWNLOAD_DIR + 'tasaPasivaBNA.txt').toString().split("\n");
+    fs.writeFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + 'tasaPasivaBNA.txt',text)
+    arrayLine = fs.readFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + 'tasaPasivaBNA.txt').toString().split("\n");
     arrayLine.forEach(function(x, index){
         let resultNumbers = dataTasaPasiva(x, index);
         let myRegexp = /(\d{2}|\d{1})[-.\/](\d{2}|\d{1})(?:[-.\/]\d{2}(\d{2})?)?/g; //Check pattern only
@@ -71,8 +71,6 @@ pdf(dataBuffer).then(function(data){
     tasasList = tasasList.filter(x => x.length != 0);
     if(typeof tasasList[0][0] === 'number' && moment(datesTasas[0], 'DD-MM-YY').isValid() === true){
         let dateToSave = moment(moment(datesTasas[0], "DD-MM-YY").format('YYYY-MM-DD') + 'T00:00').utc(true);
-        console.log(dateToSave);
-        console.log(tasasList[0][0]);
         Tasas.findOne({'tasaPasivaBNA': {$gte: 0}})
         .sort({'fecha': -1})
         .exec((err, datos) => {
@@ -156,24 +154,22 @@ async function downloadPBNA(){
     let url;
     const table = $('#collapseTwo > .panel-body > .plazoTable > ul > li').each(function(x, ele){
         $(this).each(function(i,element){
-            // console.log($(this).text())
+
             let matchPasivas = $(this).text().match(/tasas de operaciones pasivas/i);
             if(matchPasivas != null){
-                // console.log($(this).children().attr('href'));
                 url = $(this).children().attr('href')
             }
-
         })
     });
-    let file_url = 'https://www.bna.com.ar' + url
+    let file_url = 'https://www.bna.com.ar' + url;
     let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
-
-    let file = fs.createWriteStream(DOWNLOAD_DIR + file_name, {'flags': 'w'});
+    let fileRoute = DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + file_name
+    let file = fs.createWriteStream(fileRoute, {'flags': 'w'});
     const request = https.get(file_url, function(response) {
         response.pipe(file);
         file.on('finish', () => {
             file.close();
-            parseBNAPasiva();
+            parseBNAPasiva(fileRoute);
 });
 });
 };

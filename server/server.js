@@ -186,6 +186,11 @@ cron.schedule('10 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
+(async() => {
+    await downloadBCRADDBB.downloadPBNA();
+})();
+
+
 cron.schedule('30 05 * * *', () => {
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
