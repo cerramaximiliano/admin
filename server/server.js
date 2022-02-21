@@ -25,25 +25,25 @@ app.listen(process.env.PORT, () => {
     console.log('Escuchando el puerto', process.env.PORT);
 });
 
-// cron.schedule('15 05 * * *', () => {
+cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
-// }, {
-//     scheduled: true,
-//     timezone: "America/Argentina/Buenos_Aires"
-// });
-// cron.schedule('20 05 * * *', () => {
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
+cron.schedule('20 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('cer');
-// }, {
-//     scheduled: true,
-//     timezone: "America/Argentina/Buenos_Aires"
-// });
-// cron.schedule('25 05 * * *', () => {
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
+cron.schedule('25 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('icl');
-// }, {
-//     scheduled: true,
-//     timezone: "America/Argentina/Buenos_Aires"
-// });
-// cron.schedule('00 05 * * *', () => {
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
+cron.schedule('00 05 * * *', () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
@@ -165,19 +165,19 @@ app.listen(process.env.PORT, () => {
             };
         });
     }) ();
-// }, {
-//     scheduled: true,
-//     timezone: "America/Argentina/Buenos_Aires"
-// });
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
 
-// cron.schedule('10 05 * * *', () => {
+cron.schedule('10 05 * * *', () => {
 (async() => {
     await downloadBCRADDBB.downloadPBNA();
 })();
-// }, {
-//     scheduled: true,
-//     timezone: "America/Argentina/Buenos_Aires"
-// });
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
 
 cron.schedule('30 05 * * *', () => {
 (async () => {
@@ -190,14 +190,6 @@ cron.schedule('30 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-
-
-(async () => {
-    let results = await downloadBCRADDBB.scrapingInfoleg();
-    await downloadBCRADDBB.saveInfolegData(results);
-    // ENVIAR MAIL CON RESULTADOS
-    // ACTUALIZAR LA BASE DE DATOS DE LOS SERVICIOS AUTONOMOS CON LA BASE DE DATOS PREVISIONALES
-    })();
 
 
 // let data = 
