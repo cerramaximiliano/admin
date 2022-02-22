@@ -114,6 +114,21 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
         cid: 'unique@kreata.ee'
       }]
     };
+    let mailOptionsPublicacionesArray = {
+      from: 'Law||Analytics',
+      to: email,
+      subject: 'Law||Analytics - Actualizaciones.',
+      html: `<img src="cid:unique@kreata.ee"/>
+      <p>Actualizaciones normativas disponibles:</p>
+      <br>` + calculo,
+      attachments: [{
+        filename: 'lawanalyticsBanner.PNG',
+        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
+        cid: 'unique@kreata.ee'
+      }]
+    };
+
+
     let body;
     let smtpTransport;
     if (type === 'captcha') {
@@ -178,6 +193,16 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }));
     }else if(type === 'actualizacionesArray'){
       body = mailOptionsActualizacionesArray
+      smtpTransport = nodemailer.createTransport(transporter({
+        service: "gmail",
+        host: 'smtp.gmail.com',
+        auth: {
+            user: "soporte@lawanalytics.com.ar",
+            pass: "yvkea78k"
+        }
+      }));
+    }else if(type === 'actualizacionesNormas'){
+      body = mailOptionsPublicacionesArray;
       smtpTransport = nodemailer.createTransport(transporter({
         service: "gmail",
         host: 'smtp.gmail.com',

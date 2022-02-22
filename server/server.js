@@ -182,16 +182,17 @@ cron.schedule('10 05 * * *', () => {
 cron.schedule('30 05 * * *', () => {
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
-    await downloadBCRADDBB.saveInfolegData(results);
-    // ENVIAR MAIL CON RESULTADOS
-    // ACTUALIZAR LA BASE DE DATOS DE LOS SERVICIOS AUTONOMOS CON LA BASE DE DATOS PREVISIONALES
+    results.length === 0 ? false : await downloadBCRADDBB.saveInfolegData(results);
     })();
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-
+// (async () => {
+//     let results = await downloadBCRADDBB.actualizacionCategorias()
+//     console.log(results)
+// })();
 // let data = 
 // [			
 //     [	0.10685	]	,

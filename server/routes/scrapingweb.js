@@ -4,7 +4,8 @@ const nodemailer = require('nodemailer');
 const transporter = require('nodemailer-smtp-transport');
 const sendEmail = require('./nodemailer');
 const Tasas = require('../models/tasas');
-const DatosPrev = require('../models/datosprevisionales')
+const DatosPrev = require('../models/datosprevisionales');
+const Categorias = require('../models/categorias');
 const Normas = require('../models/normas')
 const moment = require('moment');
 const xlsx = require('xlsx');
@@ -16,6 +17,7 @@ const puppeteer = require('puppeteer');
 const pdf = require('pdf-parse');
 const lineReader = require('line-reader');
 const cheerio = require('cheerio');
+const datosprevisionales = require('../models/datosprevisionales');
 //============================RUTAS --------=================================
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
@@ -617,6 +619,7 @@ class Pages {
         this.norma = norma;
     }
 };
+
 //========================SCRAPING INFOLEG=========================================
 async function saveInfolegData(data){
     let find = [];
@@ -638,7 +641,23 @@ async function saveInfolegData(data){
         });
         console.log(find)
         Normas.bulkWrite(find).then(result => {
-            console.log(result)
+            console.log(result);
+            console.log(data);
+            let text = '';
+            data.forEach(function(x) {
+                text += `<p>Fecha de publicación: ${moment(x.fecha).format('DD-MM-YYYY')}</p><p>Norma: ${x.norma}</p><p>Asunto: ${x.tag}</p><p>Link: ${x.link}</p><br>`
+            });
+            sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesNormas', text)
+            .then(result => {
+                if(result === true){
+                    return true
+                }else{
+                    console.log('Envio de mail incorrecto')
+                }
+              })
+              .catch(err => {
+                  console.log('Envio de mail incorrecto', err)
+              })
         }).catch(err => {
             console.log(err)
         })
@@ -764,7 +783,31 @@ async function dataTasa(tasa, index){
     return check
 }
 
+//=========================ACTUALIZACION CATEGORIAS================================
+const findLastRecordCat = Categorias.findOne()
+.sort({'fecha': -1})
+.select('fecha');
 
+async function actualizacionCategorias(){
+    let resultsCat = await findLastRecordCat;
+    let resultsDatosPrev =  await findLastRecord;
+    if(moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))){
+        console.log(true);
+        datosprevisionales.find({'fecha': {$gte: moment(resultsCat.fecha)}})
+        .sort({'fecha': 1})
+        .select('movilidadGeneral fecha')
+        .exec((err, datos) => {
+            if(err) {
+              console.log(err)
+            }else{
+                console.log(datos)
+            }
+        })
+    }else{
+        console.log(false)
+    }
+    // return moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))
+};
 
 
 exports.downloadBCRADDBB = downloadBCRADDBB;
@@ -777,3 +820,4 @@ exports.downloadPBNA = downloadPBNA;
 exports.parseBNAPasiva = parseBNAPasiva;
 exports.scrapingInfoleg = scrapingInfoleg;
 exports.saveInfolegData = saveInfolegData;
+exports.actualizacionCategorias = actualizacionCategorias;
