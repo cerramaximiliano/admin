@@ -189,10 +189,17 @@ cron.schedule('30 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-// (async () => {
-//     let results = await downloadBCRADDBB.actualizacionCategorias()
-//     console.log(results)
-// })();
+cron.schedule('35 05 * * *', () => {
+    (async () => {
+        let results = await downloadBCRADDBB.actualizacionCategorias()
+    })();
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
+
+
+
 // let data = 
 // [			
 //     [	0.10685	]	,

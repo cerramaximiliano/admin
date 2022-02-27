@@ -786,13 +786,11 @@ async function dataTasa(tasa, index){
 //=========================ACTUALIZACION CATEGORIAS================================
 const findLastRecordCat = Categorias.findOne()
 .sort({'fecha': -1})
-.select('fecha');
 
 async function actualizacionCategorias(){
     let resultsCat = await findLastRecordCat;
     let resultsDatosPrev =  await findLastRecord;
     if(moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))){
-        console.log(true);
         datosprevisionales.find({'fecha': {$gte: moment(resultsCat.fecha)}})
         .sort({'fecha': 1})
         .select('movilidadGeneral fecha')
@@ -800,13 +798,107 @@ async function actualizacionCategorias(){
             if(err) {
               console.log(err)
             }else{
-                console.log(datos)
+                if(moment(datos[0].fecha).isSame(moment(resultsCat.fecha))){
+                    let movilidades = [];
+                    let movilidadInicial = datos[0].movilidadGeneral;
+                    datos.forEach(function(x){
+                        movilidadInicial *= x.movilidadGeneral;
+                        movilidades.push(movilidadInicial);
+                    });
+                    let datosNuevos = [];
+                    movilidades.forEach(function(x, index){
+                        if(index > 0){
+                            datosNuevos.push({
+                                updateOne: {
+                                            filter: {
+                                                fecha: datos[index].fecha,
+                                            },
+                                            update: {
+                                                categoriaA: (resultsCat.categoriaA * x),
+                                                categoriaA2: (resultsCat.categoriaA2 * x),
+                                                categoriaB: (resultsCat.categoriaB * x),
+                                                categoriaC: (resultsCat.categoriaC * x),
+                                                categoriaD: (resultsCat.categoriaD * x),
+                                                categoriaE: (resultsCat.categoriaE * x),
+                                                categoriaF: (resultsCat.categoriaF * x),
+                                                categoriaG: (resultsCat.categoriaG * x),
+                                                categoriaH: (resultsCat.categoriaH * x),
+                                                categoriaI: (resultsCat.categoriaI * x),
+                                                categoriaJ: (resultsCat.categoriaJ * x),
+                                                categoriaK: (resultsCat.categoriaK * x),
+                                                categoriaL: (resultsCat.categoriaL * x),
+                                                categoriaM: (resultsCat.categoriaM * x),
+                                                categoriaN: (resultsCat.categoriaN * x),
+                                                categoriaS: (resultsCat.categoriaS * x),
+                                                categoriaW: (resultsCat.categoriaW * x),
+                                                categoria1: (resultsCat.categoria1 * x),
+                                                categoria2: (resultsCat.categoria2 * x),
+                                                categoria3: (resultsCat.categoria3 * x),
+                                                categoria4: (resultsCat.categoria4 * x),
+                                                categoria5: (resultsCat.categoria5 * x),
+                                                categoria6: (resultsCat.categoria6 * x),
+                                                categoria7: (resultsCat.categoria7 * x),
+                                                categoria8: (resultsCat.categoria8 * x),
+                                                categoria9: (resultsCat.categoria9 * x),
+                                                categoria10: (resultsCat.categoria10 * x),
+                                                categoria11: (resultsCat.categoria11 * x),
+                                                categoria12: (resultsCat.categoria12 * x),
+                                                categoria13: (resultsCat.categoria13 * x),
+                                                categoria14: (resultsCat.categoria14 * x),
+                                                categoria15: (resultsCat.categoria15 * x),
+                                                categoria16: (resultsCat.categoria16 * x),
+                                                categoria17: (resultsCat.categoria17 * x),
+                                                categoria18: (resultsCat.categoria18 * x),
+                                                categoria19: (resultsCat.categoria19 * x),
+                                                categoria20: (resultsCat.categoria20 * x),
+                                                categoria21: (resultsCat.categoria21 * x),
+                                                categoria22: (resultsCat.categoria22 * x),
+                                                categoria23: (resultsCat.categoria23 * x),
+                                                categoria24: (resultsCat.categoria24 * x),
+                                                categoria25: (resultsCat.categoria25 * x),
+                                                categoria26: (resultsCat.categoria26 * x),
+                                                categoria27: (resultsCat.categoria27 * x),
+                                                categoria28: (resultsCat.categoria28 * x),
+                                                categoria29: (resultsCat.categoria29 * x),
+                                                categoria30: (resultsCat.categoria30 * x),
+                                                categoria31: (resultsCat.categoria31 * x),
+                                                categoria32: (resultsCat.categoria32 * x),
+                                                categoria33: (resultsCat.categoria33 * x),
+                                                categoria34: (resultsCat.categoria34 * x),
+                                                categoria35: (resultsCat.categoria35 * x),
+                                                categoria36: (resultsCat.categoria36 * x),
+                                                categoria37: (resultsCat.categoria37 * x),
+                                                categoria38: (resultsCat.categoria38 * x),
+                                                categoria39: (resultsCat.categoria39 * x),
+                                                categoria40: (resultsCat.categoria40 * x),
+                                                categoria41: (resultsCat.categoria41 * x),
+                                                categoria42: (resultsCat.categoria42 * x),
+                                                categoria43: (resultsCat.categoria43 * x),
+                                                categoria44: (resultsCat.categoria44 * x),
+                                                categoria45: (resultsCat.categoria45 * x),
+                                                categoria46: (resultsCat.categoria46 * x),
+                                                categoria47: (resultsCat.categoria47  * x),
+                                                categoriaIndependientes: (resultsCat.categoriaIndependientes * x),
+                                                categoriaProfesionales: (resultsCat.categoriaProfesionales * x),
+                                                categoriaEmpresarios: (resultsCat.categoriaEmpresarios * x)
+                                            },
+                                            upsert: true
+                                        }
+                                    });
+                        }
+                    });
+                    Categorias.bulkWrite(datosNuevos).then(result => {
+                        console.log(result)
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    })
+                }
             }
         })
     }else{
         console.log(false)
     }
-    // return moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))
 };
 
 
