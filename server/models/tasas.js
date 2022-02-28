@@ -20,10 +20,15 @@ let tasasSchema = new Schema({
     cer: {
     type: Number
     },
-
     icl: {
       type: Number
       },
+    tasaActivaCNAT2601: {
+      type: Number
+    },
+    tasaActivaCNAT2658: {
+      type: Number
+    }
   });
 
 
