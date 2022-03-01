@@ -21,13 +21,13 @@ let tasasSchema = new Schema({
     type: Number
     },
     icl: {
-      type: Number
-      },
+    type: Number
+    },
     tasaActivaCNAT2601: {
-      type: Number
+    type: Number
     },
     tasaActivaCNAT2658: {
-      type: Number
+    type: Number
     }
   });
 

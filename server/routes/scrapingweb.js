@@ -726,7 +726,6 @@ async function scrapingTasaActiva () {
         tag.forEach((tag) => {
             text.push(tag.innerText)
         })
-
         return text
     });
     await browser.close();
@@ -748,11 +747,16 @@ async function regexTextCheck(regex, text){
     return check
 };
 async function findTasa(regex, iterator){
+    // console.log(iterator)
+    // console.log(regex)
     let regexToUse;
     let check;
     let dataIndex;
     if(regex === 1){
         regexToUse = new RegExp(/tasa efectiva mensual/i);
+    }else if(regex === 2){
+        regexToUse = new RegExp(/tasa efectiva anual vencida/i);
+
     }
     iterator.forEach(function(x, index){
         if(regexToUse.test(x) === true){
@@ -771,6 +775,8 @@ async function dataTasa(tasa, index){
     let check;
     let words = tasa[index].split(' ');
     let checkMensual = words.some(value => (/mensual/i).test(value));
+    let checkAnual = words.some(value => (/anual/i).test(value));
+    console.log(checkMensual, checkAnual)
     words.forEach(function(x) {
         let checkWords = x.match(regexNumber);
         if (checkWords[0] != undefined && checkWords[0] != '') {
@@ -779,9 +785,142 @@ async function dataTasa(tasa, index){
             false
         }
     })
-    checkMensual === true ? check = check / 30 : false;
+    if(checkMensual === true){
+        check = check / 30
+    }else if(checkMensual === false && checkAnual === true){
+        check = check / 365
+    }else{
+        false
+    }
     return check
-}
+};
+
+
+async function saveTasaActivaData(tasaData, dateData, tasa){
+    let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
+    let update;
+    let tasaFind;
+    let tasaText;
+    let tasaModel;
+    if (tasa === 1){
+        tasaFind = {'tasaActivaCNAT2658': {$gte: 0}};
+        update = {'tasaActivaCNAT2658': Number(tasaData)};
+        tasaText = 'Tasa Activa Efectiva Anual Vencida, cartera general diversa del Banco Nación - Acta CNAT 2658';
+        tasaModel = 'tasaActivaCNAT2658'
+    }
+    Tasas.findOne(tasaFind)
+    .sort({'fecha': -1})
+    .exec((err, datos) => {
+        if(err) {
+          console.log(err)
+          return {
+          ok: false,
+          err
+          };
+        }else{
+            if (moment(datos.fecha).utc().isSame(today, 'day')) {
+                //Ultima fecha de la DDBB es igual a la fecha actual de actualizacion. No hay accion requerida.
+                console.log('Fecha la DDBB es igual a la fecha actual de actualizacion. No hacer nada.')
+                false
+            }else{
+                if(today.isSame(dateData, 'day')){
+                    //Actualizar con la fecha del sitio el dia de hoy
+                    console.log('La fecha del sitio es igual a hoy. Actualizar la fecha actual con la data del sitio.')
+                    let filter = {fecha: today};
+                    Tasas.findOneAndUpdate(filter, update, {
+                        new: true,
+                        upsert: true
+                    })
+                    .exec((err, datos) => {
+                        if(err) {
+                            console.log(err)
+                          return {
+                          ok: false,
+                          err
+                          };
+                        }else{
+                         let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
+                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         .then(result => {
+                           if(result === true){
+                               return true
+                           }else{
+                               console.log('Envio de mail incorrecto')
+                           }
+                         })
+                         .catch(err => {
+                             console.log('Envio de mail incorrecto', err)
+                         })
+                        }
+                    });
+                }else if(today.isBefore(dateData, 'day')){
+                    //es mayor la fecha del sitio, entonces copiar la fecha del dia de ayer.
+                    console.log('La fecha del sitio es mayor a hoy. Actualizar con la data del dia anterior.');
+                    let filter = {fecha: today};
+                    update = {[tasaModel]: datos[tasaModel]};
+                    console.log(update)
+                    Tasas.findOneAndUpdate(filter, update, {
+                        new: true,
+                        upsert: true
+                    })
+                    .exec((err, datos) => {
+                        if(err) {
+                            console.log(err)
+                          return {
+                          ok: false,
+                          err
+                          };
+                        }else{
+                         let info = [moment().format("YYYY-MM-DD"), datos[tasaModel] , tasaText]
+                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         .then(result => {
+                           if(result === true){
+                               return true
+                           }else{
+                               console.log('Envio de mail incorrecto')
+                           }
+                         })
+                         .catch(err => {
+                             console.log('Envio de mail incorrecto', err)
+                         })
+                        }
+                    });
+                }else{
+                    //La fecha de hoy es mayor a la fecha del sitio. Actualizar hoy con la fecha del sitio
+                    console.log('Actualizar la fecha del dia con la fecha del sitio (de fecha anterior)')
+                    let filter = {fecha: today};
+                    Tasas.findOneAndUpdate(filter, update, {
+                        new: true,
+                        upsert: true
+                    })
+                    .exec((err, datos) => {
+                        if(err) {
+                            console.log(err)
+                          return {
+                          ok: false,
+                          err
+                          };
+                        }else{
+                         let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
+                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         .then(result => {
+                           if(result === true){
+                               return true
+                           }else{
+                               console.log('Envio de mail incorrecto')
+                           }
+                         })
+                         .catch(err => {
+                             console.log('Envio de mail incorrecto', err)
+                         })
+                        }
+                    });
+                }
+            }
+        }
+
+    })
+};
 
 //=========================ACTUALIZACION CATEGORIAS================================
 const findLastRecordCat = Categorias.findOne()
@@ -913,3 +1052,4 @@ exports.parseBNAPasiva = parseBNAPasiva;
 exports.scrapingInfoleg = scrapingInfoleg;
 exports.saveInfolegData = saveInfolegData;
 exports.actualizacionCategorias = actualizacionCategorias;
+exports.saveTasaActivaData = saveTasaActivaData;
