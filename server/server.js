@@ -43,6 +43,8 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
+
+
 cron.schedule('00 05 * * *', () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
@@ -51,7 +53,6 @@ cron.schedule('00 05 * * *', () => {
         let dateData = await downloadBCRADDBB.regexDates(tasaActiva);
         let findTasaMensual = await downloadBCRADDBB.findTasa(1, tasaActiva);
         let tasaData = await downloadBCRADDBB.dataTasa(tasaActiva, findTasaMensual[1]);
-
         Tasas.findOne({'tasaActivaBNA': {$gte: 0}})
         .sort({'fecha': -1})
         .exec((err, datos) => {
@@ -198,7 +199,19 @@ cron.schedule('35 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-
+cron.schedule('40 05 * * *', () => {
+    (async() => {
+        let tasaActivaCNAT2658 = await downloadBCRADDBB.scrapingTasaActiva();
+        let dateData = await downloadBCRADDBB.regexDates(tasaActivaCNAT2658);
+        let findTasaMensual = await downloadBCRADDBB.findTasa(2, tasaActivaCNAT2658);    
+        let tasaData = await downloadBCRADDBB.dataTasa(tasaActivaCNAT2658, findTasaMensual[1]);
+        await downloadBCRADDBB.saveTasaActivaData(tasaData, dateData, 1)
+    })()
+    }, {
+        scheduled: true,
+        timezone: "America/Argentina/Buenos_Aires"
+    });
+    
 
 // let data = 
 // [			
