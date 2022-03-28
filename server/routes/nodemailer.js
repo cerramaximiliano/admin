@@ -13,7 +13,7 @@ const pathFiles = path.join(__dirname, '../');
 async function sendEmail (email, cc, referencia, content, pageSelectData, pageTypeData, type, calculo) {
   return new Promise((resolve, reject) => {
     let mailOptions = {
-      from: 'Law||Analytics',
+      from: 'soporte@lawanalytics.com.ar',
       to: email,
       cc: cc,
       subject: 'Law||Analytics - Actualización de notificaciones',
@@ -25,7 +25,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsAut = {
-      from: 'Law||Analytics',
+      from: 'soporte@lawanalytics.com.ar',
       to: email,
       cc: cc,
       subject: 'Law||Analytics - Verificación de cuenta.',
@@ -40,7 +40,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsReset = {
-      from: 'Law||Analytics',
+      from: 'soporte@lawanalytics.com.ar',
       to: email,
       cc: cc,
       subject: 'Law||Analytics - Reseteo de password.',
@@ -55,7 +55,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsResults = {
-      from: 'Law||Analytics',
+      from: 'calculo@lawanalytics.com.ar',
       to: email,
       cc: cc,
       subject: 'Law||Analytics - Sistema de cálculo.',
@@ -72,7 +72,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     }
     let mailOptionsActualizaciones = {
-      from: 'Law||Analytics',
+      from: 'soporte@lawanalytics.com.ar',
       to: email,
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
@@ -87,7 +87,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsActualizacionesND = {
-      from: 'Law||Analytics',
+      from: 'soporte@lawanalytics.com.ar',
       to: email,
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
@@ -101,7 +101,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsActualizacionesArray = {
-      from: 'Law||Analytics',
+      from: 'soporte@lawanalytics.com.ar',
       to: email,
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
@@ -115,7 +115,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsPublicacionesArray = {
-      from: 'Law||Analytics',
+      from: 'soporte@lawanalytics.com.ar',
       to: email,
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
@@ -134,81 +134,73 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
     if (type === 'captcha') {
       body = mailOptions
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }else if(type === 'AUT'){
       body = mailOptionsAut
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }else if(type === 'RESET'){
       body = mailOptionsReset
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }else if(type === 'calcResults'){
       body = mailOptionsResults
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-          user: "calculos@lawanalytics.com.ar",
-          pass: "jpquv39h"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }else if(type === 'actualizaciones'){
       body = mailOptionsActualizaciones
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }else if(type === 'actualizacionesND'){
       body = mailOptionsActualizacionesND
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }else if(type === 'actualizacionesArray'){
       body = mailOptionsActualizacionesArray
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }else if(type === 'actualizacionesNormas'){
       body = mailOptionsPublicacionesArray;
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        service: "Mailgun",
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.com.ar",
+          pass: "10a6fdae0fa5da32f7f9a9a6a9f687e9-62916a6c-5b91d626"
         }
       }));
     }
