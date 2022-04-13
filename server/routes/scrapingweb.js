@@ -929,24 +929,26 @@ const findLastRecordCat = Categorias.findOne()
 async function actualizacionCategorias(){
     let resultsCat = await findLastRecordCat;
     let resultsDatosPrev =  await findLastRecord;
+    console.log()
     if(moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))){
-        datosprevisionales.find({'fecha': {$gte: moment(resultsCat.fecha)}})
+        datosprevisionales.find({'fecha': {$gt: moment(resultsCat.fecha)}})
         .sort({'fecha': 1})
         .select('movilidadGeneral fecha')
         .exec((err, datos) => {
             if(err) {
               console.log(err)
             }else{
-                if(moment(datos[0].fecha).isSame(moment(resultsCat.fecha))){
+                if(moment(datos[0].fecha).isAfter(moment(resultsCat.fecha))){
+                    console.log(datos)
                     let movilidades = [];
                     let movilidadInicial = datos[0].movilidadGeneral;
                     datos.forEach(function(x){
                         movilidadInicial *= x.movilidadGeneral;
                         movilidades.push(movilidadInicial);
                     });
+                    console.log(movilidades)
                     let datosNuevos = [];
                     movilidades.forEach(function(x, index){
-                        if(index > 0){
                             datosNuevos.push({
                                 updateOne: {
                                             filter: {
@@ -1024,10 +1026,22 @@ async function actualizacionCategorias(){
                                             upsert: true
                                         }
                                     });
-                        }
+
                     });
                     Categorias.bulkWrite(datosNuevos).then(result => {
-                        console.log(result)
+                        let info = [datosNuevos[0].updateOne.filter.fecha, JSON.stringify(datosNuevos[0].updateOne.update['$set'])]
+                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'categorias', info)
+                        .then(result => {
+                          if(result === true){
+                              return true
+                          }else{
+                              console.log('Envio de mail incorrecto')
+                          }
+                        })
+                        .catch(err => {
+                            console.log('Envio de mail incorrecto', err)
+                        })
+
                     })
                     .catch(err => {
                         console.log(err)
@@ -1036,7 +1050,18 @@ async function actualizacionCategorias(){
             }
         })
     }else{
-        console.log(false)
+        let info = 'No hay actualizaciones disponibles.'
+        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'categorias', info)
+        .then(result => {
+          if(result === true){
+              return true
+          }else{
+              console.log('Envio de mail incorrecto')
+          }
+        })
+        .catch(err => {
+            console.log('Envio de mail incorrecto', err)
+        })
     }
 };
 
