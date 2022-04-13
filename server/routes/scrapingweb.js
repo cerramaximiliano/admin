@@ -611,6 +611,10 @@ const findLastRecord = DatosPrev.findOne({'estado': true})
 .sort({'fecha': -1})
 .select('fecha');
 
+const findLastRecordAll = DatosPrev.findOne({'estado': true})
+.sort({'fecha': -1})
+
+
 class Pages {
     constructor(fecha, link, tag, norma){
         this.fecha = fecha;
@@ -928,106 +932,88 @@ const findLastRecordCat = Categorias.findOne()
 
 async function actualizacionCategorias(){
     let resultsCat = await findLastRecordCat;
-    let resultsDatosPrev =  await findLastRecord;
-    console.log()
+    let resultsDatosPrev =  await findLastRecordAll;
     if(moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))){
-        datosprevisionales.find({'fecha': {$gt: moment(resultsCat.fecha)}})
-        .sort({'fecha': 1})
-        .select('movilidadGeneral fecha')
-        .exec((err, datos) => {
-            if(err) {
-              console.log(err)
-            }else{
-                if(moment(datos[0].fecha).isAfter(moment(resultsCat.fecha))){
-                    console.log(datos)
-                    let movilidades = [];
-                    let movilidadInicial = datos[0].movilidadGeneral;
-                    datos.forEach(function(x){
-                        movilidadInicial *= x.movilidadGeneral;
-                        movilidades.push(movilidadInicial);
-                    });
-                    console.log(movilidades)
                     let datosNuevos = [];
-                    movilidades.forEach(function(x, index){
                             datosNuevos.push({
                                 updateOne: {
                                             filter: {
-                                                fecha: datos[index].fecha,
+                                                fecha: resultsDatosPrev.fecha,
                                             },
                                             update: {
-                                                categoriaA: (resultsCat.categoriaA * x),
-                                                categoriaA2: (resultsCat.categoriaA2 * x),
-                                                categoriaB: (resultsCat.categoriaB * x),
-                                                categoriaC: (resultsCat.categoriaC * x),
-                                                categoriaD: (resultsCat.categoriaD * x),
-                                                categoriaE: (resultsCat.categoriaE * x),
-                                                categoriaF: (resultsCat.categoriaF * x),
-                                                categoriaG: (resultsCat.categoriaG * x),
-                                                categoriaH: (resultsCat.categoriaH * x),
-                                                categoriaI: (resultsCat.categoriaI * x),
-                                                categoriaJ: (resultsCat.categoriaJ * x),
-                                                categoriaK: (resultsCat.categoriaK * x),
-                                                categoriaL: (resultsCat.categoriaL * x),
-                                                categoriaM: (resultsCat.categoriaM * x),
-                                                categoriaN: (resultsCat.categoriaN * x),
-                                                categoriaS: (resultsCat.categoriaS * x),
-                                                categoriaW: (resultsCat.categoriaW * x),
-                                                categoria1: (resultsCat.categoria1 * x),
-                                                categoria2: (resultsCat.categoria2 * x),
-                                                categoria3: (resultsCat.categoria3 * x),
-                                                categoria4: (resultsCat.categoria4 * x),
-                                                categoria5: (resultsCat.categoria5 * x),
-                                                categoria6: (resultsCat.categoria6 * x),
-                                                categoria7: (resultsCat.categoria7 * x),
-                                                categoria8: (resultsCat.categoria8 * x),
-                                                categoria9: (resultsCat.categoria9 * x),
-                                                categoria10: (resultsCat.categoria10 * x),
-                                                categoria11: (resultsCat.categoria11 * x),
-                                                categoria12: (resultsCat.categoria12 * x),
-                                                categoria13: (resultsCat.categoria13 * x),
-                                                categoria14: (resultsCat.categoria14 * x),
-                                                categoria15: (resultsCat.categoria15 * x),
-                                                categoria16: (resultsCat.categoria16 * x),
-                                                categoria17: (resultsCat.categoria17 * x),
-                                                categoria18: (resultsCat.categoria18 * x),
-                                                categoria19: (resultsCat.categoria19 * x),
-                                                categoria20: (resultsCat.categoria20 * x),
-                                                categoria21: (resultsCat.categoria21 * x),
-                                                categoria22: (resultsCat.categoria22 * x),
-                                                categoria23: (resultsCat.categoria23 * x),
-                                                categoria24: (resultsCat.categoria24 * x),
-                                                categoria25: (resultsCat.categoria25 * x),
-                                                categoria26: (resultsCat.categoria26 * x),
-                                                categoria27: (resultsCat.categoria27 * x),
-                                                categoria28: (resultsCat.categoria28 * x),
-                                                categoria29: (resultsCat.categoria29 * x),
-                                                categoria30: (resultsCat.categoria30 * x),
-                                                categoria31: (resultsCat.categoria31 * x),
-                                                categoria32: (resultsCat.categoria32 * x),
-                                                categoria33: (resultsCat.categoria33 * x),
-                                                categoria34: (resultsCat.categoria34 * x),
-                                                categoria35: (resultsCat.categoria35 * x),
-                                                categoria36: (resultsCat.categoria36 * x),
-                                                categoria37: (resultsCat.categoria37 * x),
-                                                categoria38: (resultsCat.categoria38 * x),
-                                                categoria39: (resultsCat.categoria39 * x),
-                                                categoria40: (resultsCat.categoria40 * x),
-                                                categoria41: (resultsCat.categoria41 * x),
-                                                categoria42: (resultsCat.categoria42 * x),
-                                                categoria43: (resultsCat.categoria43 * x),
-                                                categoria44: (resultsCat.categoria44 * x),
-                                                categoria45: (resultsCat.categoria45 * x),
-                                                categoria46: (resultsCat.categoria46 * x),
-                                                categoria47: (resultsCat.categoria47  * x),
-                                                categoriaIndependientes: (resultsCat.categoriaIndependientes * x),
-                                                categoriaProfesionales: (resultsCat.categoriaProfesionales * x),
-                                                categoriaEmpresarios: (resultsCat.categoriaEmpresarios * x)
+                                                categoriaA: (resultsCat.categoriaA * resultsDatosPrev.movilidadGeneral),
+                                                categoriaA2: (resultsCat.categoriaA2 * resultsDatosPrev.movilidadGeneral),
+                                                categoriaB: (resultsCat.categoriaB * resultsDatosPrev.movilidadGeneral),
+                                                categoriaC: (resultsCat.categoriaC * resultsDatosPrev.movilidadGeneral),
+                                                categoriaD: (resultsCat.categoriaD * resultsDatosPrev.movilidadGeneral),
+                                                categoriaE: (resultsCat.categoriaE * resultsDatosPrev.movilidadGeneral),
+                                                categoriaF: (resultsCat.categoriaF * resultsDatosPrev.movilidadGeneral),
+                                                categoriaG: (resultsCat.categoriaG * resultsDatosPrev.movilidadGeneral),
+                                                categoriaH: (resultsCat.categoriaH * resultsDatosPrev.movilidadGeneral),
+                                                categoriaI: (resultsCat.categoriaI * resultsDatosPrev.movilidadGeneral),
+                                                categoriaJ: (resultsCat.categoriaJ * resultsDatosPrev.movilidadGeneral),
+                                                categoriaK: (resultsCat.categoriaK * resultsDatosPrev.movilidadGeneral),
+                                                categoriaL: (resultsCat.categoriaL * resultsDatosPrev.movilidadGeneral),
+                                                categoriaM: (resultsCat.categoriaM * resultsDatosPrev.movilidadGeneral),
+                                                categoriaN: (resultsCat.categoriaN * resultsDatosPrev.movilidadGeneral),
+                                                categoriaS: (resultsCat.categoriaS * resultsDatosPrev.movilidadGeneral),
+                                                categoriaW: (resultsCat.categoriaW * resultsDatosPrev.movilidadGeneral),
+                                                categoria1: (resultsCat.categoria1 * resultsDatosPrev.movilidadGeneral),
+                                                categoria2: (resultsCat.categoria2 * resultsDatosPrev.movilidadGeneral),
+                                                categoria3: (resultsCat.categoria3 * resultsDatosPrev.movilidadGeneral),
+                                                categoria4: (resultsCat.categoria4 * resultsDatosPrev.movilidadGeneral),
+                                                categoria5: (resultsCat.categoria5 * resultsDatosPrev.movilidadGeneral),
+                                                categoria6: (resultsCat.categoria6 * resultsDatosPrev.movilidadGeneral),
+                                                categoria7: (resultsCat.categoria7 * resultsDatosPrev.movilidadGeneral),
+                                                categoria8: (resultsCat.categoria8 * resultsDatosPrev.movilidadGeneral),
+                                                categoria9: (resultsCat.categoria9 * resultsDatosPrev.movilidadGeneral),
+                                                categoria10: (resultsCat.categoria10 * resultsDatosPrev.movilidadGeneral),
+                                                categoria11: (resultsCat.categoria11 * resultsDatosPrev.movilidadGeneral),
+                                                categoria12: (resultsCat.categoria12 * resultsDatosPrev.movilidadGeneral),
+                                                categoria13: (resultsCat.categoria13 * resultsDatosPrev.movilidadGeneral),
+                                                categoria14: (resultsCat.categoria14 * resultsDatosPrev.movilidadGeneral),
+                                                categoria15: (resultsCat.categoria15 * resultsDatosPrev.movilidadGeneral),
+                                                categoria16: (resultsCat.categoria16 * resultsDatosPrev.movilidadGeneral),
+                                                categoria17: (resultsCat.categoria17 * resultsDatosPrev.movilidadGeneral),
+                                                categoria18: (resultsCat.categoria18 * resultsDatosPrev.movilidadGeneral),
+                                                categoria19: (resultsCat.categoria19 * resultsDatosPrev.movilidadGeneral),
+                                                categoria20: (resultsCat.categoria20 * resultsDatosPrev.movilidadGeneral),
+                                                categoria21: (resultsCat.categoria21 * resultsDatosPrev.movilidadGeneral),
+                                                categoria22: (resultsCat.categoria22 * resultsDatosPrev.movilidadGeneral),
+                                                categoria23: (resultsCat.categoria23 * resultsDatosPrev.movilidadGeneral),
+                                                categoria24: (resultsCat.categoria24 * resultsDatosPrev.movilidadGeneral),
+                                                categoria25: (resultsCat.categoria25 * resultsDatosPrev.movilidadGeneral),
+                                                categoria26: (resultsCat.categoria26 * resultsDatosPrev.movilidadGeneral),
+                                                categoria27: (resultsCat.categoria27 * resultsDatosPrev.movilidadGeneral),
+                                                categoria28: (resultsCat.categoria28 * resultsDatosPrev.movilidadGeneral),
+                                                categoria29: (resultsCat.categoria29 * resultsDatosPrev.movilidadGeneral),
+                                                categoria30: (resultsCat.categoria30 * resultsDatosPrev.movilidadGeneral),
+                                                categoria31: (resultsCat.categoria31 * resultsDatosPrev.movilidadGeneral),
+                                                categoria32: (resultsCat.categoria32 * resultsDatosPrev.movilidadGeneral),
+                                                categoria33: (resultsCat.categoria33 * resultsDatosPrev.movilidadGeneral),
+                                                categoria34: (resultsCat.categoria34 * resultsDatosPrev.movilidadGeneral),
+                                                categoria35: (resultsCat.categoria35 * resultsDatosPrev.movilidadGeneral),
+                                                categoria36: (resultsCat.categoria36 * resultsDatosPrev.movilidadGeneral),
+                                                categoria37: (resultsCat.categoria37 * resultsDatosPrev.movilidadGeneral),
+                                                categoria38: (resultsCat.categoria38 * resultsDatosPrev.movilidadGeneral),
+                                                categoria39: (resultsCat.categoria39 * resultsDatosPrev.movilidadGeneral),
+                                                categoria40: (resultsCat.categoria40 * resultsDatosPrev.movilidadGeneral),
+                                                categoria41: (resultsCat.categoria41 * resultsDatosPrev.movilidadGeneral),
+                                                categoria42: (resultsCat.categoria42 * resultsDatosPrev.movilidadGeneral),
+                                                categoria43: (resultsCat.categoria43 * resultsDatosPrev.movilidadGeneral),
+                                                categoria44: (resultsCat.categoria44 * resultsDatosPrev.movilidadGeneral),
+                                                categoria45: (resultsCat.categoria45 * resultsDatosPrev.movilidadGeneral),
+                                                categoria46: (resultsCat.categoria46 * resultsDatosPrev.movilidadGeneral),
+                                                categoria47: (resultsCat.categoria47  * resultsDatosPrev.movilidadGeneral),
+                                                categoriaIndependientes: (resultsCat.categoriaIndependientes * resultsDatosPrev.movilidadGeneral),
+                                                categoriaProfesionales: (resultsCat.categoriaProfesionales * resultsDatosPrev.movilidadGeneral),
+                                                categoriaEmpresarios: (resultsCat.categoriaEmpresarios * resultsDatosPrev.movilidadGeneral)
                                             },
                                             upsert: true
                                         }
                                     });
 
-                    });
+
                     Categorias.bulkWrite(datosNuevos).then(result => {
                         let info = [datosNuevos[0].updateOne.filter.fecha, JSON.stringify(datosNuevos[0].updateOne.update['$set'])]
                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'categorias', info)
@@ -1046,9 +1032,8 @@ async function actualizacionCategorias(){
                     .catch(err => {
                         console.log(err)
                     })
-                }
-            }
-        })
+
+
     }else{
         let info = 'No hay actualizaciones disponibles.'
         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'categorias', info)
