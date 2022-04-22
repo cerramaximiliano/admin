@@ -1,2 +1,6 @@
 
-server/files
+/server/files
+*.pdf
+*.xls
+*.png
+*.json
