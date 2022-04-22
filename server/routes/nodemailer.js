@@ -140,6 +140,19 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
         cid: 'unique@kreata.ee'
       }]
     };
+    let mailOptionsNA = {
+      from: 'Law||Analytics',
+      to: email,
+      subject: 'Law||Analytics - Actualizaciones.',
+      html: `<img src="cid:unique@kreata.ee"/>
+      <p>Actualizaciones:</p>
+      <br> ${calculo}`  ,
+      attachments: [{
+        filename: 'lawanalyticsBanner.PNG',
+        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
+        cid: 'unique@kreata.ee'
+      }]
+    };
 
     let body;
     let smtpTransport;
@@ -233,6 +246,18 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
             pass: "yvkea78k"
         }
       }));
+    }else if(type==='n/a'){
+      body = mailOptionsNA;
+      smtpTransport = nodemailer.createTransport(transporter({
+        service: "gmail",
+        host: 'smtp.gmail.com',
+        auth: {
+            user: "soporte@lawanalytics.com.ar",
+            pass: "yvkea78k"
+        }
+      }));
+
+
     }
     let result = smtpTransport.sendMail(body, function(err, info){
       if(err){

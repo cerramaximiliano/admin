@@ -212,6 +212,14 @@ cron.schedule('40 05 * * *', () => {
         timezone: "America/Argentina/Buenos_Aires"
     });
     
+cron.schedule('42 05 * * *', () => {
+    (async() => {
+        downloadBCRADDBB.findAndCreateNewDDBB()
+    })()
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
 
 // let data = 
 // [			

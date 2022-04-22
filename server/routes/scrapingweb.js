@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 const transporter = require('nodemailer-smtp-transport');
 const sendEmail = require('./nodemailer');
 const Tasas = require('../models/tasas');
+const TasasMensuales = require('../models/tasasMensuales');
 const DatosPrev = require('../models/datosprevisionales');
 const Categorias = require('../models/categorias');
 const Normas = require('../models/normas')
@@ -1035,8 +1036,8 @@ async function actualizacionCategorias(){
 
 
     }else{
-        let info = 'No hay actualizaciones disponibles.'
-        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'categorias', info)
+        let info = 'No hay actualizaciones disponibles para categorías de autónomos.'
+        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'n/a', info)
         .then(result => {
           if(result === true){
               return true
@@ -1051,6 +1052,52 @@ async function actualizacionCategorias(){
 };
 
 
+// NUEVA BASE DE DATOS======================================================
+async function findAndCreateNewDDBB(){
+        let today = moment().format('YYYY-MM-DD');
+        let startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
+        if(today === startOfMonth){
+            let date = moment().subtract(1, 'M');
+            let dateEndMonth = moment(date.endOf('month').format('YYYY-MM-DD') + 'T00:00').utc(true);
+            let dateEndLastMonth = moment(moment(dateEndMonth).subtract(1, 'M').endOf('month').format('YYYY-MM-DD') + 'T00:00').utc(true)
+            Tasas.find({'fecha': {$gte: dateEndLastMonth, $lte: dateEndMonth}})
+            .then(result => {
+                // console.log(result);
+                let tasaPasivaBNA = 0;
+                let tasaActivaBNA = 0;
+                result.forEach(function(x){
+                    tasaActivaBNA += x.tasaActivaBNA;
+                    tasaPasivaBNA += x.tasaPasivaBNA;
+                })
+                let fecha = dateEndMonth.clone().add(1, 'day');
+                let data = {
+                    fecha: fecha,
+                    tasaActivaBNA: tasaActivaBNA,
+                    tasaPasivaBNA: tasaPasivaBNA,
+                    reference: [result[0].fecha, result[result.length-1].fecha]
+                }
+                TasasMensuales.findOneAndUpdate({fecha: new Date(data.fecha)}, data, {
+                    new: true,
+                    upsert: true
+                })
+                .then(result => {
+                    console.log(result);
+
+                })
+                .catch(err => {
+                    console.log(err)
+                })
+            })
+            .catch(err => {
+                console.log(err)
+            })
+        }else{
+            false
+        }
+
+}
+
+exports.findAndCreateNewDDBB = findAndCreateNewDDBB;
 exports.downloadBCRADDBB = downloadBCRADDBB;
 exports.scrapingTasaActiva = scrapingTasaActiva;
 exports.regexDates = regexDates;
