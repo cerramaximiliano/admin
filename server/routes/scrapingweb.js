@@ -1050,8 +1050,6 @@ async function actualizacionCategorias(){
         })
     }
 };
-
-
 // NUEVA BASE DE DATOS======================================================
 async function findAndCreateNewDDBB(){
         let today = moment().format('YYYY-MM-DD');
@@ -1082,7 +1080,6 @@ async function findAndCreateNewDDBB(){
                 })
                 .then(result => {
                     console.log(result);
-
                 })
                 .catch(err => {
                     console.log(err)
@@ -1094,7 +1091,6 @@ async function findAndCreateNewDDBB(){
         }else{
             false
         }
-
 }
 
 exports.findAndCreateNewDDBB = findAndCreateNewDDBB;
