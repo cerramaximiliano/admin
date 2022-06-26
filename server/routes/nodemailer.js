@@ -1,7 +1,6 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const config = require('../config/config');
 const moment = require('moment');
 const nodemailer = require('nodemailer')
 const transporter = require('nodemailer-smtp-transport');
