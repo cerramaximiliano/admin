@@ -159,105 +159,113 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
     if (type === 'captcha') {
       body = mailOptions
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'AUT'){
       body = mailOptionsAut
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'RESET'){
       body = mailOptionsReset
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'calcResults'){
       body = mailOptionsResults
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-          user: "calculos@lawanalytics.com.ar",
-          pass: "jpquv39h"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'actualizaciones'){
       body = mailOptionsActualizaciones
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'actualizacionesND'){
       body = mailOptionsActualizacionesND
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'actualizacionesArray'){
       body = mailOptionsActualizacionesArray
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'actualizacionesNormas'){
       body = mailOptionsPublicacionesArray;
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type === 'categorias'){
       body = mailOptionsCategorias;
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
     }else if(type==='n/a'){
       body = mailOptionsNA;
       smtpTransport = nodemailer.createTransport(transporter({
-        service: "gmail",
-        host: 'smtp.gmail.com',
+        host: 'smtp.mailgun.org',
+        port: 2525,
+        secure: false,
         auth: {
-            user: "soporte@lawanalytics.com.ar",
-            pass: "yvkea78k"
+          user: "postmaster@lawanalytics.app",
+          pass: process.env.MAIL_MAILGUN_PASS
         }
       }));
-
-
     }
     let result = smtpTransport.sendMail(body, function(err, info){
       if(err){
