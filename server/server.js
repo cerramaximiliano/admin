@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-require('./config/config');
+require('dotenv').config();
 const Tasas = require('./models/tasas');
 const http = require('http');
 const fs = require('fs');
