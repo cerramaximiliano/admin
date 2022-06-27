@@ -31,21 +31,21 @@ app.listen(process.env.PORT, () => {
 //     scheduled: true,
 //     timezone: "America/Argentina/Buenos_Aires"
 // });
-cron.schedule('20 05 * * *', () => {
+// cron.schedule('20 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('cer');
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
-cron.schedule('25 05 * * *', () => {
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
+// cron.schedule('25 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('icl');
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
 
-cron.schedule('00 05 * * *', () => {
+// cron.schedule('00 05 * * *', () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
@@ -166,60 +166,60 @@ cron.schedule('00 05 * * *', () => {
             };
         });
     }) ();
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
-cron.schedule('10 05 * * *', () => {
+// cron.schedule('10 05 * * *', () => {
 (async() => {
     await downloadBCRADDBB.downloadPBNA();
 })();
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
-cron.schedule('30 05 * * *', () => {
+// cron.schedule('30 05 * * *', () => {
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
     results.length === 0 ? false : await downloadBCRADDBB.saveInfolegData(results);
     })();
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
-cron.schedule('35 05 * * *', () => {
+// cron.schedule('35 05 * * *', () => {
     (async () => {
         let results = await downloadBCRADDBB.actualizacionCategorias()
     })();
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
-cron.schedule('40 05 * * *', () => {
+// cron.schedule('40 05 * * *', () => {
     (async() => {
         let tasaActivaCNAT2658 = await downloadBCRADDBB.scrapingTasaActiva();
         let dateData = await downloadBCRADDBB.regexDates(tasaActivaCNAT2658);
         let findTasaMensual = await downloadBCRADDBB.findTasa(2, tasaActivaCNAT2658);    
         let tasaData = await downloadBCRADDBB.dataTasa(tasaActivaCNAT2658, findTasaMensual[1]);
         await downloadBCRADDBB.saveTasaActivaData(tasaData, dateData, 1)
-    })()
-    }, {
-        scheduled: true,
-        timezone: "America/Argentina/Buenos_Aires"
-    });
+    })();
+    // }, {
+    //     scheduled: true,
+    //     timezone: "America/Argentina/Buenos_Aires"
+    // });
     
-cron.schedule('42 05 * * *', () => {
+// cron.schedule('42 05 * * *', () => {
     (async() => {
         downloadBCRADDBB.findAndCreateNewDDBB()
-    })()
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+    })();
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
 // let data = 
 // [			
