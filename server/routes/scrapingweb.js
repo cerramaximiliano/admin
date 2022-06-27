@@ -99,7 +99,7 @@ pdf(dataBuffer).then(function(data){
                                 console.log(err)
                             }else{
                              let info = [moment().format("YYYY-MM-DD"), (tasasList[0][0] / 365), 'Tasa Pasiva BNA']
-                             sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                             sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                              .then(result => {
                                if(result === true){
                                    return true
@@ -125,7 +125,7 @@ pdf(dataBuffer).then(function(data){
                                 console.log(err)
                             }else{
                              let info = [moment().format("YYYY-MM-DD"), datos.tasaPasivaBNA, 'Tasa Pasiva BNA']
-                             sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                             sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                              .then(result => {
                                if(result === true){
                                    return true
@@ -354,7 +354,7 @@ async function convertXlsICL (){
                 }
             });
                 if (actualizaciones.length === 0){
-                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesND', ['ICL'])
+                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['ICL'])
                         .then(result => {
                           if(result === true){
                               return true
@@ -395,7 +395,7 @@ async function convertXlsICL (){
                             let arrayText = arrayToText(actualizaciones,1);
                             let dataToSend = ['ICL', arrayText];
                             //Enviar mail con todas las tasas actualizadas
-                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
+                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
                         .then(result => {
                           if(result === true){
                               return true
@@ -476,7 +476,7 @@ async function convertXlsCER (){
                 });
                 if (actualizaciones.length === 0){
                     console.log('enviar mail sin actualizaciones')
-                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesND', ['CER'])
+                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['CER'])
                         .then(result => {
                         if(result === true){
                             return true
@@ -517,7 +517,7 @@ async function convertXlsCER (){
                             let arrayText = arrayToText(actualizaciones,1);
                             let dataToSend = ['CER', arrayText];
                             //Enviar mail con todas las tasas actualizadas
-                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
+                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
                         .then(result => {
                         if(result === true){
                             return true
@@ -652,7 +652,7 @@ async function saveInfolegData(data){
             data.forEach(function(x) {
                 text += `<p>Fecha de publicación: ${moment(x.fecha).format('DD-MM-YYYY')}</p><p>Norma: ${x.norma}</p><p>Asunto: ${x.tag}</p><p>Link: ${x.link}</p><br>`
             });
-            sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizacionesNormas', text)
+            sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesNormas', text)
             .then(result => {
                 if(result === true){
                     return true
@@ -845,7 +845,7 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                           };
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
-                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                                return true
@@ -877,7 +877,7 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                           };
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), datos[tasaModel] , tasaText]
-                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                                return true
@@ -907,7 +907,7 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                           };
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
-                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                                return true
@@ -1017,7 +1017,7 @@ async function actualizacionCategorias(){
 
                     Categorias.bulkWrite(datosNuevos).then(result => {
                         let info = [datosNuevos[0].updateOne.filter.fecha, JSON.stringify(datosNuevos[0].updateOne.update['$set'])]
-                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'categorias', info)
+                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'categorias', info)
                         .then(result => {
                           if(result === true){
                               return true
@@ -1037,7 +1037,7 @@ async function actualizacionCategorias(){
 
     }else{
         let info = 'No hay actualizaciones disponibles para categorías de autónomos.'
-        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'n/a', info)
+        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'n/a', info)
         .then(result => {
           if(result === true){
               return true
