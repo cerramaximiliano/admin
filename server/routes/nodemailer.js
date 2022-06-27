@@ -12,8 +12,8 @@ const pathFiles = path.join(__dirname, '../');
 async function sendEmail (email, cc, referencia, content, pageSelectData, pageTypeData, type, calculo) {
   return new Promise((resolve, reject) => {
     let mailOptions = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       cc: cc,
       subject: 'Law||Analytics - Actualización de notificaciones',
       html: '<img src="cid:unique@kreata.ee"/><p>Actualización de notificaciones bajo la referencia ' + referencia + ' (' + pageSelectData + pageTypeData + ')' + ': </p><br>' + content + '<br>' + '<p>Este es un mensaje automático de www.lawanalytics.com.ar.</p>',
@@ -24,8 +24,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsAut = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       cc: cc,
       subject: 'Law||Analytics - Verificación de cuenta.',
       html: `<img src="cid:unique@kreata.ee"/>
@@ -39,8 +39,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsReset = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       cc: cc,
       subject: 'Law||Analytics - Reseteo de password.',
       html: `<img src="cid:unique@kreata.ee"/>
@@ -54,8 +54,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsResults = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       cc: cc,
       subject: 'Law||Analytics - Sistema de cálculo.',
       html: `<img src="cid:unique@kreata.ee"/>
@@ -71,8 +71,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     }
     let mailOptionsActualizaciones = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
       <p>Tasa de interés actualizada: ${calculo[2]}</p>
@@ -86,8 +86,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsActualizacionesND = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
       <p>Tasa de interés actualizada: ${calculo[0]}</p>
@@ -100,8 +100,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsActualizacionesArray = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
       <p>Tasa de interés actualizada: ${calculo[0]}</p>
@@ -114,8 +114,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsPublicacionesArray = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
       <p>Actualizaciones normativas disponibles:</p>
@@ -127,8 +127,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsCategorias = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
       <p>Actualizaciones categorías disponibles:</p>
@@ -140,8 +140,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       }]
     };
     let mailOptionsNA = {
-      from: 'Law||Analytics',
-      to: email,
+      from: email,
+      to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
       html: `<img src="cid:unique@kreata.ee"/>
       <p>Actualizaciones:</p>
@@ -269,8 +269,10 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
     let result = smtpTransport.sendMail(body, function(err, info){
       if(err){
         //TODO GRABAR REPORTE DE ERRORES
+        console.log(err)
         resolve(false);
       }else{
+        console.log(info)
         resolve(true)
       };
     });

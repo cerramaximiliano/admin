@@ -25,12 +25,12 @@ app.listen(process.env.PORT, () => {
     console.log('Escuchando el puerto', process.env.PORT);
 });
 
-cron.schedule('15 05 * * *', () => {
+// cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 cron.schedule('20 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('cer');
 }, {

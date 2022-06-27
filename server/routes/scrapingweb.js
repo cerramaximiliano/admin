@@ -287,7 +287,7 @@ async function convertExcelFileToJsonUsingXlsx () {
                       };
                     }else{
                         let info = x.push('Tasa Pasiva BCRA')
-                        sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', x)
+                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', x)
                         .then(result => {
                           if(result === true){
                               return true
