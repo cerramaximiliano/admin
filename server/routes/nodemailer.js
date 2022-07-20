@@ -4,6 +4,27 @@ const path = require('path');
 const moment = require('moment');
 const nodemailer = require('nodemailer')
 const transporter = require('nodemailer-smtp-transport');
+const AWS = require('aws-sdk');
+
+const SES_CONFIG = {
+  accessKeyId: process.env.AWS_SES_USER,
+  secretAccessKey: process.env.AWS_SES_PASS,
+  region: 'us-east-1',
+};
+const AWS_SES = new AWS.SES(SES_CONFIG);
+function sendAWStemplateEmail (recipientEmail) {
+  let params = {
+  Destinations:  recipientEmail,
+    Source: 'no-reply@lawanalytics.app',
+    Template: 'promotion-1658258964667',
+    DefaultTemplateData: '{"subject":"Law||Analytics- Gestor Legal Online"}'
+};
+  return AWS_SES.sendBulkTemplatedEmail(params, function(err, data) {
+    if(err) console.log(err, err.stack);
+    else console.log(data)
+  });
+}
+
 
 //==============================================================================
 //=========================FUNCTION PARA ENVIAR EMAILS DE ACCLAW================
@@ -158,111 +179,111 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
     if (type === 'captcha') {
       body = mailOptions
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'AUT'){
       body = mailOptionsAut
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'RESET'){
       body = mailOptionsReset
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'calcResults'){
       body = mailOptionsResults
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'actualizaciones'){
       body = mailOptionsActualizaciones
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'actualizacionesND'){
       body = mailOptionsActualizacionesND
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'actualizacionesArray'){
       body = mailOptionsActualizacionesArray
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'actualizacionesNormas'){
       body = mailOptionsPublicacionesArray;
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type === 'categorias'){
       body = mailOptionsCategorias;
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }else if(type==='n/a'){
       body = mailOptionsNA;
       smtpTransport = nodemailer.createTransport(transporter({
-        host: 'smtp.mailgun.org',
-        port: 2525,
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 587,
         secure: false,
         auth: {
-          user: "postmaster@lawanalytics.app",
-          pass: process.env.MAIL_MAILGUN_PASS
+          user: process.env.AWS_SES_USER,
+          pass: process.env.AWS_SES_PASS
         }
       }));
     }
@@ -279,3 +300,4 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
   });
 };
 exports.sendEmail = sendEmail;
+exports.sendAWSEmail = sendAWStemplateEmail;

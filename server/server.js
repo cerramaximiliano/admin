@@ -15,15 +15,32 @@ const path = require('path');
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
 const puppeteer = require('puppeteer');
 app.use(express.static(path.join(__dirname, '../public')));
+const AWS = require('aws-sdk');
+const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
+
+(async () => {
+
+    const data = await secretManager.getSecretValue({ SecretId: 'arn:aws:secretsmanager:sa-east-1:244807945617:secret:env-8tdon8' }).promise();
+    const secret = JSON.parse(data.SecretString);
+    process.env.URLDB = secret.URLDB;
+    process.env.MAIL_MAILGUN_PASS = secret.MAIL_MAILGUN_PASS;
+    process.env.CADUCIDAD_TOKEN = secret.CADUCIDAD_TOKEN;
+    process.env.SEED = secret.SEED;
+    process.env.STRIPE_API_KEY = secret.STRIPE_API_KEY;
+    process.env.AWS_SES_USER = secret.AWS_SES_USER;
+    process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
+    mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
+        if(err) throw err;
+        console.log('Base de datos ONLINE!!!')
+    });
+    app.listen(3000, () => {
+        console.log('Escuchando el puerto', 3000);
+    });
 
 
-mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
-    if(err) throw err;
-    console.log('Base de datos ONLINE');
-});
-app.listen(process.env.PORT, () => {
-    console.log('Escuchando el puerto', process.env.PORT);
-});
+
+
+    downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 
 cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
@@ -625,3 +642,4 @@ cron.schedule('42 05 * * *', () => {
 // Tasas.bulkWrite(find).then(result => {
 //     console.log(result)
 // });
+})();
