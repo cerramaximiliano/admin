@@ -23,10 +23,8 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     const data = await secretManager.getSecretValue({ SecretId: 'arn:aws:secretsmanager:sa-east-1:244807945617:secret:env-8tdon8' }).promise();
     const secret = JSON.parse(data.SecretString);
     process.env.URLDB = secret.URLDB;
-    process.env.MAIL_MAILGUN_PASS = secret.MAIL_MAILGUN_PASS;
     process.env.CADUCIDAD_TOKEN = secret.CADUCIDAD_TOKEN;
     process.env.SEED = secret.SEED;
-    process.env.STRIPE_API_KEY = secret.STRIPE_API_KEY;
     process.env.AWS_SES_USER = secret.AWS_SES_USER;
     process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
     mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
@@ -40,7 +38,6 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
 
 
-    downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 
 cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');

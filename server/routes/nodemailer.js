@@ -95,44 +95,29 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       from: email,
       to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
-      html: `<img src="cid:unique@kreata.ee"/>
+      html: `
       <p>Tasa de interés actualizada: ${calculo[2]}</p>
       <p>Fecha: ${moment(calculo[0], "YYYYMMDD").format('DD/MM/YYYY')}</p>
       <p>Valor: ${calculo[1]}</p>
       <br></br>`,
-      attachments: [{
-        filename: 'lawanalyticsBanner.PNG',
-        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
-        cid: 'unique@kreata.ee'
-      }]
     };
     let mailOptionsActualizacionesND = {
       from: email,
       to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
-      html: `<img src="cid:unique@kreata.ee"/>
+      html: `
       <p>Tasa de interés actualizada: ${calculo[0]}</p>
       <p>No hay actualizaciones disponibles.</p>
       <br></br>`,
-      attachments: [{
-        filename: 'lawanalyticsBanner.PNG',
-        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
-        cid: 'unique@kreata.ee'
-      }]
     };
     let mailOptionsActualizacionesArray = {
       from: email,
       to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
-      html: `<img src="cid:unique@kreata.ee"/>
+      html: `
       <p>Tasa de interés actualizada: ${calculo[0]}</p>
       <p>Fechas y valores actualizados: ${calculo[1]}.</p>
       <br></br>`,
-      attachments: [{
-        filename: 'lawanalyticsBanner.PNG',
-        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
-        cid: 'unique@kreata.ee'
-      }]
     };
     let mailOptionsPublicacionesArray = {
       from: email,
@@ -141,37 +126,22 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
       html: `<img src="cid:unique@kreata.ee"/>
       <p>Actualizaciones normativas disponibles:</p>
       <br>` + calculo,
-      attachments: [{
-        filename: 'lawanalyticsBanner.PNG',
-        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
-        cid: 'unique@kreata.ee'
-      }]
     };
     let mailOptionsCategorias = {
       from: email,
       to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
-      html: `<img src="cid:unique@kreata.ee"/>
+      html: `
       <p>Actualizaciones categorías disponibles:</p>
       <br>` + `Fecha agregada: ${calculo[0]}` + `<br>` + `Datos agregados: ${(calculo[1])}`,
-      attachments: [{
-        filename: 'lawanalyticsBanner.PNG',
-        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
-        cid: 'unique@kreata.ee'
-      }]
     };
     let mailOptionsNA = {
       from: email,
       to: 'soporte@lawanalytics.com.ar',
       subject: 'Law||Analytics - Actualizaciones.',
-      html: `<img src="cid:unique@kreata.ee"/>
+      html: `
       <p>Actualizaciones:</p>
       <br> ${calculo}`  ,
-      attachments: [{
-        filename: 'lawanalyticsBanner.PNG',
-        path: pathFiles + 'files/serverFiles/lawanalyticsBanner.PNG',
-        cid: 'unique@kreata.ee'
-      }]
     };
 
     let body;
