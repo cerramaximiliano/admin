@@ -12,18 +12,17 @@ const SES_CONFIG = {
   region: 'us-east-1',
 };
 const AWS_SES = new AWS.SES(SES_CONFIG);
-function sendAWStemplateEmail (recipientEmail) {
+function sendAWStemplateEmail (recipientEmail, template) {
   let params = {
   Destinations:  recipientEmail,
     Source: 'no-reply@lawanalytics.app',
-    Template: 'promotion-1658258964667',
+    Template: template,
     DefaultTemplateData: '{"subject":"Law||Analytics- Gestor Legal Online"}'
 };
-  return AWS_SES.sendBulkTemplatedEmail(params, function(err, data) {
-    if(err) console.log(err, err.stack);
-    else console.log(data)
-  });
+  return AWS_SES.sendBulkTemplatedEmail(params).promise()
 }
+
+// 'promotion-1658258964667'
 
 
 //==============================================================================

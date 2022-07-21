@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cron = require('node-cron');
 const sendEmail = require('./routes/nodemailer');
+const Promotion = require('./models/promo')
 app.use(cors());
 const path = require('path');
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
@@ -19,7 +20,6 @@ const AWS = require('aws-sdk');
 const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
 (async () => {
-
     const data = await secretManager.getSecretValue({ SecretId: 'arn:aws:secretsmanager:sa-east-1:244807945617:secret:env-8tdon8' }).promise();
     const secret = JSON.parse(data.SecretString);
     process.env.URLDB = secret.URLDB;
@@ -34,6 +34,79 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     app.listen(3000, () => {
         console.log('Escuchando el puerto', 3000);
     });
+
+// Promotion.find({estado: true}, function(err, data) {
+//     if(err) return console.log(err)
+//     else {
+//         (async () => {
+//         let resultados = [];
+//         let iter = 13;
+//         let place = 0;
+//         let datas = [];
+//         data.forEach(function(x, index){
+//             if(index <= iter){
+//                 datas.push(x.email)
+//                 if(data.length-1 === index){
+//                     resultados.push(datas);
+//                 }
+//             }else{
+//                 resultados.push(datas);
+//                 iter += 14;
+//                 place += 1;
+//                 datas = [];
+//                 datas.push(x.email)
+//             }
+//         });
+//         let results = [];
+//         resultados.forEach(function(x){
+//             let data = [];
+//             x.forEach(function(y){
+//                 data.push(
+//                     {
+//                         Destination: {
+//                             ToAddresses: [y],
+//                         }
+//                     }
+//                 )
+//             });
+//             results.push(data);
+//         });
+//         console.log(results)
+//         let delivery = [];
+//         for (let index = 0; index < results.length; index++) {
+//             let resultEmail = await sendEmail.sendAWSEmail(results[index], 'promotion-1658258964667')
+//             delivery.push([results[index], resultEmail.Status])
+//         };
+//         let saveData = [];
+//         delivery.forEach(function(x){
+//             x[0].forEach(function(y, i){
+//                 saveData.push(
+//                     {
+//                         updateOne: {
+//                                     filter: {
+//                                         email: y.Destination.ToAddresses[0],
+//                                     },
+//                                     update: {
+//                                         $push: {
+//                                             delivery: [{
+//                                             status: x[1][i].Status,
+//                                             template: 'promotion-1658258964667',
+//                                             date: new Date(),
+//                                         }], 
+//                                     }
+//                                     },
+//                                     upsert: true
+//                                 }
+//                             }
+//                 )
+//             })
+//         });
+//         Promotion.bulkWrite(saveData).then(result => {
+//             console.log(result)
+//         });
+//     })();
+//     }
+// });
 
 
 
@@ -57,6 +130,152 @@ cron.schedule('25 05 * * *', () => {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
+
+
+
+
+
+
+
+(async () => {
+    let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
+    let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
+    console.log(tasaActiva)
+    let checkTasa = await downloadBCRADDBB.regexTextCheck(1, tasaActiva[0]);
+    let dateData = await downloadBCRADDBB.regexDates(tasaActiva);
+    let findTasaMensual = await downloadBCRADDBB.findTasa(1, tasaActiva);
+    let tasaData = await downloadBCRADDBB.dataTasa(tasaActiva, findTasaMensual[1]);
+    Tasas.findOne({'tasaActivaBNA': {$gte: 0}})
+    .sort({'fecha': -1})
+    .exec((err, datos) => {
+        if(err) {
+          console.log(err)
+          return {
+          ok: false,
+          err
+          };
+        }else{
+        if (moment(datos.fecha).utc().isSame(today, 'day')) {
+            //Ultima fecha de la DDBB es igual a la fecha actual de actualizacion. No hay accion requerida.
+            console.log('Fecha la DDBB es igual a la fecha actual de actualizacion. No hacer nada.')
+            false
+        }else{
+            if(today.isSame(dateData, 'day')){
+                //Actualizar con la fecha del sitio el dia de hoy
+                console.log('La fecha del sitio es igual a hoy. Actualizar la fecha actual con la data del sitio.')
+                let filter = {fecha: today};
+                let update = {tasaActivaBNA: Number(tasaData)};
+                Tasas.findOneAndUpdate(filter, update, {
+                    new: true,
+                    upsert: true
+                })
+                .exec((err, datos) => {
+                    if(err) {
+                        console.log(err)
+                      return {
+                      ok: false,
+                      err
+                      };
+                    }else{
+                     let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
+                     sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                     .then(result => {
+                       if(result === true){
+                           return true
+                       }else{
+                           console.log('Envio de mail incorrecto')
+                       }
+                     })
+                     .catch(err => {
+                         console.log('Envio de mail incorrecto', err)
+                     })
+                    }
+                });
+            }else if(today.isBefore(dateData, 'day')){
+                //es mayor la fecha del sitio, entonces copiar la fecha del dia de ayer.
+                console.log('La fecha del sitio es mayor a hoy. Actualizar con la data del dia anterior.');
+                let filter = {fecha: today};
+                let update = {tasaActivaBNA: Number(datos.tasaActivaBNA)};
+                Tasas.findOneAndUpdate(filter, update, {
+                    new: true,
+                    upsert: true
+                })
+                .exec((err, datos) => {
+                    if(err) {
+                        console.log(err)
+                      return {
+                      ok: false,
+                      err
+                      };
+                    }else{
+                     let info = [moment().format("YYYY-MM-DD"), datos.tasaActivaBNA , 'Tasa Activa BNA']
+                     sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                     .then(result => {
+                       if(result === true){
+                           return true
+                       }else{
+                           console.log('Envio de mail incorrecto')
+                       }
+                     })
+                     .catch(err => {
+                         console.log('Envio de mail incorrecto', err)
+                     })
+                    }
+                });
+            }else{
+                //La fecha de hoy es mayor a la fecha del sitio. Actualizar hoy con la fecha del sitio
+                console.log('Actualizar la fecha del dia con la fecha del sitio (de fecha anterior)')
+                let filter = {fecha: today};
+                let update = {tasaActivaBNA: Number(tasaData)};
+                Tasas.findOneAndUpdate(filter, update, {
+                    new: true,
+                    upsert: true
+                })
+                .exec((err, datos) => {
+                    if(err) {
+                        console.log(err)
+                      return {
+                      ok: false,
+                      err
+                      };
+                    }else{
+                     let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
+                     sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                     .then(result => {
+                       if(result === true){
+                           return true
+                       }else{
+                           console.log('Envio de mail incorrecto')
+                       }
+                     })
+                     .catch(err => {
+                         console.log('Envio de mail incorrecto', err)
+                     })
+                    }
+                });
+            }
+            };
+        };
+    });
+}) ();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 cron.schedule('00 05 * * *', () => {
@@ -100,7 +319,7 @@ cron.schedule('00 05 * * *', () => {
                           };
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
-                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                                return true
@@ -131,7 +350,7 @@ cron.schedule('00 05 * * *', () => {
                           };
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), datos.tasaActivaBNA , 'Tasa Activa BNA']
-                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                                return true
@@ -162,7 +381,7 @@ cron.schedule('00 05 * * *', () => {
                           };
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
-                         sendEmail.sendEmail('soporte@lawanalytics.com.ar', 'soporte@lawanalytics.com.ar', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                                return true
