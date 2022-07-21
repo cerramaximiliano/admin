@@ -22,6 +22,14 @@ const datosprevisionales = require('../models/datosprevisionales');
 //============================RUTAS --------=================================
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
+//============================CHROME CONFIG=================================
+const chromeOptions = {
+    headless:true, 
+    slowMo:18,
+    defaultViewport: null,
+    args: ['--no-sandbox'],
+    executablePath: '/usr/bin/chromium-browser',
+  };
 //============================FUNCIONES TASA PASIVA BNA======================
 function parseBNAPasiva(routeFile){
 let tasasList = [];
@@ -555,12 +563,6 @@ function generateJSONFile(data, file) {
 };
 };
 
-const chromeOptions = {
-    headless:false, 
-    slowMo:18,
-    defaultViewport: null,
-    args: ['--no-sandbox']
-  };
 
   function datesSpanish(date){
     let dateArray = date.split('-');
@@ -734,7 +736,7 @@ async function scrapingTasaActiva () {
             })
             return text
         });
-        // await browser.close();
+        await browser.close();
         console.log(ele)
         return ele
     }
