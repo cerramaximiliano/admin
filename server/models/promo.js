@@ -5,7 +5,8 @@ let Schema = mongoose.Schema;
 let promotion = new Schema({
     email: {
     type: String,
-    required: true
+    required: true,
+    unique: true
     },
     estado: {
     type: Boolean,
