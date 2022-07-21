@@ -140,7 +140,6 @@ cron.schedule('25 05 * * *', () => {
 (async () => {
     let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
     let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
-    console.log(tasaActiva)
     let checkTasa = await downloadBCRADDBB.regexTextCheck(1, tasaActiva[0]);
     let dateData = await downloadBCRADDBB.regexDates(tasaActiva);
     let findTasaMensual = await downloadBCRADDBB.findTasa(1, tasaActiva);
