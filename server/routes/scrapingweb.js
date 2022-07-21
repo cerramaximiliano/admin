@@ -737,7 +737,6 @@ async function scrapingTasaActiva () {
             return text
         });
         await browser.close();
-        console.log(ele)
         return ele
     }
     catch (error) {
