@@ -10,7 +10,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cron = require('node-cron');
 const sendEmail = require('./routes/nodemailer');
-const Promotion = require('./models/promo')
+const Promotion = require('./models/promo');
+const promotions = require('./config/promotions');
 app.use(cors());
 const path = require('path');
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
@@ -35,78 +36,49 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
         console.log('Escuchando el puerto', 3000);
     });
 
-// Promotion.find({estado: true}, function(err, data) {
-//     if(err) return console.log(err)
-//     else {
-//         (async () => {
-//         let resultados = [];
-//         let iter = 13;
-//         let place = 0;
-//         let datas = [];
-//         data.forEach(function(x, index){
-//             if(index <= iter){
-//                 datas.push(x.email)
-//                 if(data.length-1 === index){
-//                     resultados.push(datas);
-//                 }
-//             }else{
-//                 resultados.push(datas);
-//                 iter += 14;
-//                 place += 1;
-//                 datas = [];
-//                 datas.push(x.email)
-//             }
-//         });
-//         let results = [];
-//         resultados.forEach(function(x){
-//             let data = [];
-//             x.forEach(function(y){
-//                 data.push(
-//                     {
-//                         Destination: {
-//                             ToAddresses: [y],
-//                         }
-//                     }
-//                 )
-//             });
-//             results.push(data);
-//         });
-//         console.log(results)
-//         let delivery = [];
-//         for (let index = 0; index < results.length; index++) {
-//             let resultEmail = await sendEmail.sendAWSEmail(results[index], 'promotion-1658258964667')
-//             delivery.push([results[index], resultEmail.Status])
-//         };
-//         let saveData = [];
-//         delivery.forEach(function(x){
-//             x[0].forEach(function(y, i){
-//                 saveData.push(
-//                     {
-//                         updateOne: {
-//                                     filter: {
-//                                         email: y.Destination.ToAddresses[0],
-//                                     },
-//                                     update: {
-//                                         $push: {
-//                                             delivery: [{
-//                                             status: x[1][i].Status,
-//                                             template: 'promotion-1658258964667',
-//                                             date: new Date(),
-//                                         }], 
-//                                     }
-//                                     },
-//                                     upsert: true
-//                                 }
-//                             }
-//                 )
-//             })
-//         });
-//         Promotion.bulkWrite(saveData).then(result => {
-//             console.log(result)
-//         });
-//     })();
-//     }
-// });
+
+    // try{
+    //     let data = await promotions.findNotEqualStatus('promotion-1658258964667', true)
+    //     const resultsParse = promotions.parseResults(data);
+    //     console.log(data)
+    //     let delivery = [];
+    //     for (let index = 0; index < resultsParse.length; index++) {
+    //         let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667')
+    //         delivery.push([resultsParse[index], resultEmail.Status])
+    //     };
+    //     let saveData = [];
+    //     delivery.forEach(function(x){
+    //         x[0].forEach(function(y, i){
+    //             saveData.push(
+    //                 {
+    //                     updateOne: {
+    //                                 filter: {
+    //                                     email: y.Destination.ToAddresses[0],
+    //                                 },
+    //                                 update: {
+    //                                     $push: {
+    //                                         delivery: [{
+    //                                         status: x[1][i].Status,
+    //                                         template: 'promotion-1658258964667',
+    //                                         date: new Date(),
+    //                                     }], 
+    //                                 }
+    //                                 },
+    //                                 upsert: true
+    //                             }
+    //                         }
+    //             )
+    //         })
+    //     });
+    //     Promotion.bulkWrite(saveData).then(result => {
+    //         console.log(result)
+    //     });
+    // }
+    // catch(err){
+    //     console.log(err)
+    // }
+
+
 
 
 
