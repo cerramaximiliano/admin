@@ -28,7 +28,7 @@ const chromeOptions = {
     slowMo:18,
     defaultViewport: null,
     args: ['--no-sandbox'],
-    // executablePath: '/usr/bin/chromium-browser',
+    executablePath: '/usr/bin/chromium-browser',
   };
 //============================FUNCIONES TASA PASIVA BNA======================
 function parseBNAPasiva(routeFile){
