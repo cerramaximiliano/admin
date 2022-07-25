@@ -24,7 +24,7 @@ const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
 //============================CHROME CONFIG=================================
 const chromeOptions = {
-    headless:false, 
+    headless:true, 
     slowMo:18,
     defaultViewport: null,
     args: ['--no-sandbox'],
