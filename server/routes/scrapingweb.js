@@ -24,11 +24,11 @@ const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
 //============================CHROME CONFIG=================================
 const chromeOptions = {
-    headless:true, 
+    headless:false, 
     slowMo:18,
     defaultViewport: null,
     args: ['--no-sandbox'],
-    executablePath: '/usr/bin/chromium-browser',
+    // executablePath: '/usr/bin/chromium-browser',
   };
 //============================FUNCIONES TASA PASIVA BNA======================
 function parseBNAPasiva(routeFile){
