@@ -250,7 +250,7 @@ cron.schedule('35 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('40 05 * * *', () => {
+// cron.schedule('40 05 * * *', () => {
     (async() => {
         try{
             let tasaActivaCNAT2658 = await downloadBCRADDBB.scrapingTasaActiva();
@@ -262,10 +262,10 @@ cron.schedule('40 05 * * *', () => {
             console.log(`Error en actualizar tasa 2658 ${err}`)
         }
     })();
-}, {
-        scheduled: true,
-        timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//         scheduled: true,
+//         timezone: "America/Argentina/Buenos_Aires"
+// });
     
 cron.schedule('50 05 * * *', () => {
     (async() => {
