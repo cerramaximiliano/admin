@@ -77,12 +77,6 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     //     console.log(err)
     // }
 
-
-
-
-
-
-
 cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
