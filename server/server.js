@@ -28,9 +28,6 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     process.env.SEED = secret.SEED;
     process.env.AWS_SES_USER = secret.AWS_SES_USER;
     process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
-    process.env.PM2_PUBLIC_KEY='63tbtspxe2zahab';
-    process.env.PM2_SECRET_KEY='3m7zok6u28yx24x';
-
     mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
         if(err) throw err;
         console.log('Base de datos ONLINE!!!')
@@ -38,7 +35,6 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     app.listen(3000, () => {
         console.log('Escuchando el puerto', 3000);
     });
-
 
     // try{
     //     let data = await promotions.findNotEqualStatus('promotion-1658258964667', true)
@@ -260,7 +256,7 @@ cron.schedule('35 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-// cron.schedule('40 05 * * *', () => {
+cron.schedule('40 05 * * *', () => {
     (async() => {
         try{
             let tasaActivaCNAT2658 = await downloadBCRADDBB.scrapingTasaActiva();
@@ -272,10 +268,10 @@ cron.schedule('35 05 * * *', () => {
             console.log(`Error en actualizar tasa 2658 ${err}`)
         }
     })();
-// }, {
-//         scheduled: true,
-//         timezone: "America/Argentina/Buenos_Aires"
-// });
+}, {
+        scheduled: true,
+        timezone: "America/Argentina/Buenos_Aires"
+});
     
 cron.schedule('50 05 * * *', () => {
     (async() => {
