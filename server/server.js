@@ -32,9 +32,10 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
         if(err) throw err;
         console.log('Base de datos ONLINE!!!')
     });
-    app.listen(3000, () => {
+    const server = app.listen(3000, () => {
         console.log('Escuchando el puerto', 3000);
     });
+    server.on('error', error => console.log(`Error: ${JSON.stringify(error)}`));
 
     // try{
     //     let data = await promotions.findNotEqualStatus('promotion-1658258964667', true)
