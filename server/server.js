@@ -241,14 +241,14 @@ cron.schedule('30 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('35 05 * * *', () => {
+// cron.schedule('35 05 * * *', () => {
     (async () => {
         let results = await downloadBCRADDBB.actualizacionCategorias()
     })();
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
 // cron.schedule('40 05 * * *', () => {
     (async() => {
