@@ -936,8 +936,7 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
 };
 
 //=========================ACTUALIZACION CATEGORIAS================================
-const findLastRecordCat = Categorias.findOne()
-.sort({'fecha': -1})
+const findLastRecordCat = ()  => Categorias.findOne().sort({'fecha': -1})
 
 async function actualizacionCategorias(){
     let resultsCat = await findLastRecordCat;
