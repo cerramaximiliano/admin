@@ -1,2 +1,26 @@
 [27-07-2022, 17:36:12] INFO (21892 on DESKTOP-771UJJ7): Escuchando puerto 3000
 [27-07-2022, 17:36:13] INFO (21892 on DESKTOP-771UJJ7): Base de Datos ONLINE
+[27-07-2022, 18:04:01] INFO (5864 on DESKTOP-771UJJ7): Escuchando puerto 3000
+[27-07-2022, 18:04:02] INFO (5864 on DESKTOP-771UJJ7): Base de Datos ONLINE
+[27-07-2022, 18:15:00] INFO (5864 on DESKTOP-771UJJ7): Tasa Activa BNA. Actualizando fecha Wed Jul 27 2022 00:00:00 GMT+0000
+[27-07-2022, 18:15:00] ERROR (5864 on DESKTOP-771UJJ7): Error en actualizar tasa 2658 Error: Failed to launch the browser process! spawn /usr/bin/chromium-browser ENOENT
+
+
+TROUBLESHOOTING: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
+
+{"level":30,"time":1658945700292,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Categorias. No hay actualizaciones disponibles."}
+{"level":30,"time":1658945700308,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Tasas mensualizadas. Inicia funcion. 2022-07-01"}
+{"level":30,"time":1658945700308,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Tasas mensualizadas. Fecha no disponible para actualizar tasas. 2022-07-01"}
+[27-07-2022, 18:15:00] INFO (5864 on DESKTOP-771UJJ7): Tasa Pasiva BCRA. Funcion de actualizacion ejecutada.
+[27-07-2022, 18:15:00] INFO (5864 on DESKTOP-771UJJ7): Tasa CER ok
+{"level":50,"time":1658945701116,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Tasa CER BCRA. Error en lectura de archivo json. Error: ENOENT: no such file or directory, open 'C:\\Proyectos\\law_analytics_admin\\server\\files\\serverFiles\\dataBCRATasaCER.json'"}
+{"level":30,"time":1658945701198,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Tasa CER BCRA. Enviar mail sin actualizaciones."}
+{"level":30,"time":1658945703499,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Categorias. Envio de mail correcto. true"}
+{"level":30,"time":1658945703878,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Tasa Pasiva BCRA. Envio de mail correcto. true"}
+{"level":30,"time":1658945703938,"pid":5864,"hostname":"DESKTOP-771UJJ7","msg":"Tasa CER BCRA. Envio de mail correcto. true"}
+[27-07-2022, 18:40:18] INFO (6944 on DESKTOP-771UJJ7): Escuchando puerto 3000
+[27-07-2022, 18:40:19] INFO (6944 on DESKTOP-771UJJ7): Base de Datos ONLINE
+[27-07-2022, 18:41:38] INFO (26596 on DESKTOP-771UJJ7): Escuchando puerto 3000
+[27-07-2022, 18:41:39] INFO (26596 on DESKTOP-771UJJ7): Base de Datos ONLINE
+[27-07-2022, 18:45:00] INFO (26596 on DESKTOP-771UJJ7): Tasa Pasiva BCRA. Funcion de actualizacion ejecutada.
+{"level":30,"time":1658947504346,"pid":26596,"hostname":"DESKTOP-771UJJ7","msg":"Tasa Pasiva BCRA. Envio de mail correcto. true"}
