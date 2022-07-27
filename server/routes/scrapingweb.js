@@ -41,13 +41,13 @@ const chromeOptions = {
           colorize: true,
           translateTime: 'dd-mm-yyyy, HH:MM:ss'
           }},
-          {
-          target: 'pino/file',
-          options: {
-              destination: `${pathFiles}/logger.log`,
-              translateTime: 'dd-mm-yyyy, HH:MM:ss'
-          }
-          }
+        //   {
+        //   target: 'pino/file',
+        //   options: {
+        //       destination: `${pathFiles}/logger.log`,
+        //       translateTime: 'dd-mm-yyyy, HH:MM:ss'
+        //   }
+        //   }
       ]
   },
   },

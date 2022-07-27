@@ -12,7 +12,6 @@ const cron = require('node-cron');
 const sendEmail = require('./routes/nodemailer');
 const Promotion = require('./models/promo');
 const promotions = require('./config/promotions');
-const hour = '15';
 app.use(cors());
 const path = require('path');
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
@@ -22,6 +21,7 @@ const AWS = require('aws-sdk');
 const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
 (async () => {
+    const hour = '15';
     const pino = require('pino')
     const logger = pino({
         transport: {
