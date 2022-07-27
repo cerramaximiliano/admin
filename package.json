@@ -30,6 +30,8 @@
     "path": "^0.12.7",
     "pdf-parse": "^1.1.1",
     "pdf2json": "^1.2.5",
+    "pino": "^8.3.0",
+    "pino-pretty": "^8.1.0",
     "puppeteer": "^13.7.0",
     "xlsx": "^0.17.5"
   }

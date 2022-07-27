@@ -30,6 +30,28 @@ const chromeOptions = {
     args: ['--no-sandbox'],
     executablePath: '/usr/bin/chromium-browser',
   };
+  //============================PINO LOGGER=================================
+  const pino = require('pino')
+  const logger = pino({
+      transport: {
+      targets :[
+          {
+          target: 'pino-pretty',
+          options: {
+          colorize: true,
+          translateTime: 'dd-mm-yyyy, HH:MM:ss'
+          }},
+          {
+          target: 'pino/file',
+          options: {
+              destination: `${pathFiles}/logger.log`,
+              translateTime: 'dd-mm-yyyy, HH:MM:ss'
+          }
+          }
+      ]
+  },
+  },
+  );
 //============================FUNCIONES TASA PASIVA BNA======================
 function parseBNAPasiva(routeFile){
 let tasasList = [];
@@ -87,15 +109,15 @@ pdf(dataBuffer).then(function(data){
         .sort({'fecha': -1})
         .exec((err, datos) => {
             if(err) {
-              console.log(err)
+                logger.error(`Tasa pasiva BNA. Error en base de datos ${err}`)
             }else{
                 let today = moment(moment().format('YYYY-MM-DD') + 'T00:00').utc(true)
                 if(moment(datos.fecha).isSame(today, 'day')){
-                    console.log('Hoy es igual al ultimo dia DDBB')
+                    logger.info(`Tasa Pasiva BNA. Hoy es igual al ultimo dia DDBB. ${datos.fecha, today}`)
                 }else if(moment(datos.fecha).isBefore(today, 'day')){
-                    console.log('El ultimo dia DDBB es anterior a hoy. Actualizar');
+                    logger.info(`Tasa Pasiva BNA. El ultimo dia DDBB es anterior a hoy. Actualizar. ${datos.fecha, today}`)
                     if(dateToSave.isSameOrBefore(today, 'day')){
-                        console.log('El dia de Hoy es mayor o igual al de la pagina web. Actualizar con WEB')
+                        logger.info(`Tasa Pasiva BNA. El dia de Hoy es mayor o igual al de la pagina web. Actualizar con WEB. ${dateToSave, today}`)
                         let filter = {fecha: today};
                         let update = {tasaPasivaBNA: Number(tasasList[0][0] / 365)};
                         Tasas.findOneAndUpdate(filter, update, {
@@ -104,24 +126,24 @@ pdf(dataBuffer).then(function(data){
                         })
                         .exec((err, datos) => {
                             if(err) {
-                                console.log(err)
+                                logger.error(`Tasa Pasiva BNA. Error en base de datos ${err}`)
                             }else{
                              let info = [moment().format("YYYY-MM-DD"), (tasasList[0][0] / 365), 'Tasa Pasiva BNA']
                              sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                              .then(result => {
                                if(result === true){
-                                   return true
+                                logger.info(`Tasa Pasiva BNA. Envio de mail correcto. ${result}`)
                                }else{
-                                   console.log('Envio de mail incorrecto')
+                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto ${result}`)
                                }
                              })
                              .catch(err => {
-                                 console.log('Envio de mail incorrecto', err)
+                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto ${err}`)
                              })
                             }
                         });
                     }else if(dateToSave.isAfter(today, 'day')){
-                        console.log('El dia de Hoy es anterior al dia de la pagina web. Actualizar con DDBB')
+                        logger.info(`Tasa Pasiva BNA. El dia de Hoy es anterior al dia de la pagina web. Actualizar con DDBB. ${dateToSave, today}`)
                         let filter = {fecha: today};
                         let update = {tasaPasivaBNA: Number(datos.tasaPasivaBNA)};
                         Tasas.findOneAndUpdate(filter, update, {
@@ -130,19 +152,19 @@ pdf(dataBuffer).then(function(data){
                         })
                         .exec((err, datos) => {
                             if(err) {
-                                console.log(err)
+                                logger.error(`Tasa Pasiva BNA. Error en base de datos ${err}`)
                             }else{
                              let info = [moment().format("YYYY-MM-DD"), datos.tasaPasivaBNA, 'Tasa Pasiva BNA']
                              sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                              .then(result => {
                                if(result === true){
-                                   return true
+                                logger.info(`Tasa Pasiva BNA. Envio de mail correcto. ${result}`)
                                }else{
-                                   console.log('Envio de mail incorrecto')
+                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto. ${result}`)
                                }
                              })
                              .catch(err => {
-                                 console.log('Envio de mail incorrecto', err)
+                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto. ${err}`)
                              })
                             }
                         });
@@ -151,10 +173,10 @@ pdf(dataBuffer).then(function(data){
             }
         });
     }else{
-        console.log('requerir accion humana')
+        logger.warn(`Tasa Pasiva BNA. Requiere actualizacion manual.`)
     }
 }).catch(function(err){
-    console.log(err)
+    logger.error(`Tasa Pasiva BNA. Requiere actualizacion manual. ${err}`)
 });
 }
 async function downloadPBNA(){
@@ -166,7 +188,6 @@ async function downloadPBNA(){
     let url;
     const table = $('#collapseTwo > .panel-body > .plazoTable > ul > li').each(function(x, ele){
         $(this).each(function(i,element){
-
             let matchPasivas = $(this).text().match(/tasas de operaciones pasivas/i);
             if(matchPasivas != null){
                 url = $(this).children().attr('href')
@@ -190,7 +211,6 @@ async function downloadPBNA(){
 //===================CONFIGURACION WEB SCRAPING=================================
 //==============================================================================
 //=========================TASA PASIVA==========================================
-
 
 function isInt(value) {
         return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value))
@@ -239,7 +259,7 @@ function downloadBCRADDBB(tasa){
         });
     
     }).on('error', (err) => {
-        console.log('Error', err.message);
+        logger.warn(`Tasa pasiva BCRA. Requiere actualizacion manual. ${err}`)
     });
 async function convertExcelFileToJsonUsingXlsx () {
         let file_read = 'data.xls'
@@ -288,7 +308,7 @@ async function convertExcelFileToJsonUsingXlsx () {
                 })
                 .exec((err, datos) => {
                     if(err) {
-                        console.log(err)
+                        logger.error(`Tasa Pasiva BCRA. Error en DDBB. ${err}`)
                       return {
                       ok: false,
                       err
@@ -298,13 +318,13 @@ async function convertExcelFileToJsonUsingXlsx () {
                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', x)
                         .then(result => {
                           if(result === true){
-                              return true
+                            logger.info(`Tasa Pasiva BCRA. Envio de mail correcto. ${result}`)
                           }else{
-                              console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa Pasiva BCRA. Envio de mail correcto. ${result}`)
                           }
                         })
                         .catch(err => {
-                            console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa Pasiva BCRA. Envio de mail correcto. ${err}`)
                         })
                         return {
                         ok: true,
@@ -313,7 +333,7 @@ async function convertExcelFileToJsonUsingXlsx () {
                         }
                     });
             }else {
-                return false
+                false
             }
         });
         return generateJSONFile(parsedData, 'dataBCRATasaPasiva2022.json');
@@ -346,11 +366,7 @@ async function convertXlsICL (){
     .sort({'fecha': -1})
     .exec((err, datos) => {
         if(err) {
-        console.log(err)
-        return {
-        ok: false,
-        err
-        };
+            logger.error(`Tasa ICL BCRA. Error en DDBB. ${err}`)
         }else{
             //Busca un resultado de la ultima fecha para ese indice
             let actualizaciones = [];
@@ -362,20 +378,22 @@ async function convertXlsICL (){
                 }
             });
                 if (actualizaciones.length === 0){
+                    logger.info(`Tasa ICL BCRA. Envio de mail sin actualizaciones.`)
                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['ICL'])
                         .then(result => {
                           if(result === true){
+                            logger.info(`Tasa ICL BCRA. Envio de mail correcto. ${result}`)
                               return true
                           }else{
-                              console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa ICL BCRA. Envio de mail incorrecto. ${result}`)
                           }
                         })
                         .catch(err => {
-                            console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa ICL BCRA. Envio de mail incorrecto. ${err}`)
                         })
 
                 }else{
-                    console.log('enviar mail con actualizaciones');
+                    logger.info(`Tasa ICL BCRA. Envio de mail con actualizaciones.`)
                     let find = [];
                     actualizaciones.forEach(function(ele){
                             let date = (moment(ele[0], "YYYYMMDD").format('YYYY-MM-DD')) + 'T00:00'
@@ -395,7 +413,6 @@ async function convertXlsICL (){
                             function arrayToText(array, position){
                                 let string = ''
                                 array.forEach(function(x){
-                                    console.log(x)
                                     string += `[ Fecha: ${moment(x[0], 'YYYYMMDD').format('DD/MM/YYYY')} - Indice: ${x[1]} ]`
                                 });
                                 return string
@@ -406,13 +423,13 @@ async function convertXlsICL (){
                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
                         .then(result => {
                           if(result === true){
-                              return true
+                            logger.info(`Tasa ICL BCRA. Envio de mail correcto. ${result}`)
                           }else{
-                              console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa ICL BCRA. Envio de mail incorrecto. ${result}`)
                           }
                         })
                         .catch(err => {
-                            console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa ICL BCRA. Envio de mail incorrecto. ${err}`)
                         })
                 })                
             }
@@ -446,11 +463,7 @@ async function convertXlsCER (){
     .sort({'fecha': -1})
     .exec((err, datos) => {
         if(err) {
-            console.log(err)
-          return {
-          ok: false,
-          err
-          };
+            logger.error(`Tasa CER BCRA. Error en DDBB. ${err}`)
         }else{
             if(datos === null){
                 let find = [];
@@ -469,7 +482,7 @@ async function convertXlsCER (){
                                     })
                 });
                 Tasas.bulkWrite(find).then(result => {
-                    console.log(result)
+                    logger.info(`Tasa CER BCRA. Resultado de bulk operation. ${result}`)
                 });
             }else{
                 let actualizaciones = [];
@@ -483,21 +496,20 @@ async function convertXlsCER (){
                     }
                 });
                 if (actualizaciones.length === 0){
-                    console.log('enviar mail sin actualizaciones')
+                    logger.info(`Tasa CER BCRA. Enviar mail sin actualizaciones.`)
                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['CER'])
                         .then(result => {
                         if(result === true){
-                            return true
+                            logger.info(`Tasa CER BCRA. Envio de mail correcto. ${result}`)
                         }else{
-                            console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa CER BCRA. Envio de mail incorrecto. ${result}`)
                         }
                         })
                         .catch(err => {
-                            console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa CER BCRA. Envio de mail incorrecto. ${err}`)
                         })
                 }else if(actualizaciones.length > 0){
-                    console.log('enviar mail con actualizaciones');
-                    console.log(actualizaciones)
+                    logger.info(`Tasa CER BCRA. Enviar mail con actualizaciones.`)
                     let find = [];
                     actualizaciones.forEach(function(ele){
                             let date = (moment(ele[0], "YYYYMMDD").format('YYYY-MM-DD')) + 'T00:00'
@@ -517,7 +529,6 @@ async function convertXlsCER (){
                             function arrayToText(array, position){
                                 let string = ''
                                 array.forEach(function(x){
-                                    console.log(x)
                                     string += `[ Fecha: ${moment(x[0], 'YYYYMMDD').format('DD/MM/YYYY')} - Indice: ${x[1]} ]`
                                 });
                                 return string
@@ -528,13 +539,13 @@ async function convertXlsCER (){
                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
                         .then(result => {
                         if(result === true){
-                            return true
+                            logger.info(`Tasa CER BCRA. Envio de mail correcto. ${result}`)
                         }else{
-                            console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa CER BCRA. Envio de mail incorrecto. ${result}`)
                         }
                         })
                         .catch(err => {
-                            console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa CER BCRA. Envio de mail incorrecto. ${result}`)
                         })
                         });
                 }
@@ -544,7 +555,7 @@ async function convertXlsCER (){
 
     fs.readFile(DOWNLOAD_DIR + 'dataBCRATasaCER.json', (err, data)  => {
         if(err){
-            console.log(err)
+            logger.error(`Tasa CER BCRA. Error en lectura de archivo json. ${err}`)
             generateJSONFile(parsedData, 'dataBCRATasaCER.json')
             return err;
         }else{
@@ -558,7 +569,7 @@ function generateJSONFile(data, file) {
         try {
             fs.writeFileSync(DOWNLOAD_DIR + file, JSON.stringify(data))
         } catch (err) {
-            console.error(err)
+            logger.error(`Error en escritura de archivo json. ${err}`)
         }
 };
 };
@@ -629,6 +640,7 @@ class Pages {
 
 //========================SCRAPING INFOLEG=========================================
 async function saveInfolegData(data){
+    logger.info(`Infoleg. Guardar data. Bulkoperation.`)
     let find = [];
     data.forEach(function(ele){
             find.push({
@@ -646,10 +658,8 @@ async function saveInfolegData(data){
                                 }
                             })
         });
-        console.log(find)
         Normas.bulkWrite(find).then(result => {
-            console.log(result);
-            console.log(data);
+            logger.info(`Infoleg. Bulkoperation. ${result}`)
             let text = '';
             data.forEach(function(x) {
                 text += `<p>Fecha de publicación: ${moment(x.fecha).format('DD-MM-YYYY')}</p><p>Norma: ${x.norma}</p><p>Asunto: ${x.tag}</p><p>Link: ${x.link}</p><br>`
@@ -657,16 +667,16 @@ async function saveInfolegData(data){
             sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesNormas', text)
             .then(result => {
                 if(result === true){
-                    return true
+                    logger.info(`Infoleg. Envío de mail correcto. ${result}`)
                 }else{
-                    console.log('Envio de mail incorrecto')
+                    logger.error(`Infoleg. Envío de mail incorrecto. ${result}`)
                 }
               })
               .catch(err => {
-                  console.log('Envio de mail incorrecto', err)
+                logger.error(`Infoleg. Envío de mail incorrecto. ${err}`)
               })
         }).catch(err => {
-            console.log(err)
+            logger.error(`Infoleg. Bulkoperation Error. ${err}`)
         })
 };
 async function scrapingInfoleg(){
@@ -716,6 +726,7 @@ async function scrapingInfoleg(){
             results[i].textLink = 'http://servicios.infoleg.gob.ar/infolegInternet/'+ text.attr('href')
     };
     await browser.close();
+    logger.info(`Infoleg. Resultados de scraping. ${results}`)
     return results
 };
 
@@ -737,10 +748,11 @@ async function scrapingTasaActiva () {
             return text
         });
         await browser.close();
+        logger.info(`Tasa Activa BNA. Resultados scraping. ${ele}`)
         return ele
     }
     catch (error) {
-        console.log(error)
+        logger.error(`Tasa Activa BNA. Resultados scraping con errore. ${error}`)
     }
 };
 
@@ -749,6 +761,7 @@ async function regexDates(tasaActiva){
     let validDate = /(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])?|(?:(?:16|[2468][048]|[3579][26])00)?)))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))(\4)?(?:(?:1[6-9]|[2-9]\d)?\d{2})?$/g;
     tasaActiva[0] = myRegexp.exec(tasaActiva[0])
     tasaActiva[0][0] = validDate.exec(tasaActiva[0][0])
+    logger.info(`Tasa Activa BNA. Resultados fecha. ${tasaActiva[0][0][0]}`)
     return moment(moment(tasaActiva[0][0][0],"DD/MM/YYYY").format('YYYY-MM-DD') + 'T00:00').utc(true);
 };
 async function regexTextCheck(regex, text){
@@ -760,8 +773,6 @@ async function regexTextCheck(regex, text){
     return check
 };
 async function findTasa(regex, iterator){
-    // console.log(iterator)
-    // console.log(regex)
     let regexToUse;
     let check;
     let dataIndex;
@@ -789,7 +800,6 @@ async function dataTasa(tasa, index){
     let words = tasa[index].split(' ');
     let checkMensual = words.some(value => (/mensual/i).test(value));
     let checkAnual = words.some(value => (/anual/i).test(value));
-    console.log(checkMensual, checkAnual)
     words.forEach(function(x) {
         let checkWords = x.match(regexNumber);
         if (checkWords[0] != undefined && checkWords[0] != '') {
@@ -825,20 +835,16 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
     .sort({'fecha': -1})
     .exec((err, datos) => {
         if(err) {
-          console.log(err)
-          return {
-          ok: false,
-          err
-          };
+          logger.error(`Tasa Activa BNA. Error en DDBB. ${err}`)
         }else{
             if (moment(datos.fecha).utc().isSame(today, 'day')) {
                 //Ultima fecha de la DDBB es igual a la fecha actual de actualizacion. No hay accion requerida.
-                console.log('Fecha la DDBB es igual a la fecha actual de actualizacion. No hacer nada.')
+                logger.info(`Tasa Activa BNA. Fecha la DDBB es igual a la fecha actual de actualizacion. No hacer nada. ${datos.fecha, today}`)
                 false
             }else{
                 if(today.isSame(dateData, 'day')){
                     //Actualizar con la fecha del sitio el dia de hoy
-                    console.log('La fecha del sitio es igual a hoy. Actualizar la fecha actual con la data del sitio.')
+                    logger.info(`Tasa Activa BNA. La fecha del sitio es igual a hoy. Actualizar la fecha actual con la data del sitio. ${dateData, today}`)
                     let filter = {fecha: today};
                     Tasas.findOneAndUpdate(filter, update, {
                         new: true,
@@ -846,61 +852,52 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                     })
                     .exec((err, datos) => {
                         if(err) {
-                            console.log(err)
-                          return {
-                          ok: false,
-                          err
-                          };
+                            logger.error(`Tasa Activa BNA. Error en DDBB. ${err}`)
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
                          sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
-                               return true
+                            logger.info(`Tasa Activa BNA. Envio de mail correcto. ${result}`)
                            }else{
-                               console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto. ${result}`)
                            }
                          })
                          .catch(err => {
-                             console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto. ${err}`)
                          })
                         }
                     });
                 }else if(today.isBefore(dateData, 'day')){
                     //es mayor la fecha del sitio, entonces copiar la fecha del dia de ayer.
-                    console.log('La fecha del sitio es mayor a hoy. Actualizar con la data del dia anterior.');
+                    logger.info(`Tasa Activa BNA. La fecha del sitio es mayor a hoy. Actualizar con la data del dia anterior. ${dateData, today}`)
                     let filter = {fecha: today};
                     update = {[tasaModel]: datos[tasaModel]};
-                    console.log(update)
                     Tasas.findOneAndUpdate(filter, update, {
                         new: true,
                         upsert: true
                     })
                     .exec((err, datos) => {
                         if(err) {
-                            console.log(err)
-                          return {
-                          ok: false,
-                          err
-                          };
+                            logger.error(`Tasa Activa BNA. Error en DDBB. ${err}`)
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), datos[tasaModel] , tasaText]
                          sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
-                               return true
+                            logger.info(`Tasa Activa BNA. Envio de mail correcto. ${result}`)
                            }else{
-                               console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto. ${result}`)
                            }
                          })
                          .catch(err => {
-                             console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto. ${err}`)
                          })
                         }
                     });
                 }else{
                     //La fecha de hoy es mayor a la fecha del sitio. Actualizar hoy con la fecha del sitio
-                    console.log('Actualizar la fecha del dia con la fecha del sitio (de fecha anterior)')
+                    logger.info(`Tasa Activa BNA. Actualizar la fecha del dia con la fecha del sitio (de fecha anterior). ${dateData, today}`)
                     let filter = {fecha: today};
                     Tasas.findOneAndUpdate(filter, update, {
                         new: true,
@@ -908,23 +905,19 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                     })
                     .exec((err, datos) => {
                         if(err) {
-                            console.log(err)
-                          return {
-                          ok: false,
-                          err
-                          };
+                            logger.error(`Tasa Activa BNA. Error en DDBB. ${err}`)
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
                          sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
-                               return true
+                            logger.info(`Tasa Activa BNA. Envio de mail correcto. ${result}`)
                            }else{
-                               console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto. ${result}`)
                            }
                          })
                          .catch(err => {
-                             console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto. ${err}`)
                          })
                         }
                     });
@@ -941,6 +934,7 @@ async function actualizacionCategorias(){
     let resultsCat = await Categorias.findOne().sort({'fecha': -1});
     let resultsDatosPrev =  await findLastRecordAll;
     if(moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))){
+        logger.info(`Categorias. Hay actualizaciones disponibles.`)
                     let datosNuevos = [];
                             datosNuevos.push({
                                 updateOne: {
@@ -1020,56 +1014,56 @@ async function actualizacionCategorias(){
                                         }
                                     });
 
-
                     Categorias.bulkWrite(datosNuevos).then(result => {
+                        logger.info(`Categorias. Bulkoperation OK.`)
                         let info = [datosNuevos[0].updateOne.filter.fecha, JSON.stringify(datosNuevos[0].updateOne.update['$set'])]
                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'categorias', info)
                         .then(result => {
                           if(result === true){
-                              return true
+                            logger.info(`Categorias. Envio de mail correcto. ${result}`)
                           }else{
-                              console.log('Envio de mail incorrecto')
+                            logger.error(`Categorias. Envio de mail incorrecto. ${result}`)
                           }
                         })
                         .catch(err => {
-                            console.log('Envio de mail incorrecto', err)
+                            logger.error(`Categorias. Envio de mail incorrecto. ${err}`)
                         })
 
                     })
                     .catch(err => {
-                        console.log(err)
+                        logger.warn(`Categorias. Bulkoperation fallo. ${err}`)
                     })
-
-
     }else{
         let info = 'No hay actualizaciones disponibles para categorías de autónomos.'
+        logger.info(`Categorias. No hay actualizaciones disponibles.`)
         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'n/a', info)
         .then(result => {
           if(result === true){
-              return true
+            logger.info(`Categorias. Envio de mail correcto. ${result}`)
           }else{
-              console.log('Envio de mail incorrecto')
+            logger.error(`Categorias. Envio de mail incorrecto. ${result}`)
           }
         })
         .catch(err => {
-            console.log('Envio de mail incorrecto', err)
+            logger.warn(`Categorias. Envio de mail incorrecto. ${err}`)
         })
     }
     }catch (error){
-        console.log(error)
+        logger.warn(`Categorias. Requiere actualizacion manual, falla funcion de actualizacion. ${error}`)
     }
 };
 // NUEVA BASE DE DATOS======================================================
 async function findAndCreateNewDDBB(){
         let today = moment().format('YYYY-MM-DD');
         let startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
+        logger.info(`Tasas mensualizadas. Inicia funcion. ${today, startOfMonth}`)
         if(today === startOfMonth){
+            logger.info(`Tasas mensualizadas. Fecha actual es igual a principio de mes, se arma base de datos. ${today, startOfMonth}`)
             let date = moment().subtract(1, 'M');
             let dateEndMonth = moment(date.endOf('month').format('YYYY-MM-DD') + 'T00:00').utc(true);
             let dateEndLastMonth = moment(moment(dateEndMonth).subtract(1, 'M').endOf('month').format('YYYY-MM-DD') + 'T00:00').utc(true)
             Tasas.find({'fecha': {$gte: dateEndLastMonth, $lte: dateEndMonth}})
             .then(result => {
-                // console.log(result);
                 let tasaPasivaBNA = 0;
                 let tasaActivaBNA = 0;
                 result.forEach(function(x){
@@ -1088,17 +1082,17 @@ async function findAndCreateNewDDBB(){
                     upsert: true
                 })
                 .then(result => {
-                    console.log(result);
+                    logger.info(`Tasas mensualizadas. ${result}`)
                 })
                 .catch(err => {
-                    console.log(err)
+                    logger.err(`Tasas mensualizadas. Error en actualizacion ${err}`)
                 })
             })
             .catch(err => {
-                console.log(err)
+                logger.err(`Tasas mensualizadas. Error en DDBB. ${err}`)
             })
         }else{
-            false
+            logger.info(`Tasas mensualizadas. Fecha no disponible para actualizar tasas. ${today, startOfMonth}`)
         }
 }
 

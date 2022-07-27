@@ -259,10 +259,8 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
     let result = smtpTransport.sendMail(body, function(err, info){
       if(err){
         //TODO GRABAR REPORTE DE ERRORES
-        console.log(err)
         resolve(false);
       }else{
-        console.log(info)
         resolve(true)
       };
     });

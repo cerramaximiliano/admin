@@ -21,6 +21,28 @@ const AWS = require('aws-sdk');
 const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
 (async () => {
+    const pino = require('pino')
+    const logger = pino({
+        transport: {
+        targets :[
+            {
+            target: 'pino-pretty',
+            options: {
+            colorize: true,
+            translateTime: 'dd-mm-yyyy, HH:MM:ss',
+            }},
+            {
+                target: 'pino-pretty',
+                options: {
+                colorize: false,
+                translateTime: 'dd-mm-yyyy, HH:MM:ss',
+                destination: `${__dirname}/logger.log`
+                }},
+        ]
+    },
+    },
+    );
+    
     const data = await secretManager.getSecretValue({ SecretId: 'arn:aws:secretsmanager:sa-east-1:244807945617:secret:env-8tdon8' }).promise();
     const secret = JSON.parse(data.SecretString);
     process.env.URLDB = secret.URLDB;
@@ -30,12 +52,12 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
     mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
         if(err) throw err;
-        console.log('Base de datos ONLINE!!!')
+        logger.info('Base de Datos ONLINE');
     });
     const server = app.listen(3000, () => {
-        console.log('Escuchando el puerto', 3000);
+        logger.info('Escuchando puerto 3000');
     });
-    server.on('error', error => console.log(`Error: ${JSON.stringify(error)}`));
+    server.on('error', error => logger.error(`Error: ${JSON.stringify(error)}`));
 
     // try{
     //     let data = await promotions.findNotEqualStatus('promotion-1658258964667', true)
@@ -78,28 +100,32 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     //     console.log(err)
     // }
 
-cron.schedule('15 09 * * *', () => {
+cron.schedule('15 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
+    logger.info('Tasa Pasiva BCRA. Funcion de actualizacion ejecutada.');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('20 09 * * *', () => {
+cron.schedule('20 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('cer');
+    logger.info('Tasa CER ok');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('25 09 * * *', () => {
+cron.schedule('25 05 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('icl');
+    logger.info('Tasa ICL ok');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('10 09 * * *', () => {
+cron.schedule('00 05 * * *', () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
+        logger.info(`Tasa Activa BNA. Actualizando fecha ${today}`)
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
         let checkTasa = await downloadBCRADDBB.regexTextCheck(1, tasaActiva[0]);
         let dateData = await downloadBCRADDBB.regexDates(tasaActiva);
@@ -109,20 +135,16 @@ cron.schedule('10 09 * * *', () => {
         .sort({'fecha': -1})
         .exec((err, datos) => {
             if(err) {
-              console.log(err)
-              return {
-              ok: false,
-              err
-              };
+              logger.error(`Tasa activa BNA. Error en DDBB. ${err}`)
             }else{
             if (moment(datos.fecha).utc().isSame(today, 'day')) {
                 //Ultima fecha de la DDBB es igual a la fecha actual de actualizacion. No hay accion requerida.
-                console.log('Fecha la DDBB es igual a la fecha actual de actualizacion. No hacer nada.')
+                logger.info('Tasa Activa BNA. Fecha la DDBB es igual a la fecha actual de actualizacion. No hacer nada.');
                 false
             }else{
                 if(today.isSame(dateData, 'day')){
                     //Actualizar con la fecha del sitio el dia de hoy
-                    console.log('La fecha del sitio es igual a hoy. Actualizar la fecha actual con la data del sitio.')
+                    logger.info('Tasa Activa BNA. La fecha del sitio es igual a hoy. Actualizar la fecha actual con la data del sitio.');
                     let filter = {fecha: today};
                     let update = {tasaActivaBNA: Number(tasaData)};
                     Tasas.findOneAndUpdate(filter, update, {
@@ -131,7 +153,7 @@ cron.schedule('10 09 * * *', () => {
                     })
                     .exec((err, datos) => {
                         if(err) {
-                            console.log(err)
+                            logger.error(`Tasa Activa BNA. Error en Base de Datos ${err}`);
                           return {
                           ok: false,
                           err
@@ -141,19 +163,19 @@ cron.schedule('10 09 * * *', () => {
                          sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
-                               return true
+                            logger.info('Tasa Activa BNA. Envio de mail correcto.');
                            }else{
-                               console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto ${result}`);
                            }
                          })
                          .catch(err => {
-                             console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto ${err}`);
                          })
                         }
                     });
                 }else if(today.isBefore(dateData, 'day')){
                     //es mayor la fecha del sitio, entonces copiar la fecha del dia de ayer.
-                    console.log('La fecha del sitio es mayor a hoy. Actualizar con la data del dia anterior.');
+                    logger.info('Tasa Activa BNA. La fecha del sitio es mayor a hoy. Actualizar con la data del dia anterior.');
                     let filter = {fecha: today};
                     let update = {tasaActivaBNA: Number(datos.tasaActivaBNA)};
                     Tasas.findOneAndUpdate(filter, update, {
@@ -162,29 +184,25 @@ cron.schedule('10 09 * * *', () => {
                     })
                     .exec((err, datos) => {
                         if(err) {
-                            console.log(err)
-                          return {
-                          ok: false,
-                          err
-                          };
+                            logger.error(`Tasa Activa BNA. Error en Base de Datos ${err}`);
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), datos.tasaActivaBNA , 'Tasa Activa BNA']
                          sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
-                               return true
+                            logger.info('Tasa Activa BNA. Envio de mail correcto.');
                            }else{
-                               console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto ${result}`);
                            }
                          })
                          .catch(err => {
-                             console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto ${err}`);
                          })
                         }
                     });
                 }else{
                     //La fecha de hoy es mayor a la fecha del sitio. Actualizar hoy con la fecha del sitio
-                    console.log('Actualizar la fecha del dia con la fecha del sitio (de fecha anterior)')
+                    logger.info('Tasa Activa BNA. Actualizar la fecha del dia con la fecha del sitio (de fecha anterior)');
                     let filter = {fecha: today};
                     let update = {tasaActivaBNA: Number(tasaData)};
                     Tasas.findOneAndUpdate(filter, update, {
@@ -193,23 +211,19 @@ cron.schedule('10 09 * * *', () => {
                     })
                     .exec((err, datos) => {
                         if(err) {
-                            console.log(err)
-                          return {
-                          ok: false,
-                          err
-                          };
+                            logger.error(`Tasa Activa BNA. Error en Base de Datos ${err}`);
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
                          sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
-                               return true
+                            logger.info('Tasa Activa BNA. Envio de mail correcto.');
                            }else{
-                               console.log('Envio de mail incorrecto')
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto ${result}`);
                            }
                          })
                          .catch(err => {
-                             console.log('Envio de mail incorrecto', err)
+                            logger.error(`Tasa Activa BNA. Envio de mail incorrecto ${err}`);
                          })
                         }
                     });
@@ -223,7 +237,7 @@ cron.schedule('10 09 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('13 09 * * *', () => {
+cron.schedule('10 05 * * *', () => {
 (async() => {
     await downloadBCRADDBB.downloadPBNA();
 })();
@@ -232,7 +246,7 @@ cron.schedule('13 09 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('30 09 * * *', () => {
+cron.schedule('30 05 * * *', () => {
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
     results.length === 0 ? false : await downloadBCRADDBB.saveInfolegData(results);
@@ -242,7 +256,7 @@ cron.schedule('30 09 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('35 09 * * *', () => {
+cron.schedule('35 05 * * *', () => {
     (async () => {
         let results = await downloadBCRADDBB.actualizacionCategorias()
     })();
@@ -251,7 +265,7 @@ cron.schedule('35 09 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('40 09 * * *', () => {
+cron.schedule('40 05 * * *', () => {
     (async() => {
         try{
             let tasaActivaCNAT2658 = await downloadBCRADDBB.scrapingTasaActiva();
@@ -260,7 +274,7 @@ cron.schedule('40 09 * * *', () => {
             let tasaData = await downloadBCRADDBB.dataTasa(tasaActivaCNAT2658, findTasaMensual[1]);
             await downloadBCRADDBB.saveTasaActivaData(tasaData, dateData, 1)
         }catch(err){
-            console.log(`Error en actualizar tasa 2658 ${err}`)
+            logger.error(`Error en actualizar tasa 2658 ${err}`)
         }
     })();
 }, {
@@ -268,7 +282,7 @@ cron.schedule('40 09 * * *', () => {
         timezone: "America/Argentina/Buenos_Aires"
 });
     
-cron.schedule('50 09 * * *', () => {
+cron.schedule('50 05 * * *', () => {
     (async() => {
         downloadBCRADDBB.findAndCreateNewDDBB()
     })();
