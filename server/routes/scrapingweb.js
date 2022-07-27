@@ -936,10 +936,9 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
 };
 
 //=========================ACTUALIZACION CATEGORIAS================================
-const findLastRecordCat = ()  => Categorias.findOne().sort({'fecha': -1})
-
 async function actualizacionCategorias(){
-    let resultsCat = await findLastRecordCat;
+    try {
+    let resultsCat = await Categorias.findOne().sort({'fecha': -1});
     let resultsDatosPrev =  await findLastRecordAll;
     if(moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))){
                     let datosNuevos = [];
@@ -1055,6 +1054,9 @@ async function actualizacionCategorias(){
         .catch(err => {
             console.log('Envio de mail incorrecto', err)
         })
+    }
+    }catch (error){
+        console.log(error)
     }
 };
 // NUEVA BASE DE DATOS======================================================

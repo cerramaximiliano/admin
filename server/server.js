@@ -78,26 +78,26 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     //     console.log(err)
     // }
 
-cron.schedule('15 05 * * *', () => {
+cron.schedule('15 09 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('20 05 * * *', () => {
+cron.schedule('20 09 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('cer');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
-cron.schedule('25 05 * * *', () => {
+cron.schedule('25 09 * * *', () => {
     downloadBCRADDBB.downloadBCRADDBB('icl');
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('00 05 * * *', () => {
+cron.schedule('10 09 * * *', () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
         let tasaActiva = await downloadBCRADDBB.scrapingTasaActiva();
@@ -223,7 +223,7 @@ cron.schedule('00 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('10 05 * * *', () => {
+cron.schedule('13 09 * * *', () => {
 (async() => {
     await downloadBCRADDBB.downloadPBNA();
 })();
@@ -232,7 +232,7 @@ cron.schedule('10 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule('30 05 * * *', () => {
+cron.schedule('30 09 * * *', () => {
 (async () => {
     let results = await downloadBCRADDBB.scrapingInfoleg();
     results.length === 0 ? false : await downloadBCRADDBB.saveInfolegData(results);
@@ -242,16 +242,16 @@ cron.schedule('30 05 * * *', () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-// cron.schedule('35 05 * * *', () => {
+cron.schedule('35 09 * * *', () => {
     (async () => {
         let results = await downloadBCRADDBB.actualizacionCategorias()
     })();
-// }, {
-//     scheduled: true,
-//     timezone: "America/Argentina/Buenos_Aires"
-// });
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
 
-cron.schedule('40 05 * * *', () => {
+cron.schedule('40 09 * * *', () => {
     (async() => {
         try{
             let tasaActivaCNAT2658 = await downloadBCRADDBB.scrapingTasaActiva();
@@ -268,7 +268,7 @@ cron.schedule('40 05 * * *', () => {
         timezone: "America/Argentina/Buenos_Aires"
 });
     
-cron.schedule('50 05 * * *', () => {
+cron.schedule('50 09 * * *', () => {
     (async() => {
         downloadBCRADDBB.findAndCreateNewDDBB()
     })();
