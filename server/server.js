@@ -32,13 +32,13 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
             colorize: true,
             translateTime: 'dd-mm-yyyy, HH:MM:ss',
             }},
-            // {
-            //     target: 'pino-pretty',
-            //     options: {
-            //     colorize: false,
-            //     translateTime: 'dd-mm-yyyy, HH:MM:ss',
-            //     destination: `${__dirname}/logger.log`
-            //     }},
+            {
+                target: 'pino-pretty',
+                options: {
+                colorize: false,
+                translateTime: 'dd-mm-yyyy, HH:MM:ss',
+                destination: `${__dirname}/logger.log`
+                }},
         ]
     },
     },
