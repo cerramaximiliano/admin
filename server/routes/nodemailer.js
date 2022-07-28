@@ -24,7 +24,6 @@ function sendAWStemplateEmail (recipientEmail, template) {
 
 // 'promotion-1658258964667'
 
-
 //==============================================================================
 //=========================FUNCTION PARA ENVIAR EMAILS DE ACCLAW================
 //===========================NODEMAILER=========================================

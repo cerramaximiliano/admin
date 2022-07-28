@@ -11,6 +11,7 @@ const cors = require('cors');
 const cron = require('node-cron');
 const sendEmail = require('./routes/nodemailer');
 const Promotion = require('./models/promo');
+const Schedule = require('./models/schedule');
 const promotions = require('./config/promotions');
 app.use(cors());
 const path = require('path');
@@ -79,34 +80,56 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
         })()
     };
 
-    // test();
+    test();
 
 
-cron.schedule(`30 ${hourPromotionInitial} * * *`, () => {
-    (async () => {
-        try{
-            const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
-            logger.info(`Email Marketing. Usuarios para Email 01: ${dataPromotions.length}`)
-            const resultsParse = promotions.parseResults(dataPromotions);
-            logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
-            let delivery = [];
-            for (let index = 0; index < resultsParse.length; index++) {
-                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667')
-                delivery.push([resultsParse[index], resultEmail.Status])
-            };
-            const dataSaved = promotions.saveDDBBPromotion(delivery);
-            logger.info(`Email Marketing. Resultado de Emails guardados: ${dataSaved}`)
-            const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
-            logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
-        }
-        catch(err){
-            logger.error(`Email Marketing Error: ${err}`)
-        };
-    })()
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+    // cron.schedule(`45 * * * *`, () => {
+    //     (async() => {
+    //         logger.info('Ejecucion de tareas de rutina una vez por hora.')
+    //         let findRutine = await Schedule.findOneAndUpdate({'task': 'General Promotion', 'status': true}, {'status': false, 'scheduleActive': true});
+    //         logger.info(`Busqueda de Promociones generales no activas. Resultado: ${findRutine} - `)
+    //         if(findRutine != null){
+    //             logger.info(`Tarea de ${findRutine.toObject().type} agendada.`)
+    //             cron.schedule(findRutine.toObject().schedule, () => {
+    //                 logger.info(`Email Marketing. Tarea de ejecucion. ${findRutine.toObject().schedule}`)
+    //             }, {
+    //                 scheduled: true,
+    //                 timezone: "America/Argentina/Buenos_Aires"
+    //             })
+    //         }else{
+    //             logger.warn(`No hay tareas agendadas en DDBB.`)
+    //         }
+    //     })();
+    // }, {
+    //     scheduled: true,
+    //     timezone: "America/Argentina/Buenos_Aires"
+    // })
+
+// cron.schedule(`30 ${hourPromotionInitial} * * *`, () => {
+//     (async () => {
+//         try{
+//             const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
+//             logger.info(`Email Marketing. Usuarios para Email 01: ${dataPromotions.length}`)
+//             const resultsParse = promotions.parseResults(dataPromotions);
+//             logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
+//             let delivery = [];
+//             for (let index = 0; index < resultsParse.length; index++) {
+//                 let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667')
+//                 delivery.push([resultsParse[index], resultEmail.Status])
+//             };
+//             const dataSaved = promotions.saveDDBBPromotion(delivery);
+//             logger.info(`Email Marketing. Resultado de Emails guardados: ${dataSaved}`)
+//             const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
+//             logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+//         }
+//         catch(err){
+//             logger.error(`Email Marketing Error: ${err}`)
+//         };
+//     })()
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
 cron.schedule(`00 ${hour} * * *`, () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');

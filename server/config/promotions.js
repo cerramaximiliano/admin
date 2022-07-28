@@ -111,6 +111,18 @@ function saveDDBBPromotion(deliveryEmails){
     return bulkOperation;
 };
 
+function schedule (arrayDate){
+    let string = '';
+    arrayDate.forEach(function(x){
+        if(x === undefined || x === ''){
+            string += ' * '
+        }else{
+            string += ` ${((x).toString())} `
+        }
+    })
+    logger.info(string)
+    return string
+};
 
 exports.findNotEqualStatus = findNotEqualStatus;
 exports.parseResults = parseResults;

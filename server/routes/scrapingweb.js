@@ -39,15 +39,15 @@ const chromeOptions = {
           target: 'pino-pretty',
           options: {
           colorize: true,
-          translateTime: 'dd-mm-yyyy, HH:MM:ss'
+          translateTime: 'dd-mm-yyyy, HH:MM:ss',
           }},
           {
-          target: 'pino/file',
-          options: {
+              target: 'pino-pretty',
+              options: {
+              colorize: false,
+              translateTime: 'dd-mm-yyyy, HH:MM:ss',
               destination: `${pathFiles}/logger.log`,
-              translateTime: 'dd-mm-yyyy, HH:MM:ss'
-          }
-          }
+              }},
       ]
   },
   },
