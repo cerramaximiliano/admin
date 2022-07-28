@@ -23,7 +23,7 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
 (async () => {
     const hour = '05';
-    const hourPromotionInitial = '15'
+    const hourPromotionInitial = '17'
     const pino = require('pino')
     const logger = pino({
         transport: {
@@ -117,22 +117,27 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     //     timezone: "America/Argentina/Buenos_Aires"
     // })
 
-cron.schedule(`00 ${hourPromotionInitial} * * *`, () => {
+
+cron.schedule(`50 ${hourPromotionInitial} * * *`, () => {
     (async () => {
         try{
             const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
             logger.info(`Email Marketing. Usuarios para Email 01: ${dataPromotions.length}`)
-            const resultsParse = promotions.parseResults(dataPromotions);
-            logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
-            let delivery = [];
-            for (let index = 0; index < resultsParse.length; index++) {
-                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG);
-                delivery.push([resultsParse[index], resultEmail.Status]);
-            };
-            const dataSaved = await promotions.saveDDBBPromotion(delivery);
-            logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
-            const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
-            logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+            if(dataPromotions.length > 0){
+                const resultsParse = promotions.parseResults(dataPromotions);
+                logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
+                let delivery = [];
+                for (let index = 0; index < resultsParse.length; index++) {
+                    let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG);
+                    delivery.push([resultsParse[index], resultEmail.Status]);
+                };
+                const dataSaved = await promotions.saveDDBBPromotion(delivery);
+                logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
+                const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
+                logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+            }else{
+                logger.info(`Email Marketing. No hay usuarios disponibles para enviar promocion.`)
+            }
         }
         catch(err){
             logger.error(`Email Marketing Error: ${err}`)
@@ -143,49 +148,26 @@ cron.schedule(`00 ${hourPromotionInitial} * * *`, () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule(`45 ${hourPromotionInitial} * * *`, () => {
+cron.schedule(`55 ${hourPromotionInitial} * * *`, () => {
     (async () => {
         try{
             const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
             logger.info(`Email Marketing. Usuarios para Email 01: ${dataPromotions.length}`)
-            const resultsParse = promotions.parseResults(dataPromotions);
-            logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
-            let delivery = [];
-            for (let index = 0; index < resultsParse.length; index++) {
-                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG);
-                delivery.push([resultsParse[index], resultEmail.Status]);
-            };
-            const dataSaved = await promotions.saveDDBBPromotion(delivery);
-            logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
-            const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
-            logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
-        }
-        catch(err){
-            logger.error(`Email Marketing Error: ${err}`)
-        };
-    })()
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
-
-
-cron.schedule(`30 ${hourPromotionInitial} * * *`, () => {
-    (async () => {
-        try{
-            const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
-            logger.info(`Email Marketing. Usuarios para Email 01: ${dataPromotions.length}`)
-            const resultsParse = promotions.parseResults(dataPromotions);
-            logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
-            let delivery = [];
-            for (let index = 0; index < resultsParse.length; index++) {
-                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG);
-                delivery.push([resultsParse[index], resultEmail.Status]);
-            };
-            const dataSaved = await promotions.saveDDBBPromotion(delivery);
-            logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
-            const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
-            logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+            if(dataPromotions.length > 0){
+                const resultsParse = promotions.parseResults(dataPromotions);
+                logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
+                let delivery = [];
+                for (let index = 0; index < resultsParse.length; index++) {
+                    let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG);
+                    delivery.push([resultsParse[index], resultEmail.Status]);
+                };
+                const dataSaved = await promotions.saveDDBBPromotion(delivery);
+                logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
+                const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
+                logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+            }else{
+                logger.info(`Email Marketing. No hay usuarios disponibles para enviar promocion.`)
+            }
         }
         catch(err){
             logger.error(`Email Marketing Error: ${err}`)
