@@ -126,8 +126,8 @@ cron.schedule(`30 ${hourPromotionInitial} * * *`, () => {
             logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
             let delivery = [];
             for (let index = 0; index < resultsParse.length; index++) {
-                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667')
-                delivery.push([resultsParse[index], resultEmail.Status])
+                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG);
+                delivery.push([resultsParse[index], resultEmail.Status]);
             };
             const dataSaved = await promotions.saveDDBBPromotion(delivery);
             logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
