@@ -117,7 +117,7 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     //     timezone: "America/Argentina/Buenos_Aires"
     // })
 
-cron.schedule(`30 ${hourPromotionInitial} * * *`, () => {
+cron.schedule(`40 ${hourPromotionInitial} * * *`, () => {
     (async () => {
         try{
             const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
