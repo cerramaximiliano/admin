@@ -6,14 +6,8 @@ const nodemailer = require('nodemailer')
 const transporter = require('nodemailer-smtp-transport');
 const AWS = require('aws-sdk');
 
-const SES_CONFIG = {
-  accessKeyId: process.env.AWS_SES_USER,
-  secretAccessKey: process.env.AWS_SES_PASS,
-  region: 'us-east-1',
-};
-console.log(SES_CONFIG)
-const AWS_SES = new AWS.SES(SES_CONFIG);
-function sendAWStemplateEmail (recipientEmail, template) {
+function sendAWStemplateEmail (recipientEmail, template, SES_CONFIG) {
+  const AWS_SES = new AWS.SES(SES_CONFIG);
   let params = {
   Destinations:  recipientEmail,
     Source: 'no-reply@lawanalytics.app',
@@ -258,8 +252,7 @@ async function sendEmail (email, cc, referencia, content, pageSelectData, pageTy
     }
     let result = smtpTransport.sendMail(body, function(err, info){
       if(err){
-        //TODO GRABAR REPORTE DE ERRORES
-        resolve(false);
+        resolve(err);
       }else{
         resolve(true)
       };

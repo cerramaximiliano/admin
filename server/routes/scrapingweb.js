@@ -320,11 +320,11 @@ async function convertExcelFileToJsonUsingXlsx () {
                           if(result === true){
                             logger.info(`Tasa Pasiva BCRA. Envio de mail correcto. ${result}`)
                           }else{
-                            logger.error(`Tasa Pasiva BCRA. Envio de mail correcto. ${result}`)
+                            logger.error(`Tasa Pasiva BCRA. Envio de mail incorrecto. ${result}`)
                           }
                         })
                         .catch(err => {
-                            logger.error(`Tasa Pasiva BCRA. Envio de mail correcto. ${err}`)
+                            logger.error(`Tasa Pasiva BCRA. Envio de mail incorrecto. ${err}`)
                         })
                         return {
                         ok: true,

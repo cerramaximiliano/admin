@@ -53,6 +53,11 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     process.env.SEED = secret.SEED;
     process.env.AWS_SES_USER = secret.AWS_SES_USER;
     process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
+    const SES_CONFIG = {
+        accessKeyId: secret.AWS_SES_KEY_ID,
+        secretAccessKey: secret.AWS_SES_ACCESS_KEY,
+        region: 'us-east-1',
+      };
     mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
         if(err) throw err;
         logger.info('Base de Datos ONLINE');
@@ -62,7 +67,6 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     });
     server.on('error', error => logger.error(`Error: ${JSON.stringify(error)}`));
 
-
     function test(){
         (async() => {
             try{
@@ -71,15 +75,15 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
                 const resultsParse = promotions.parseResults(testEmails);            
                 let delivery =[];
                 for (let index = 0; index < resultsParse.length; index++) {
-                    let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667')
+                    let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG)
                     delivery.push([resultsParse[index], resultEmail.Status])
                 };
-                const dataSaved = promotions.saveDDBBPromotion(delivery);
-                logger.info(`Email Marketing. Resultado de Emails guardados: ${dataSaved}`)
+                const dataSaved = await promotions.saveDDBBPromotion(delivery);
+                logger.info(`Email Marketing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
                 const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
                 logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
             }catch(err){
-                looger.error(`Email Marketing Error: ${err}`);
+                logger.error(`Email Marketing Error: ${err}`);
             }
         })()
     };

@@ -34,7 +34,6 @@ async function findNotEqualStatus (promotion, estado, cantResultados) {
     .limit(cantResultados);
 };
 async function findTest (promotion) {
-    logger.info(promotion)
     return Promotion.find(
         {email:
             {$in:
@@ -104,11 +103,13 @@ function saveDDBBPromotion(deliveryEmails){
             )
         })
     });
-    let bulkOperation = Promotion.bulkWrite(saveData).then(result => {
-        logger.info(`Email Marketing: emails enviados y guardados en DDBB ${result}`);
-        return result;
-    });
-    return bulkOperation;
+    
+    return Promotion.bulkWrite(saveData)
+    // let bulkOperation = Promotion.bulkWrite(saveData).then(result => {
+    //     logger.info(`Email Marketing: emails enviados y guardados en DDBB ${result}`);
+    //     return result;
+    // });
+    // return bulkOperation;
 };
 
 function schedule (arrayDate){
