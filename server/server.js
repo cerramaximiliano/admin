@@ -65,18 +65,22 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
     function test(){
         (async() => {
-            const testEmails = await promotions.findTest(['cerramaximiliano@gmail.com', 'mcerra@estudiofm.com']);
-            logger.info(`Email Marketing. Usuarios para Email 01: ${testEmails.length}`)
-            const resultsParse = promotions.parseResults(testEmails);            
-            let delivery =[];
-            for (let index = 0; index < resultsParse.length; index++) {
-                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667')
-                delivery.push([resultsParse[index], resultEmail.Status])
-            };
-            const dataSaved = promotions.saveDDBBPromotion(delivery);
-            logger.info(`Email Marketing. Resultado de Emails guardados: ${dataSaved}`)
-            const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
-            logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+            try{
+                const testEmails = await promotions.findTest(['cerramaximiliano@gmail.com', 'mcerra@estudiofm.com']);
+                logger.info(`Email Marketing. Usuarios para Email 01: ${testEmails.length}`)
+                const resultsParse = promotions.parseResults(testEmails);            
+                let delivery =[];
+                for (let index = 0; index < resultsParse.length; index++) {
+                    let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667')
+                    delivery.push([resultsParse[index], resultEmail.Status])
+                };
+                const dataSaved = promotions.saveDDBBPromotion(delivery);
+                logger.info(`Email Marketing. Resultado de Emails guardados: ${dataSaved}`)
+                const dataPromotionsRest = await promotions.findNotEqualStatus('promotion-1658258964667', true, false)
+                logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+            }catch(err){
+                looger.error(`Email Marketing Error: ${err}`);
+            }
         })()
     };
 

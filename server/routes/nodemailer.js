@@ -11,6 +11,7 @@ const SES_CONFIG = {
   secretAccessKey: process.env.AWS_SES_PASS,
   region: 'us-east-1',
 };
+console.log(SES_CONFIG)
 const AWS_SES = new AWS.SES(SES_CONFIG);
 function sendAWStemplateEmail (recipientEmail, template) {
   let params = {
