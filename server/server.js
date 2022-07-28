@@ -178,7 +178,7 @@ cron.schedule(`20 ${hourPromotionInitial} * * *`, () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule(`30 ${hourPromotionInitial} * * *`, () => {
+cron.schedule(`50 ${hourPromotionInitial} * * *`, () => {
     (async () => {
         try{
             const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
