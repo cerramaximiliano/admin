@@ -180,33 +180,37 @@ pdf(dataBuffer).then(function(data){
 });
 }
 async function downloadPBNA(){
-    const browser = await puppeteer.launch(chromeOptions);
-    const page = await browser.newPage();
-    await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
-    const ele = await page.content();
-    const $ = cheerio.load(ele);
-    let url;
-    const table = $('#collapseTwo > .panel-body > .plazoTable > ul > li').each(function(x, ele){
-        $(this).each(function(i,element){
-            let matchPasivas = $(this).text().match(/tasas de operaciones pasivas/i);
-            if(matchPasivas != null){
-                url = $(this).children().attr('href')
-                logger.info(`Tasa Pasiva BNA. Busqueda URL: ${url}`)
-            }
-        })
+    try {
+        const browser = await puppeteer.launch(chromeOptions);
+        const page = await browser.newPage();
+        await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
+        const ele = await page.content();
+        const $ = cheerio.load(ele);
+        let url;
+        const table = $('#collapseTwo > .panel-body > .plazoTable > ul > li').each(function(x, ele){
+            $(this).each(function(i,element){
+                let matchPasivas = $(this).text().match(/tasas de operaciones pasivas/i);
+                if(matchPasivas != null){
+                    url = $(this).children().attr('href')
+                    logger.info(`Tasa Pasiva BNA. Busqueda URL: ${url}`)
+                }
+            })
+        });
+        let file_url = 'https://www.bna.com.ar' + url;
+        let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
+        let fileRoute = DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + file_name
+        logger.info(`Tasa Pasiva BNA. ${fileRoute}`)
+        let file = fs.createWriteStream(fileRoute, {'flags': 'w'});
+        const request = https.get(file_url, function(response) {
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close();
+                parseBNAPasiva(fileRoute);
     });
-    let file_url = 'https://www.bna.com.ar' + url;
-    let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
-    let fileRoute = DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + file_name
-    logger.info(`Tasa Pasiva BNA. ${fileRoute}`)
-    let file = fs.createWriteStream(fileRoute, {'flags': 'w'});
-    const request = https.get(file_url, function(response) {
-        response.pipe(file);
-        file.on('finish', () => {
-            file.close();
-            parseBNAPasiva(fileRoute);
-});
-});
+    });
+    }catch(err){
+        logger.error(`Tasa Pasiva BNA. Error al ejectutar función de guardado de pdf: ${err}`)
+    }
 };
 
 
