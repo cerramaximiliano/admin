@@ -109,7 +109,7 @@ function saveDDBBPromotion(deliveryEmails){
 };
 
 
-function test(SES_CONFIG){
+function test(promotion, templateData, SES_CONFIG){
     (async() => {
         try{
             const testEmails = await findTest(['cerramaximiliano@gmail.com', 'mcerra@estudiofm.com']);
@@ -117,7 +117,7 @@ function test(SES_CONFIG){
             const resultsParse = parseResults(testEmails);            
             let delivery =[];
             for (let index = 0; index < resultsParse.length; index++) {
-                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG)
+                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], promotion, templateData, SES_CONFIG)
                 delivery.push([resultsParse[index], resultEmail.Status])
             };
             const dataSaved = await saveDDBBPromotion(delivery);

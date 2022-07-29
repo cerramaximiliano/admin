@@ -312,12 +312,25 @@ cron.schedule(`40 ${hour} * * *`, () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
+
 cron.schedule(`45 20 * * *`, () => {
-    promotions.test(SES_CONFIG);
+    promotions.test('promotionprevisional-1659115051606', '{"subject":"Law||Analytics- Cálculos Previsionales"}', SES_CONFIG);
 }, {
 scheduled: true,
 timezone: "America/Argentina/Buenos_Aires"
-})
+});
+cron.schedule(`50 20 * * *`, () => {
+    promotions.test('promotion-1658258964667', '{"subject":"Law||Analytics- Gestor Legal Online"}', SES_CONFIG);
+}, {
+scheduled: true,
+timezone: "America/Argentina/Buenos_Aires"
+});
+cron.schedule(`55 20 * * *`, () => {
+    promotions.test('promotionlaboral-1659113638889', '{"subject":"Law||Analytics- Cálculos Laborales"}', SES_CONFIG);
+}, {
+scheduled: true,
+timezone: "America/Argentina/Buenos_Aires"
+});
 // let data = 
 // [			
 //     [	0.10685	]	,

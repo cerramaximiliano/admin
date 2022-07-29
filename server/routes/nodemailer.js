@@ -6,17 +6,17 @@ const nodemailer = require('nodemailer')
 const transporter = require('nodemailer-smtp-transport');
 const AWS = require('aws-sdk');
 
-function sendAWStemplateEmail (recipientEmail, template, SES_CONFIG) {
+function sendAWStemplateEmail (recipientEmail, template, templateData, SES_CONFIG) {
   const AWS_SES = new AWS.SES(SES_CONFIG);
   let params = {
   Destinations:  recipientEmail,
     Source: 'no-reply@lawanalytics.app',
     Template: template,
-    DefaultTemplateData: '{"subject":"Law||Analytics- Gestor Legal Online"}'
+    DefaultTemplateData: templateData,
 };
   return AWS_SES.sendBulkTemplatedEmail(params).promise()
 }
-
+// '{"subject":"Law||Analytics- Gestor Legal Online"}'
 // 'promotion-1658258964667'
 
 //==============================================================================
