@@ -288,14 +288,14 @@ cron.schedule(`15 ${hour} * * *`, () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule(`20 ${hour} * * *`, () => {
+// cron.schedule(`20 ${hour} * * *`, () => {
 (async() => {
     await downloadBCRADDBB.downloadPBNA();
 })();
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
 cron.schedule(`25 ${hour} * * *`, () => {
 (async () => {
