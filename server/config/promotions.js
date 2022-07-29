@@ -1,4 +1,5 @@
 const Promotion = require('../models/promo');
+const sendEmail = require('../routes/nodemailer');
 const path = require('path');
 const pathFiles = path.join(__dirname, '../');
 const pino = require('pino')
@@ -105,11 +106,28 @@ function saveDDBBPromotion(deliveryEmails){
     });
     
     return Promotion.bulkWrite(saveData)
-    // let bulkOperation = Promotion.bulkWrite(saveData).then(result => {
-    //     logger.info(`Email Marketing: emails enviados y guardados en DDBB ${result}`);
-    //     return result;
-    // });
-    // return bulkOperation;
+};
+
+
+function test(SES_CONFIG){
+    (async() => {
+        try{
+            const testEmails = await findTest(['cerramaximiliano@gmail.com', 'mcerra@estudiofm.com']);
+            logger.info(`Email Marketing Testing. Usuarios para Email 01: ${testEmails.length}`)
+            const resultsParse = parseResults(testEmails);            
+            let delivery =[];
+            for (let index = 0; index < resultsParse.length; index++) {
+                let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG)
+                delivery.push([resultsParse[index], resultEmail.Status])
+            };
+            const dataSaved = await saveDDBBPromotion(delivery);
+            logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
+            const dataPromotionsRest = await findNotEqualStatus('promotion-1658258964667', true, false)
+            logger.info(`Email Marketing Testing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+        }catch(err){
+            logger.error(`Email Marketing Testing Error: ${err}`);
+        }
+    })()
 };
 
 function schedule (arrayDate){
@@ -129,3 +147,4 @@ exports.findNotEqualStatus = findNotEqualStatus;
 exports.parseResults = parseResults;
 exports.saveDDBBPromotion = saveDDBBPromotion;
 exports.findTest = findTest;
+exports.test = test;
