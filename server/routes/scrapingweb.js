@@ -18,7 +18,6 @@ const puppeteer = require('puppeteer');
 const pdf = require('pdf-parse');
 const lineReader = require('line-reader');
 const cheerio = require('cheerio');
-const datosprevisionales = require('../models/datosprevisionales');
 //============================RUTAS --------=================================
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
@@ -938,7 +937,8 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
 async function actualizacionCategorias(){
     try {
     let resultsCat = await Categorias.findOne().sort({'fecha': -1});
-    let resultsDatosPrev =  await findLastRecordAll;
+    let resultsDatosPrev =  await DatosPrev.findOne({'estado': true}).sort({'fecha': -1})
+    logger.info(`Categorias. Ejecuto funciones de busqueda en DDBB.`)
     if(moment(resultsCat.fecha).isBefore(moment(resultsDatosPrev.fecha))){
         logger.info(`Categorias. Hay actualizaciones disponibles.`)
                     let datosNuevos = [];
