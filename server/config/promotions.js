@@ -34,6 +34,18 @@ async function findNotEqualStatus (promotion, estado, cantResultados) {
     }) 
     .limit(cantResultados);
 };
+async function findNotEqualStatusType (promotion, estado, type, cantResultados) {
+    return Promotion.find({
+        estado: estado,
+        tipo: type, 
+        delivery:{
+            $not: {'$elemMatch':{
+                "template": promotion}
+            }
+        }
+    }) 
+    .limit(cantResultados);
+};
 async function findTest (promotion) {
     return Promotion.find(
         {email:
@@ -148,3 +160,4 @@ exports.parseResults = parseResults;
 exports.saveDDBBPromotion = saveDDBBPromotion;
 exports.findTest = findTest;
 exports.test = test;
+exports.findNotEqualStatusType = findNotEqualStatusType;

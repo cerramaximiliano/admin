@@ -27,6 +27,7 @@ const chromeOptions = {
     slowMo:18,
     defaultViewport: null,
     args: ['--no-sandbox'],
+    ignoreDefaultArgs: ["--disable-extensions"],
     executablePath: '/usr/bin/chromium-browser',
   };
   //============================PINO LOGGER=================================
@@ -51,7 +52,19 @@ const chromeOptions = {
   },
   },
   );
-//============================FUNCIONES TASA PASIVA BNA======================
+//============================FUNCIONES PJN SCRAPING======================
+async function scrapingPjn (){
+
+        const browser = await puppeteer.launch(chromeOptions);
+        const page = await browser.newPage();
+        await page.goto('https://scw.pjn.gov.ar/scw/home.seam');
+        'formPublica:camaraNumAni'
+
+};
+
+
+
+  //============================FUNCIONES TASA PASIVA BNA======================
 function parseBNAPasiva(routeFile){
 let tasasList = [];
 async function dataTasaPasiva(data, ind){
@@ -239,6 +252,7 @@ function downloadBCRADDBB(tasa){
     let file_url;
     let file_name;
     if (tasa === 'pasivaBCRA'){
+        console.log('tasa pasiva bcra')
         file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind2022.xls';
         file_name = 'data.xls';
     }else if(tasa === 'cer'){
@@ -262,7 +276,6 @@ function downloadBCRADDBB(tasa){
                 convertXlsICL();
             }
         });
-    
     }).on('error', (err) => {
         logger.warn(`Tasa pasiva BCRA. Requiere actualizacion manual. ${err}`)
     });
@@ -303,6 +316,7 @@ async function convertExcelFileToJsonUsingXlsx () {
         });
         parsedData.forEach(function(x){
             if (moment(x[0], "YYYYMMDD").isSame(moment(), 'days') === true){
+                logger.info(`Tasa pasiva BCRA. Hay actualizacion disponible.`)
                 let date = (moment(x[0], "YYYYMMDD").format('YYYY-MM-DD')) + 'T00:00'
                 let dateToFind = moment(date).utc(true);
                 let filter = {fecha: dateToFind}
@@ -338,7 +352,8 @@ async function convertExcelFileToJsonUsingXlsx () {
                         }
                     });
             }else {
-                false
+                false;
+                logger.info(`Tasa pasiva BCRA. No hay actualizacion disponible.`)
             }
         });
         return generateJSONFile(parsedData, 'dataBCRATasaPasiva2022.json');
@@ -757,7 +772,7 @@ async function scrapingTasaActiva () {
         return ele
     }
     catch (error) {
-        logger.error(`Tasa Activa BNA. Resultados scraping con errore. ${error}`)
+        logger.error(`Tasa Activa BNA. Resultados scraping con errores. ${error}`)
     }
 };
 
@@ -1115,3 +1130,4 @@ exports.scrapingInfoleg = scrapingInfoleg;
 exports.saveInfolegData = saveInfolegData;
 exports.actualizacionCategorias = actualizacionCategorias;
 exports.saveTasaActivaData = saveTasaActivaData;
+exports.scrapingPjn = scrapingPjn;

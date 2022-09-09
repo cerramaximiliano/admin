@@ -12,6 +12,8 @@ const cron = require('node-cron');
 const sendEmail = require('./routes/nodemailer');
 const Promotion = require('./models/promo');
 const Schedule = require('./models/schedule');
+const EscalaComercio = require('./models/escalasComercio');
+const EscalaDomestico =  require('./models/escalasDomestico');
 const promotions = require('./config/promotions');
 app.use(cors());
 const path = require('path');
@@ -23,8 +25,8 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
 (async () => {
     const hour = '05';
-    const hourPromotionInitial = '18'
-    const pino = require('pino')
+    const hourPromotionInitial = '10';
+    const pino = require('pino');
     const logger = pino({
         transport: {
         targets :[
@@ -90,17 +92,95 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     // })
 
 
-// cron.schedule(`15 ${hourPromotionInitial} * * *`, () => {
+const promotionGeneral = ['promotion-1658258964667', 'Promoción general'];
+const promotionLab = ['promotionlaboral-1659113638889', 'Promoción laboral'];
+const promotionPrev =  ['promotionprevisional-1659115051606', 'Promoción previsional'];
+
+
+// MANDAR CORREO PROMOCION GENERAL A TODOS LOS CONTACTOS CON ESTADO TRUE
+cron.schedule(`40 ${hourPromotionInitial} * * *`, () => {
+    (async () => {
+        try{
+             const dataPromotions = await promotions.findNotEqualStatus(promotionGeneral[0], true, 70)
+            logger.info(`Email Marketing. Usuarios para Email ${promotionGeneral[1]}: ${dataPromotions.length}`)
+            if(dataPromotions.length > 0){
+                const resultsParse = promotions.parseResults(dataPromotions);
+                logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
+                let delivery = [];
+                for (let index = 0; index < resultsParse.length; index++) {
+                    let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], promotionGeneral[0], '{"subject":"Law||Analytics- Gestor Legal Online"}', SES_CONFIG);
+                    delivery.push([resultsParse[index], resultEmail.Status]);
+                };
+                const dataSaved = await promotions.saveDDBBPromotion(delivery);
+                logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
+                const dataPromotionsRest = await promotions.findNotEqualStatus(promotionGeneral[0], true, false)
+                logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+            }else{
+                logger.info(`Email Marketing. No hay usuarios disponibles para enviar promocion.`)
+            }
+        }
+        catch(err){
+            logger.error(`Email Marketing Error: ${err}`)
+        };
+    })()
+}, {
+    scheduled: true,
+    timezone: "America/Argentina/Buenos_Aires"
+});
+
+// BUSCAR TODOS LOS QUE NO HAYAN SIDO NOTIFICADOS DE UNA PROMOCION
+// const dataPromotions = await promotions.findNotEqualStatus(promotionGeneral, 'true', 1500)
+// console.log(dataPromotions.length,
+//     )
+
+// cron.schedule(`30 ${hourPromotionInitial} * * *`, () => {
 //     (async () => {
 //         try{
-//             const dataPromotions = await promotions.findNotEqualStatus('promotion-1658258964667', true, 70)
-//             logger.info(`Email Marketing. Usuarios para Email 01: ${dataPromotions.length}`)
+//             const dataPromotions = await Promotion.find({
+//                 estado: true,
+//                 tipo: "prev",
+//                 delivery:{
+//                 $not: {'$elemMatch':{
+//                     "date":  {$gte: new Date('2022-08-02T00:00:00.000Z'), $lte: new Date('2022-08-03T00:00:00.000Z')}}
+//                 }
+//             }}
+//         );           
+//             logger.info(`Email Marketing. Email 02. Busqueda contactos previsional: ${dataPromotions.length}`);
 //             if(dataPromotions.length > 0){
 //                 const resultsParse = promotions.parseResults(dataPromotions);
 //                 logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
 //                 let delivery = [];
 //                 for (let index = 0; index < resultsParse.length; index++) {
-//                     let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotion-1658258964667', SES_CONFIG);
+//                     let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotionprevisional-1659115051606', '{"subject":"Law||Analytics- Cálculos Previsionales"}', SES_CONFIG);
+//                     delivery.push([resultsParse[index], resultEmail.Status]);
+//                 };
+//                 const dataSaved = await promotions.saveDDBBPromotion(delivery);
+//                 logger.info(`Email Marketing Testing. Resultado de Emails guardados: ${dataSaved.result.nMatched}`)
+//                 const dataPromotionsRest = await promotions.findNotEqualStatus('promotionprevisional-1659115051606', true, false)
+//                 logger.info(`Email Marketing Usuarios restantes para Email 01: ${dataPromotionsRest.length}`)
+//             }else{
+//                 logger.info(`Email Marketing. No hay usuarios disponibles para enviar promocion.`)
+//             }
+//         }
+//         catch(err){
+//             logger.error(`Email Marketing Error: ${err}`)
+//         };
+//     })()
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
+// cron.schedule(`35 ${hourPromotionInitial} * * *`, () => {
+//     (async () => {
+//         try{
+//             const dataPromotions = await Promotion.find({estado: true, tipo: "labor"}).limit(300);
+//             logger.info(`Email Marketing. Email 02. Busqueda contactos laboral: ${dataPromotions.length}`);
+//             if(dataPromotions.length > 0){
+//                 const resultsParse = promotions.parseResults(dataPromotions);
+//                 logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
+//                 let delivery = [];
+//                 for (let index = 0; index < resultsParse.length; index++) {
+//                     let resultEmail = await sendEmail.sendAWSEmail(resultsParse[index], 'promotionlaboral-1659113638889', '{"subject":"Law||Analytics- Cálculos Laborales"}', SES_CONFIG);
 //                     delivery.push([resultsParse[index], resultEmail.Status]);
 //                 };
 //                 const dataSaved = await promotions.saveDDBBPromotion(delivery);
@@ -119,6 +199,12 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 //     scheduled: true,
 //     timezone: "America/Argentina/Buenos_Aires"
 // });
+
+
+
+
+// downloadBCRADDBB.scrapingPjn();
+
 
 
 cron.schedule(`00 ${hour} * * *`, () => {
@@ -286,7 +372,7 @@ cron.schedule(`30 ${hour} * * *`, () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule(`35 ${hour} * * *`, () => {
+cron.schedule(`55 ${hour} * * *`, () => {
     (async() => {
         try{
             let tasaActivaCNAT2658 = await downloadBCRADDBB.scrapingTasaActiva();
@@ -303,7 +389,7 @@ cron.schedule(`35 ${hour} * * *`, () => {
         timezone: "America/Argentina/Buenos_Aires"
 });
     
-cron.schedule(`40 ${hour} * * *`, () => {
+cron.schedule(`35 ${hour} * * *`, () => {
     (async() => {
         downloadBCRADDBB.findAndCreateNewDDBB()
     })();

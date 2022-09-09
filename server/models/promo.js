@@ -12,6 +12,9 @@ let promotion = new Schema({
     type: Boolean,
     default: true
     },
+    tipo: {
+    type: String
+    },
     delivery: [
       {
         template: String,

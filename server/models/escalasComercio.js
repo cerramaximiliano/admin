@@ -15,7 +15,10 @@ let escalasComercio = new Schema({
         tipo: String,
         },
     ],
-    status:{
+    remuneracionTotal: {
+      type: Number
+    },
+    estado:{
       type: Boolean
     }
   });
