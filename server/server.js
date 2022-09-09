@@ -97,11 +97,11 @@ const promotionLab = ['promotionlaboral-1659113638889', 'Promoción laboral'];
 const promotionPrev =  ['promotionprevisional-1659115051606', 'Promoción previsional'];
 
 
-// MANDAR CORREO PROMOCION GENERAL A TODOS LOS CONTACTOS CON ESTADO TRUE
-cron.schedule(`40 ${hourPromotionInitial} * * *`, () => {
+// MANDAR CORREO PROMOCION GENERAL A TODOS LOS CONTACTOS CON ESTADO TRUE QUE NO SE LES HAY ENVIADO EL MAIL PROMOCION GENERAL
+cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {
     (async () => {
         try{
-             const dataPromotions = await promotions.findNotEqualStatus(promotionGeneral[0], true, 70)
+            const dataPromotions = await promotions.findNotEqualStatus(promotionGeneral[0], true, 70)
             logger.info(`Email Marketing. Usuarios para Email ${promotionGeneral[1]}: ${dataPromotions.length}`)
             if(dataPromotions.length > 0){
                 const resultsParse = promotions.parseResults(dataPromotions);
