@@ -10,14 +10,14 @@ const Categorias = require('../models/categorias');
 const Normas = require('../models/normas')
 const moment = require('moment');
 const xlsx = require('xlsx');
-const http = require('http');
-const https = require('https');
 const path = require('path');
 const fs = require('fs');
 const puppeteer = require('puppeteer');
 const pdf = require('pdf-parse');
 const lineReader = require('line-reader');
 const cheerio = require('cheerio');
+const download = require('download');
+const https = require('https');
 //============================RUTAS --------=================================
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
@@ -28,7 +28,7 @@ const chromeOptions = {
     defaultViewport: null,
     args: ['--no-sandbox'],
     ignoreDefaultArgs: ["--disable-extensions"],
-    executablePath: '/usr/bin/chromium-browser',
+    // executablePath: '/usr/bin/chromium-browser',
   };
   //============================PINO LOGGER=================================
   const pino = require('pino')
@@ -54,12 +54,10 @@ const chromeOptions = {
   );
 //============================FUNCIONES PJN SCRAPING======================
 async function scrapingPjn (){
-
         const browser = await puppeteer.launch(chromeOptions);
         const page = await browser.newPage();
         await page.goto('https://scw.pjn.gov.ar/scw/home.seam');
         'formPublica:camaraNumAni'
-
 };
 
 
@@ -222,6 +220,7 @@ async function downloadPBNA(){
     });
     }catch(err){
         logger.error(`Tasa Pasiva BNA. Error al ejectutar función de guardado de pdf: ${err}`)
+
     }
 };
 
@@ -252,35 +251,60 @@ function downloadBCRADDBB(tasa){
     let file_url;
     let file_name;
     if (tasa === 'pasivaBCRA'){
-        console.log('tasa pasiva bcra')
         file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind2022.xls';
-        file_name = 'data.xls';
+        file_name = 'data';
     }else if(tasa === 'cer'){
         file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer2022.xls'
-        file_name = 'dataCER.xls';
+        file_name = 'dataCER';
     }else if(tasa === 'icl'){
         file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl2022.xls'
-        file_name = 'dataICL.xls';
-    }
+        file_name = 'dataICL';
+    };
+    const filePath = DOWNLOAD_DIR;
+    const file = download(file_url, filePath)
+    .then((result) => {
+                if (tasa === 'pasivaBCRA') {
+                    convertExcelFileToJsonUsingXlsx('ind2022.xls');
+                }else if(tasa === 'cer'){
+                    convertXlsCER('cer2022.xls');
+                }else if(tasa === 'icl'){
+                    convertXlsICL('icl2022.xls');
+                }
+    })
+    .catch((err) => {
+        return err
+    })
+
+    // const file = fs.createWriteStream(filePath, {'flags': 'w'});
+        // const httpRequest = request.get(file_url, function(err, response) {
+        //     if(err){
+        //         console.log(err)
+        //     }
+        //     if(response.statusCode != 200){
+        //         console.log(`Error: código ${response.statusCode}`)
+        //     }
+        //     file.on('finish', function(){
+        //         file.close()
+        //     });
+        //     response.pipe(file).on('error', (err) => console.log(`Error en el grabado de archivo: ${err}`))
+        //     file.on('error', (err) => console.log(`Error en el archivo grabado: ${err}`))
     
-    let file = fs.createWriteStream(DOWNLOAD_DIR + file_name, {'flags': 'w'});
-    const request = http.get(file_url, function(response) {
-        response.pipe(file);
-        file.on('finish', () => {
-            file.close();
-            if (tasa === 'pasivaBCRA') {
-                convertExcelFileToJsonUsingXlsx();
-            }else if(tasa === 'cer'){
-                convertXlsCER();
-            }else if(tasa === 'icl'){
-                convertXlsICL();
-            }
-        });
-    }).on('error', (err) => {
-        logger.warn(`Tasa pasiva BCRA. Requiere actualizacion manual. ${err}`)
-    });
-async function convertExcelFileToJsonUsingXlsx () {
-        let file_read = 'data.xls'
+            // response.pipe(file);
+            // file.on('finish', () => {
+            //     file.close()
+                // if (tasa === 'pasivaBCRA') {
+                //     convertExcelFileToJsonUsingXlsx();
+                // }else if(tasa === 'cer'){
+                //     convertXlsCER();
+                // }else if(tasa === 'icl'){
+                //     console.log('convert icl')
+                //     convertXlsICL();
+                // }
+            // }).on('error', (err) => console.log(`Error en la creación de achivo ${err}`))
+
+};
+
+async function convertExcelFileToJsonUsingXlsx (file_read) {
         const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
         const sheetNames = file.SheetNames;
         const totalSheets = sheetNames.length;
@@ -310,7 +334,6 @@ async function convertExcelFileToJsonUsingXlsx () {
             }else{
                 false
             };
-    
             data = [];
             dataIndex = [];
         });
@@ -353,14 +376,13 @@ async function convertExcelFileToJsonUsingXlsx () {
                     });
             }else {
                 false;
-                logger.info(`Tasa pasiva BCRA. No hay actualizacion disponible.`)
+                logger.info(`Tasa pasiva BCRA. No hay actualizacion disponible.`);
             }
         });
         return generateJSONFile(parsedData, 'dataBCRATasaPasiva2022.json');
     };
 
-async function convertXlsICL (){
-    let file_read = 'dataICL.xls';
+async function convertXlsICL (file_read){
     const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
     const sheetNames = file.SheetNames;
     const totalSheets = sheetNames.length;
@@ -457,8 +479,7 @@ async function convertXlsICL (){
     });
 }
 
-async function convertXlsCER (){
-    let file_read = 'dataCER.xls'
+async function convertXlsCER (file_read){
     const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
     const sheetNames = file.SheetNames;
     const tempData = xlsx.utils.sheet_to_json(file.Sheets['Totales_diarios']);
@@ -592,7 +613,7 @@ function generateJSONFile(data, file) {
             logger.error(`Error en escritura de archivo json. ${err}`)
         }
 };
-};
+
 
 
   function datesSpanish(date){

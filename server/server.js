@@ -3,6 +3,7 @@ const app = express();
 require('dotenv').config();
 const Tasas = require('./models/tasas');
 const http = require('http');
+const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const moment = require('moment');
@@ -15,11 +16,21 @@ const Schedule = require('./models/schedule');
 const EscalaComercio = require('./models/escalasComercio');
 const EscalaDomestico =  require('./models/escalasDomestico');
 const promotions = require('./config/promotions');
+const ejs = require('ejs');
+const cookieParser = require('cookie-parser');
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'html');
 app.use(cors());
-const path = require('path');
+app.use(cookieParser());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
 const puppeteer = require('puppeteer');
+
+const scrapingRoutes = require('./routes/scrapingRoutes');
 app.use(express.static(path.join(__dirname, '../public')));
+
 const AWS = require('aws-sdk');
 const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 
@@ -67,7 +78,7 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
         logger.info('Escuchando puerto 3000');
     });
     server.on('error', error => logger.error(`Error: ${JSON.stringify(error)}`));
-
+    app.use(scrapingRoutes);
 
     // cron.schedule(`45 * * * *`, () => {
     //     (async() => {
@@ -204,7 +215,6 @@ cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {
 
 
 // downloadBCRADDBB.scrapingPjn();
-
 
 
 cron.schedule(`00 ${hour} * * *`, () => {
