@@ -60,7 +60,6 @@ document.querySelector("#add-EmailsList").addEventListener('click', (e) => {
     fetch('/emailpromotion', requestOptions)
     .then((res) => res.json())
     .then((result) => {
-        console.log(result.result)
         if(result.err != undefined){
             if(result.err.code === 11000){
                 toastr.error(`<p>
@@ -85,6 +84,22 @@ document.querySelector("#add-EmailsList").addEventListener('click', (e) => {
     .catch((err) => {
         console.log(err)
     });
+});
+
+document.querySelector('#view-Email').addEventListener('click',function(e) {
+    window.open('/emailusers', '_self');
+    // var requestOptions = {
+    //   method: "GET",
+    //   redirect: "follow",
+    // };
+    // fetch('/emailusers', requestOptions)
+    // .then((res) => res.json())
+    // .then((results) => {
+    //     console.log(results)
+    // })
+    // .catch((err) => {
+    //     console.log(err)
+    // })
 });
 
 

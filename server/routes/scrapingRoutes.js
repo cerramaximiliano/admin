@@ -16,6 +16,8 @@ router.post('/login', userController.usersLogin);
 
 router.get('/home/', verificaAutenticacion, userController.usersHome);
 
-router.post('/emailpromotion', verificaAutenticacion, promotionController.emailPromotion)
+router.post('/emailpromotion', verificaAutenticacion, promotionController.emailPromotion);
+
+router.get('/emailusers', verificaAutenticacion, promotionController.emailUsers);
 
 module.exports = router;
