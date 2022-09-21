@@ -402,18 +402,22 @@
       </div>
       <div class="modal-body">
 
-          <form>
+          <form  class="needs-validation" id="validateEmail">
             <div class="row g-3">
               <div class="col-sm-7">
-                <textarea name="" id="emailsArea" cols="30" rows="10" class="form-control" placeholder="Emails" aria-label="Emails"></textarea>
+                <textarea name="" id="emailsArea" cols="30" rows="10" class="form-control" placeholder="Emails" aria-label="Emails" required></textarea>
               </div>
+              <div class="valid-feedback"></div>
+              <div class="invalid-feedback">Complete el campo con un correo válido.</div>
               <div class="col-sm">
-                <select class="form-select" aria-label="Default select example" id="selectType">
-                  <option selected disabled>Elija un tipo</option>
+                <select class="form-select" aria-label="Default select example" id="selectType" required>
+                  <option selected disabled value="">Elija un tipo</option>
                   <option value="lab">Laboral</option>
                   <option value="prev">Previsional</option>
                   <option value="civ">Civil</option>
                 </select>
+                <div class="valid-feedback"></div>
+                <div class="invalid-feedback">Elija una opción.</div>
               </div>
             </div>
           </form>
