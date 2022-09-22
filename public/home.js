@@ -72,7 +72,6 @@ document.querySelector("#add-EmailsList").addEventListener('click', (e) => {
         fetch(url, requestOptions)
         .then((res) => res.json())
         .then((result) => {
-            console.log(result)
             if(url === '/emailpromotion'){
                 if(result.err != undefined){
                     if(result.err.code === 11000){
@@ -95,7 +94,6 @@ document.querySelector("#add-EmailsList").addEventListener('click', (e) => {
             modalEmails.hide();
         })
         .catch((err) => {
-            console.log(err)
             toastr.error(`Ha ocurrido un error en el servidor. Error Code: ${err}`);
             modalEmails.hide();
         });

@@ -31,7 +31,6 @@ exports.emailPromotion = (req, res, next) => {
                                             })
                                         })
                                         .catch(errorUpdateRecord => {
-                                            console.log('Error linea 34' + errorUpdateRecord)
                                             res.status(500).json({
                                                 ok: false,
                                                 status: 500,
@@ -53,7 +52,6 @@ exports.emailPromotion = (req, res, next) => {
                                     })
                                 })
                                 .catch(errRecord => {
-                                    console.log('Error linea 55'+errRecord)
                                     res.status(500).json({
                                         ok: false,
                                         status: 500,
@@ -63,7 +61,6 @@ exports.emailPromotion = (req, res, next) => {
                         }
 
                     }).catch(errors => {
-                        console.log('Error linea 65'+errors)
                         res.status(500).json({
                             ok: false,
                             status: 500,
@@ -73,7 +70,6 @@ exports.emailPromotion = (req, res, next) => {
 
     })
     .catch((err) => {
-        console.log(err)
         res.status(500).json({
             ok: false,
             status: 500,
@@ -171,7 +167,6 @@ exports.emailUsers = (req, res, next) => {
         Estadisticas.findOne()
         .sort({fecha: -1})
         .then(data => {
-            console.log(result)
             return res.render(path.join(__dirname, '../views/') + 'promotion.ejs', {
                 data: result,
                 totales: data,
