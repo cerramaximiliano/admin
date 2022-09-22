@@ -16,7 +16,4 @@ exports.downloadUrlFile = (req, res, next) => {
             status: 200
         })
     }
-
 };
-
-

@@ -217,20 +217,20 @@
       <div class="card " style="width: 18rem;">
         <div class="card-body">
           <h5 class="card-title text-center">Correos Totales</h5>
-          <p class="card-text">Se muestran la cantidad total de emails registrados y válidos. Se excluyen correos con resultado negativo.</p>
+          <p class="card-text">Se muestran la cantidad total de emails registrados y válidos.</p>
           <h3 class="text-center" >
-            <%= totales %>
+            <%= totales.promoActivos %>
           </h3>
         </div>
       </div>
 
       <div class="card" style="width: 18rem;">
         <div class="card-body">
-          <h5 class="card-title">Card title</h5>
-          <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-          <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-          <a href="#" class="card-link">Card link</a>
-          <a href="#" class="card-link">Another link</a>
+          <h5 class="card-title">Correos Inactivos</h5>
+          <p class="card-text">Se muestra la cantidad total de email registrados que fueron quitados de suscripcion.</p>
+          <h3 class="text-center">
+            <%= totales.promoInactivos %>
+          </h3>
         </div>
       </div>
 

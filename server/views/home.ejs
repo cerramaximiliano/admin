@@ -189,6 +189,12 @@
               Agregar Emails
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="sub-Emails">
+              <span data-feather="file-text" class="align-text-bottom"></span>
+              Eliminar Emails
+            </a>
+          </li>
         </ul>
       </div>
     </nav>
@@ -351,19 +357,19 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Carga de emails</h5>
+        <h5 class="modal-title" id="modalEmailTitle"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
 
           <form class="needs-validation" id="validateEmail">
             <div class="row g-3">
-              <div class="col-sm-7">
+              <div class="">
                 <textarea name="" id="emailsArea" cols="30" rows="10" class="form-control" placeholder="Emails" aria-label="Emails" required></textarea>
               </div>
               <div class="valid-feedback"></div>
               <div class="invalid-feedback">Complete el campo con un correo válido.</div>
-              <div class="col-sm">
+              <div class="col-sm" id="selectEmailType">
                 <select class="form-select" aria-label="Default select example" id="selectType" required>
                   <option selected disabled value="">Elija un tipo</option>
                   <option value="lab">Laboral</option>
@@ -379,7 +385,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-primary" id="add-EmailsList">Agregar</button>
+        <button type="button" class="btn btn-primary" id="add-EmailsList"></button>
       </div>
     </div>
   </div>

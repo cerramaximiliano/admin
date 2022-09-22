@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const uniqueValidator = require('mongoose-unique-validator');
 let Schema = mongoose.Schema;
 
 let promotion = new Schema({
@@ -21,7 +20,7 @@ let promotion = new Schema({
         status: String,
         date: Date
       }
-    ]
+    ],
   });
 
   module.exports = mongoose.model('Promotion', promotion);
