@@ -106,7 +106,8 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 const promotionGeneral = ['promotion-1658258964667', 'Promoción general'];
 const promotionLab = ['promotionlaboral-1659113638889', 'Promoción laboral'];
 const promotionPrev =  ['promotionprevisional-1659115051606', 'Promoción previsional'];
-
+const templateEmail = await sendEmail.getTemplates(SES_CONFIG);
+console.log(templateEmail)
 
 // MANDAR CORREO PROMOCION GENERAL A TODOS LOS CONTACTOS CON ESTADO TRUE QUE NO SE LES HAY ENVIADO EL MAIL PROMOCION GENERAL
 cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {

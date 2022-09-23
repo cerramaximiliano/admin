@@ -16,8 +16,10 @@ function sendAWStemplateEmail (recipientEmail, template, templateData, SES_CONFI
 };
   return AWS_SES.sendBulkTemplatedEmail(params).promise()
 }
-// '{"subject":"Law||Analytics- Gestor Legal Online"}'
-// 'promotion-1658258964667'
+exports.getTemplates = (SES_CONFIG) => {
+  const AWS_SES = new AWS.SES(SES_CONFIG);
+  return AWS_SES.listTemplates({MaxItems: 10}).promise();
+};
 
 //==============================================================================
 //=========================FUNCTION PARA ENVIAR EMAILS DE ACCLAW================

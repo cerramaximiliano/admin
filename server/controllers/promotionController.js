@@ -16,9 +16,11 @@ exports.emailPromotion = (req, res, next) => {
     });
     Promotion.insertMany(list, { ordered: false })
     .then((result) => {
+        console.log(result, 19)
         Estadisticas.findOne()
         .sort({fecha: -1})
                     .then(results => {
+                        console.log(results, 23)
                         if( moment(results.fecha).isSame( moment(moment().format('YYYY-MM-DD')+ 'T00:00:00.000Z').utc()  ) ) {
                             Estadisticas.findOneAndUpdate({fecha: results.fecha}, 
                                                             {'$inc': {promoActivos:  (result.length) , promoInactivos: result.length}},
@@ -45,6 +47,7 @@ exports.emailPromotion = (req, res, next) => {
                             });
                             newRecord.save()
                                 .then(record => {
+                                    console.log(record)
                                     res.status(200).json({
                                         ok: true,
                                         status: 200,
@@ -52,6 +55,7 @@ exports.emailPromotion = (req, res, next) => {
                                     })
                                 })
                                 .catch(errRecord => {
+                                    console.log(errRecord, 58)
                                     res.status(500).json({
                                         ok: false,
                                         status: 500,
@@ -59,17 +63,17 @@ exports.emailPromotion = (req, res, next) => {
                                     })
                                 })
                         }
-
                     }).catch(errors => {
+                        console.log(errors, 68)
                         res.status(500).json({
                             ok: false,
                             status: 500,
                             err: errors
                         })
                     })
-
     })
     .catch((err) => {
+        console.log(err, 78)
         res.status(500).json({
             ok: false,
             status: 500,
