@@ -3,6 +3,37 @@ const Promotion = require('../models/promo.js');
 const Estadisticas = require('../models/estadisticas.js');
 const moment = require('moment');
 
+async function findUpdateEstadisticas (addNumber) {
+    Estadisticas.findOne()
+                .sort({fecha: -1})
+                .then(res => {
+                    (async () => {
+                        if( moment(res.fecha).isSame( moment(moment().format('YYYY-MM-DD')+ 'T00:00:00.000Z').utc()  ) ) {
+                            const updateSameDay = await Estadisticas.findOneAndUpdate({fecha: res.fecha}, {'$inc': {promoActivos:  addNumber}})
+                            console.log(updateSameDay)
+                            return updateSameDay
+                        }else{
+                            let newRecord = new Estadisticas({
+                                fecha: moment().format('YYYY-MM-DD')+ 'T00:00:00.000Z',
+                                promoActivos: Number(res.promoActivos) + addNumber,
+                                promoInactivos: Number(res.promoInactivos)
+                            });
+                            const saveNewDay = await newRecord.save();
+                            return saveNewDay
+                        }
+                    })()
+                })
+                .catch(err => {
+                    return res.status(500).json({
+                        ok: false,
+                        status: 500,
+                        err: err
+                    })
+                })
+}
+
+
+
 exports.emailPromotion = (req, res, next) => {
     const emailList = JSON.parse(req.body.email);
     const type = req.body.type;
@@ -20,10 +51,9 @@ exports.emailPromotion = (req, res, next) => {
         Estadisticas.findOne()
         .sort({fecha: -1})
                     .then(results => {
-                        console.log(results, 23)
                         if( moment(results.fecha).isSame( moment(moment().format('YYYY-MM-DD')+ 'T00:00:00.000Z').utc()  ) ) {
                             Estadisticas.findOneAndUpdate({fecha: results.fecha}, 
-                                                            {'$inc': {promoActivos:  (result.length) , promoInactivos: result.length}},
+                                                            {'$inc': {promoActivos:  (result.length)}},
                                                             )
                                         .then(updateRecord => {
                                             res.status(200).json({
@@ -73,7 +103,9 @@ exports.emailPromotion = (req, res, next) => {
                     })
     })
     .catch((err) => {
-        console.log(err, 78)
+        if(err.result.result.nInserted != undefined && err.result.result.nInserted > 0){
+            findUpdateEstadisticas(err.result.result.nInserted)
+        }
         res.status(500).json({
             ok: false,
             status: 500,
