@@ -1,8 +1,6 @@
 const express = require('express');
 const app = express();
-const nodemailer = require('nodemailer');
-const transporter = require('nodemailer-smtp-transport');
-const sendEmail = require('./nodemailer');
+const sendEmail = require('../config/email');
 const Tasas = require('../models/tasas');
 const TasasMensuales = require('../models/tasasMensuales');
 const DatosPrev = require('../models/datosprevisionales');
@@ -18,7 +16,6 @@ const lineReader = require('line-reader');
 const cheerio = require('cheerio');
 const download = require('download');
 const https = require('https');
-//============================RUTAS --------=================================
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
 //============================CHROME CONFIG=================================

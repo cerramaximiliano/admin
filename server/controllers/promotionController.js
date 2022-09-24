@@ -2,6 +2,7 @@ const path = require('path');
 const Promotion = require('../models/promo.js');
 const Estadisticas = require('../models/estadisticas.js');
 const moment = require('moment');
+const emailConfig = require('../config/email.js');
 
 async function findUpdateEstadisticas (addNumber) {
     Estadisticas.findOne()
@@ -10,7 +11,6 @@ async function findUpdateEstadisticas (addNumber) {
                     (async () => {
                         if( moment(res.fecha).isSame( moment(moment().format('YYYY-MM-DD')+ 'T00:00:00.000Z').utc()  ) ) {
                             const updateSameDay = await Estadisticas.findOneAndUpdate({fecha: res.fecha}, {'$inc': {promoActivos:  addNumber}})
-                            console.log(updateSameDay)
                             return updateSameDay
                         }else{
                             let newRecord = new Estadisticas({
@@ -187,7 +187,7 @@ exports.emailPromotionErase = (req, res, next) => {
     })
 };
 
-exports.emailUsers = (req, res, next) => {
+exports.emailUsers = async (req, res, next) => {
     Promotion.find({
         estado: true
     })
@@ -202,13 +202,22 @@ exports.emailUsers = (req, res, next) => {
         }
         Estadisticas.findOne()
         .sort({fecha: -1})
-        .then(data => {
+        .then( async (data) => {
+            let templates;
+            try{
+                templates = await emailConfig.getTemplates( JSON.parse(process.env.SES_CONFIG) );
+            }catch(errorCode){
+                console.log('ERROR')
+            }
+            console.log(templates)
             return res.render(path.join(__dirname, '../views/') + 'promotion.ejs', {
+                templates: templates.TemplatesMetadata,
                 data: result,
                 totales: data,
             })
         })
         .catch(err => {
+            console.log(err)
             return res.status(500).json({
                 ok: false,
                 status: 500,

@@ -1,6 +1,7 @@
+require('./config/env.js');
+require('dotenv').config();
 const express = require('express');
 const app = express();
-require('dotenv').config();
 const Tasas = require('./models/tasas');
 const http = require('http');
 const path = require('path');
@@ -10,7 +11,7 @@ const moment = require('moment');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cron = require('node-cron');
-const sendEmail = require('./routes/nodemailer');
+const sendEmail = require('./config/email');
 const Promotion = require('./models/promo');
 const Schedule = require('./models/schedule');
 const EscalaComercio = require('./models/escalasComercio');
@@ -58,18 +59,28 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     },
     },
     );
-    const data = await secretManager.getSecretValue({ SecretId: 'arn:aws:secretsmanager:sa-east-1:244807945617:secret:env-8tdon8' }).promise();
-    const secret = JSON.parse(data.SecretString);
-    process.env.URLDB = secret.URLDB;
-    process.env.CADUCIDAD_TOKEN = secret.CADUCIDAD_TOKEN;
-    process.env.SEED = secret.SEED;
-    process.env.AWS_SES_USER = secret.AWS_SES_USER;
-    process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
-    const SES_CONFIG = {
-        accessKeyId: secret.AWS_SES_KEY_ID,
-        secretAccessKey: secret.AWS_SES_ACCESS_KEY,
-        region: 'us-east-1',
-    };
+    // const data = await secretManager.getSecretValue({ SecretId: 'arn:aws:secretsmanager:sa-east-1:244807945617:secret:env-8tdon8' }).promise();
+    // const secret = JSON.parse(data.SecretString);
+    // process.env.URLDB = secret.URLDB;
+    // process.env.CADUCIDAD_TOKEN = secret.CADUCIDAD_TOKEN;
+    // process.env.SEED = secret.SEED;
+    // process.env.AWS_SES_USER = secret.AWS_SES_USER;
+    // process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
+    // process.env.SES_CONFIG = JSON.stringify({
+    //     accessKeyId: secret.AWS_SES_KEY_ID,
+    //     secretAccessKey: secret.AWS_SES_ACCESS_KEY,
+    //     region: 'us-east-1',
+    // });
+    // const SES_CONFIG = {
+    //     accessKeyId: secret.AWS_SES_KEY_ID,
+    //     secretAccessKey: secret.AWS_SES_ACCESS_KEY,
+    //     region: 'us-east-1',
+    // };
+
+    // console.log(JSON.parse(process.env.SES_CONFIG))
+    // const templates = await sendEmail.getTemplates(process.env.SES_CONFIG);
+    // console.log(templates);
+
     mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
         if(err) throw err;
         logger.info('Base de Datos ONLINE');
@@ -106,8 +117,6 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
 const promotionGeneral = ['promotion-1658258964667', 'Promoción general'];
 const promotionLab = ['promotionlaboral-1659113638889', 'Promoción laboral'];
 const promotionPrev =  ['promotionprevisional-1659115051606', 'Promoción previsional'];
-const templateEmail = await sendEmail.getTemplates(SES_CONFIG);
-console.log(templateEmail)
 
 // MANDAR CORREO PROMOCION GENERAL A TODOS LOS CONTACTOS CON ESTADO TRUE QUE NO SE LES HAY ENVIADO EL MAIL PROMOCION GENERAL
 cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {

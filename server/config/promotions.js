@@ -1,5 +1,5 @@
 const Promotion = require('../models/promo');
-const sendEmail = require('../routes/nodemailer');
+const sendEmail = require('./email');
 const path = require('path');
 const pathFiles = path.join(__dirname, '../');
 const pino = require('pino')
