@@ -8,6 +8,7 @@ const SES_CONFIG = {
     secretAccessKey: process.env.AWS_SES_PASS,
     region: 'us-east-1',
 };
+
 async function findUpdateEstadisticas (addNumber) {
     Tasas.findOne()
                 .sort({fecha: -1})
@@ -209,9 +210,9 @@ exports.emailUsers = async (req, res, next) => {
         .then( async (data) => {
             let templates;
             try{
-                console.log(process.env.SES_CONFIG)
+                console.log(SES_CONFIG)
                 templates = await emailConfig.getTemplates( SES_CONFIG );
-                console.log(templates)
+
             }catch(errorCode){
                 return res.status(500).json({
                     ok: false,

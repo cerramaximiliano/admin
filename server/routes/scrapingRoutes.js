@@ -1,8 +1,8 @@
 const path = require('path');
-
 const express = require('express');
-
 const {verificaAutenticacion} = require('./middleware');
+const dotenv = require('dotenv');
+dotenv.config()
 
 const tasasController = require('../controllers/scrapingtasas');
 const userController = require('../controllers/users');
