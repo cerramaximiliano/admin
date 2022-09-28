@@ -3,7 +3,11 @@ const Promotion = require('../models/promo.js');
 const Estadisticas = require('../models/estadisticas.js');
 const moment = require('moment');
 const emailConfig = require('../config/email.js');
-
+const SES_CONFIG = {
+    accessKeyId: process.env.AWS_SES_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SES_KEY_ID,
+    region: 'us-east-1',
+};
 async function findUpdateEstadisticas (addNumber) {
     Tasas.findOne()
                 .sort({fecha: -1})
@@ -205,9 +209,15 @@ exports.emailUsers = async (req, res, next) => {
         .then( async (data) => {
             let templates;
             try{
-                templates = await emailConfig.getTemplates( JSON.parse(process.env.SES_CONFIG) );
+                console.log(process.env.SES_CONFIG)
+                templates = await emailConfig.getTemplates( SES_CONFIG );
+                console.log(templates)
             }catch(errorCode){
-                console.log('ERROR')
+                return res.status(500).json({
+                    ok: false,
+                    status: 500,
+                    message: errorCode
+                })
             }
             return res.render(path.join(__dirname, '../views/') + 'promotion.ejs', {
                 templates: templates.TemplatesMetadata,

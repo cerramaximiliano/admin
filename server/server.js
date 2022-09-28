@@ -99,8 +99,14 @@ const promotionLab = ['promotionlaboral-1659113638889', 'Promoción laboral'];
 const promotionPrev =  ['promotionprevisional-1659115051606', 'Promoción previsional'];
 
 // MANDAR CORREO PROMOCION GENERAL A TODOS LOS CONTACTOS CON ESTADO TRUE QUE NO SE LES HAY ENVIADO EL MAIL PROMOCION GENERAL
+
 cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {
     (async () => {
+        const SES_CONFIG = {
+            accessKeyId: process.env.AWS_SES_ACCESS_KEY,
+            secretAccessKey: process.env.AWS_SES_KEY_ID,
+            region: 'us-east-1',
+        };
         try{
             const dataPromotions = await promotions.findNotEqualStatus(promotionGeneral[0], true, 70)
             logger.info(`Email Marketing. Usuarios para Email ${promotionGeneral[1]}: ${dataPromotions.length}`)
@@ -400,18 +406,33 @@ cron.schedule(`35 ${hour} * * *`, () => {
 
 
 cron.schedule(`45 20 * * *`, () => {
+    const SES_CONFIG = {
+        accessKeyId: process.env.AWS_SES_ACCESS_KEY,
+        secretAccessKey: process.env.AWS_SES_KEY_ID,
+        region: 'us-east-1',
+    };
     promotions.test('promotionprevisional-1659115051606', '{"subject":"Law||Analytics- Cálculos Previsionales"}', SES_CONFIG);
 }, {
 scheduled: true,
 timezone: "America/Argentina/Buenos_Aires"
 });
 cron.schedule(`50 20 * * *`, () => {
+    const SES_CONFIG = {
+        accessKeyId: process.env.AWS_SES_ACCESS_KEY,
+        secretAccessKey: process.env.AWS_SES_KEY_ID,
+        region: 'us-east-1',
+    };
     promotions.test('promotion-1658258964667', '{"subject":"Law||Analytics- Gestor Legal Online"}', SES_CONFIG);
 }, {
 scheduled: true,
 timezone: "America/Argentina/Buenos_Aires"
 });
 cron.schedule(`55 20 * * *`, () => {
+    const SES_CONFIG = {
+        accessKeyId: process.env.AWS_SES_ACCESS_KEY,
+        secretAccessKey: process.env.AWS_SES_KEY_ID,
+        region: 'us-east-1',
+    };
     promotions.test('promotionlaboral-1659113638889', '{"subject":"Law||Analytics- Cálculos Laborales"}', SES_CONFIG);
 }, {
 scheduled: true,
