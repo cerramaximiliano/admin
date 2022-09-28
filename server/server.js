@@ -1,11 +1,12 @@
-require('./config/env.js');
-require('dotenv').config();
+const retrieveSecrets = require('./config/env.js');
+const dotenv = require('dotenv');
 const express = require('express');
 const app = express();
 const Tasas = require('./models/tasas');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const fsPromises = require("fs").promises;
 const bodyParser = require('body-parser');
 const moment = require('moment');
 const mongoose = require('mongoose');
@@ -19,22 +20,10 @@ const EscalaDomestico =  require('./models/escalasDomestico');
 const promotions = require('./config/promotions');
 const ejs = require('ejs');
 const cookieParser = require('cookie-parser');
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'html');
-app.use(cors());
-app.use(cookieParser());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
 const downloadBCRADDBB = require('./routes/scrapingweb.js');
 const puppeteer = require('puppeteer');
-
 const scrapingRoutes = require('./routes/scrapingRoutes');
-app.use(express.static(path.join(__dirname, '../public')));
-
 const AWS = require('aws-sdk');
-const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
-
 (async () => {
     const hour = '05';
     const hourPromotionInitial = '10';
@@ -59,40 +48,30 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     },
     },
     );
-    // const data = await secretManager.getSecretValue({ SecretId: 'arn:aws:secretsmanager:sa-east-1:244807945617:secret:env-8tdon8' }).promise();
-    // const secret = JSON.parse(data.SecretString);
-    // process.env.URLDB = secret.URLDB;
-    // process.env.CADUCIDAD_TOKEN = secret.CADUCIDAD_TOKEN;
-    // process.env.SEED = secret.SEED;
-    // process.env.AWS_SES_USER = secret.AWS_SES_USER;
-    // process.env.AWS_SES_PASS = secret.AWS_SES_PASS;
-    // process.env.SES_CONFIG = JSON.stringify({
-    //     accessKeyId: secret.AWS_SES_KEY_ID,
-    //     secretAccessKey: secret.AWS_SES_ACCESS_KEY,
-    //     region: 'us-east-1',
-    // });
-    // const SES_CONFIG = {
-    //     accessKeyId: secret.AWS_SES_KEY_ID,
-    //     secretAccessKey: secret.AWS_SES_ACCESS_KEY,
-    //     region: 'us-east-1',
-    // };
-
-    // console.log(JSON.parse(process.env.SES_CONFIG))
-    // const templates = await sendEmail.getTemplates(process.env.SES_CONFIG);
-    // console.log(templates);
-console.log(process.env.URLDB)
-
-
-    mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
-        if(err) throw err;
-        logger.info('Base de Datos ONLINE');
-    });
-    const server = app.listen(3000, () => {
+    const server = app.listen(3000, async () => {
+    try {
+		const secretsString = await retrieveSecrets();
+		await fsPromises.writeFile(".env", secretsString);
+    	dotenv.config();
+        mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
+            if(err) throw err;
+            logger.info('Base de Datos ONLINE');
+        });
         logger.info('Escuchando puerto 3000');
-    });
-    server.on('error', error => logger.error(`Error: ${JSON.stringify(error)}`));
-    app.use(scrapingRoutes);
+	} catch (error) {
+		console.log("Error in setting environment variables", error);
+		process.exit(-1);
+	}
+});
 
+    app.use(scrapingRoutes);
+    app.set('views', path.join(__dirname, 'views'));
+    app.set('view engine', 'html');
+    app.use(cors());
+    app.use(cookieParser());
+    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(bodyParser.json());
+    app.use(express.static(path.join(__dirname, '../public')));
     // cron.schedule(`45 * * * *`, () => {
     //     (async() => {
     //         logger.info('Ejecucion de tareas de rutina una vez por hora.')
@@ -114,7 +93,6 @@ console.log(process.env.URLDB)
     //     scheduled: true,
     //     timezone: "America/Argentina/Buenos_Aires"
     // })
-
 
 const promotionGeneral = ['promotion-1658258964667', 'Promoción general'];
 const promotionLab = ['promotionlaboral-1659113638889', 'Promoción laboral'];
