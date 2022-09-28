@@ -16,4 +16,6 @@ process.env.SES_CONFIG = JSON.stringify({
     region: 'us-east-1',
 });
 
+console.log(process.env.URLDB)
+
 })();
