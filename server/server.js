@@ -80,6 +80,8 @@ const secretManager = new AWS.SecretsManager({ region: 'sa-east-1'});
     // console.log(JSON.parse(process.env.SES_CONFIG))
     // const templates = await sendEmail.getTemplates(process.env.SES_CONFIG);
     // console.log(templates);
+console.log(process.env.URLDB)
+
 
     mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
         if(err) throw err;
