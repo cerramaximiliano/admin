@@ -4,8 +4,8 @@ const Estadisticas = require('../models/estadisticas.js');
 const moment = require('moment');
 const emailConfig = require('../config/email.js');
 const SES_CONFIG = {
-    accessKeyId: process.env.AWS_SES_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SES_KEY_ID,
+    accessKeyId: process.env.AWS_SES_USER,
+    secretAccessKey: process.env.AWS_SES_PASS,
     region: 'us-east-1',
 };
 async function findUpdateEstadisticas (addNumber) {
