@@ -33,7 +33,6 @@ exports.usersLogin = (req, res, next) => {
     const token = jwt.sign({
       usuario: usuarioDB
     }, process.env.SEED, {expiresIn: process.env.CADUCIDAD_TOKEN})
-    console.log(token);
     res.cookie('access_token', token, {
       maxAge: 86400000,
       httpOnly: true,

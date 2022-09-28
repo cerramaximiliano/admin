@@ -64,7 +64,6 @@ const AWS = require('aws-sdk');
 	}
 });
 
-    app.use(scrapingRoutes);
     app.set('views', path.join(__dirname, 'views'));
     app.set('view engine', 'html');
     app.use(cors());
@@ -72,6 +71,7 @@ const AWS = require('aws-sdk');
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json());
     app.use(express.static(path.join(__dirname, '../public')));
+    app.use(scrapingRoutes);
     // cron.schedule(`45 * * * *`, () => {
     //     (async() => {
     //         logger.info('Ejecucion de tareas de rutina una vez por hora.')
