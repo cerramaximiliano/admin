@@ -5,7 +5,7 @@ const moment = require('moment');
 const emailConfig = require('../config/email.js');
 
 async function findUpdateEstadisticas (addNumber) {
-    Estadisticas.findOne()
+    Tasas.findOne()
                 .sort({fecha: -1})
                 .then(res => {
                     (async () => {
@@ -209,7 +209,6 @@ exports.emailUsers = async (req, res, next) => {
             }catch(errorCode){
                 console.log('ERROR')
             }
-            console.log(templates)
             return res.render(path.join(__dirname, '../views/') + 'promotion.ejs', {
                 templates: templates.TemplatesMetadata,
                 data: result,

@@ -1,10 +1,8 @@
 'use strict';
 window.addEventListener("load", () => {
-
+console.log(true);
 const modalEmails = new bootstrap.Modal(document.querySelector('#modal-EmailMarketing'));
 const forms = document.querySelector('.needs-validation');
-
-
 document.querySelector('#updateData').addEventListener('click', (e) => {
     const select = document.querySelector('#selectUpdateData');
     const optionSelected = select.options[select.selectedIndex].value;
@@ -116,6 +114,26 @@ document.querySelector("#sub-Emails").addEventListener('click', (e) => {
 document.querySelector('#view-Email').addEventListener('click',function(e) {
     window.open('/emailusers', '_self');
 });
+document.querySelector('#homeDashboard').addEventListener('click', function(e) {
+    window.open('/home', '_self');
+});
+document.querySelector('#tasasDashboard').addEventListener('click', function(e) {
+    try {
+        window.open('/tasasdashboard', '_self');
+        console.log(true)
+    }catch(err){
+        console.log(err)
+    }
+});
+document.querySelector('#usersDashboard').addEventListener('click', function(e) {
+    console.log(true)
+    try{
+        window.open('/usersdashboard', '_self');
+    }catch (err){
+        console.log(err)
+    }
+});
+
 
 
 });

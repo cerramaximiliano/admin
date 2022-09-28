@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
-    <title>Law Analytics - Dashboard</title>
+    <title>Law Analytics - Dashboard Tasas</title>
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/dashboard/">
     <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../assets/toastr/toastr.min.css">
@@ -63,6 +63,7 @@
     </style>
 
     
+    <!-- Custom styles for this template -->
   </head>
   <body>
     
@@ -217,7 +218,7 @@
       </div>
     </nav>
 
-
+    <canvas class="my-4 w-100 d-none" id="myChart" width="900" height="380"></canvas>
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -234,134 +235,78 @@
         </div>
       </div>
 
-      <canvas class="my-4 w-100" id="myChart" width="900" height="380"></canvas>
-
-      <h2>Section title</h2>
+      <h2>Usuarios Suscriptos</h2>
       <div class="table-responsive">
         <table class="table table-striped table-sm">
           <thead>
             <tr>
-              <th scope="col">#</th>
-              <th scope="col">Header</th>
-              <th scope="col">Header</th>
-              <th scope="col">Header</th>
-              <th scope="col">Header</th>
+              <th scope="col">Fecha creado</th>
+              <th scope="col">Email</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Membresía</th>
+              <th scope="col">Cálculos</th>
+              <th scope="col">Documentos</th>
+              <th scope="col">Ultimo Cálculo</th>
+              <th scope="col">Ultimo Documento</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>1,001</td>
-              <td>random</td>
-              <td>data</td>
-              <td>placeholder</td>
-              <td>text</td>
-            </tr>
-            <tr>
-              <td>1,002</td>
-              <td>placeholder</td>
-              <td>irrelevant</td>
-              <td>visual</td>
-              <td>layout</td>
-            </tr>
-            <tr>
-              <td>1,003</td>
-              <td>data</td>
-              <td>rich</td>
-              <td>dashboard</td>
-              <td>tabular</td>
-            </tr>
-            <tr>
-              <td>1,003</td>
-              <td>information</td>
-              <td>placeholder</td>
-              <td>illustrative</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,004</td>
-              <td>text</td>
-              <td>random</td>
-              <td>layout</td>
-              <td>dashboard</td>
-            </tr>
-            <tr>
-              <td>1,005</td>
-              <td>dashboard</td>
-              <td>irrelevant</td>
-              <td>text</td>
-              <td>placeholder</td>
-            </tr>
-            <tr>
-              <td>1,006</td>
-              <td>dashboard</td>
-              <td>illustrative</td>
-              <td>rich</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,007</td>
-              <td>placeholder</td>
-              <td>tabular</td>
-              <td>information</td>
-              <td>irrelevant</td>
-            </tr>
-            <tr>
-              <td>1,008</td>
-              <td>random</td>
-              <td>data</td>
-              <td>placeholder</td>
-              <td>text</td>
-            </tr>
-            <tr>
-              <td>1,009</td>
-              <td>placeholder</td>
-              <td>irrelevant</td>
-              <td>visual</td>
-              <td>layout</td>
-            </tr>
-            <tr>
-              <td>1,010</td>
-              <td>data</td>
-              <td>rich</td>
-              <td>dashboard</td>
-              <td>tabular</td>
-            </tr>
-            <tr>
-              <td>1,011</td>
-              <td>information</td>
-              <td>placeholder</td>
-              <td>illustrative</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,012</td>
-              <td>text</td>
-              <td>placeholder</td>
-              <td>layout</td>
-              <td>dashboard</td>
-            </tr>
-            <tr>
-              <td>1,013</td>
-              <td>dashboard</td>
-              <td>irrelevant</td>
-              <td>text</td>
-              <td>visual</td>
-            </tr>
-            <tr>
 
-              <td>1,014</td>
-              <td>dashboard</td>
-              <td>illustrative</td>
-              <td>rich</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,015</td>
-              <td>random</td>
-              <td>tabular</td>
-              <td>information</td>
-              <td>text</td>
-            </tr>
+            <% for (var i = 0; i < data.length ; i++) { %>
+              <tr>
+                <% if (data[i].createtime === undefined || data[i].createtime === null) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                <td><%= (new Date(data[i].createtime).getUTCDate()).toString() + '/' + (new Date(data[i].createtime).getMonth() + 1).toString() + '/' + (new Date(data[i].createtime).getFullYear()).toString()  %></td>
+                <% } %>
+
+                <% if (data[i].email === undefined || data[i].email === null) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                  <td><%= data[i].email %></td>
+                <% } %>
+
+                <% if (data[i].nombre === undefined || data[i].nombre === null) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                  <td><%= data[i].nombre  %></td>
+                <% } %>
+
+                <% if (data[i].suscripcion === undefined || data[i].suscripcion === null) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                  <td><%= data[i].suscripcion  %></td>
+                <% } %>
+
+                <% if (data[i].calculos === undefined || data[i].calculos === null) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                  <td><%= data[i].calculos.length  %></td>
+                <% } %>
+
+                <% if (data[i].documentos === undefined || data[i].documentos === null) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                  <td><%= data[i].documentos.length  %></td>
+                <% } %>
+
+                <% if (data[i].calculos === undefined || data[i].calculos === null || data[i].calculos.length === 0 ||  data[i].calculos.length === undefined ) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                  <td><%= (data[i].calculos[data[i].calculos.length-1].fecha).toLocaleDateString()  %></td>
+                <% } %>
+
+                <% if (data[i].documentos === undefined || data[i].documentos === null || data[i].documentos.length === 0  ||  data[i].documentos.length === undefined ) {%>
+                  <td style="    color: red; font-weight: bold;"> N/A </td>
+                <% } else { %>
+                  <td><%= (data[i].documentos[data[i].documentos.length-1].fecha).toLocaleDateString()  %></td>
+                <% } %>
+
+
+              </tr>
+            <% }; %>
+
+
           </tbody>
         </table>
       </div>

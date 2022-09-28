@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const sendEmail = require('../config/email');
+const sendEmail = require('../config/email.js');
 const Tasas = require('../models/tasas');
 const TasasMensuales = require('../models/tasasMensuales');
 const DatosPrev = require('../models/datosprevisionales');
@@ -136,7 +136,7 @@ pdf(dataBuffer).then(function(data){
                                 logger.error(`Tasa Pasiva BNA. Error en base de datos ${err}`)
                             }else{
                              let info = [moment().format("YYYY-MM-DD"), (tasasList[0][0] / 365), 'Tasa Pasiva BNA']
-                             sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                             sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                              .then(result => {
                                if(result === true){
                                 logger.info(`Tasa Pasiva BNA. Envio de mail correcto. ${result}`)
@@ -162,7 +162,7 @@ pdf(dataBuffer).then(function(data){
                                 logger.error(`Tasa Pasiva BNA. Error en base de datos ${err}`)
                             }else{
                              let info = [moment().format("YYYY-MM-DD"), datos.tasaPasivaBNA, 'Tasa Pasiva BNA']
-                             sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                             sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                              .then(result => {
                                if(result === true){
                                 logger.info(`Tasa Pasiva BNA. Envio de mail correcto. ${result}`)
@@ -354,7 +354,7 @@ async function convertExcelFileToJsonUsingXlsx (file_read) {
                       };
                     }else{
                         let info = x.push('Tasa Pasiva BCRA')
-                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', x)
+                        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', x)
                         .then(result => {
                           if(result === true){
                             logger.info(`Tasa Pasiva BCRA. Envio de mail correcto. ${result}`)
@@ -418,7 +418,7 @@ async function convertXlsICL (file_read){
             });
                 if (actualizaciones.length === 0){
                     logger.info(`Tasa ICL BCRA. Envio de mail sin actualizaciones.`)
-                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['ICL'])
+                        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['ICL'])
                         .then(result => {
                           if(result === true){
                             logger.info(`Tasa ICL BCRA. Envio de mail correcto. ${result}`)
@@ -459,7 +459,7 @@ async function convertXlsICL (file_read){
                             let arrayText = arrayToText(actualizaciones,1);
                             let dataToSend = ['ICL', arrayText];
                             //Enviar mail con todas las tasas actualizadas
-                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
+                        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
                         .then(result => {
                           if(result === true){
                             logger.info(`Tasa ICL BCRA. Envio de mail correcto. ${result}`)
@@ -535,7 +535,7 @@ async function convertXlsCER (file_read){
                 });
                 if (actualizaciones.length === 0){
                     logger.info(`Tasa CER BCRA. Enviar mail sin actualizaciones.`)
-                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['CER'])
+                        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesND', ['CER'])
                         .then(result => {
                         if(result === true){
                             logger.info(`Tasa CER BCRA. Envio de mail correcto. ${result}`)
@@ -574,7 +574,7 @@ async function convertXlsCER (file_read){
                             let arrayText = arrayToText(actualizaciones,1);
                             let dataToSend = ['CER', arrayText];
                             //Enviar mail con todas las tasas actualizadas
-                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
+                        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesArray', dataToSend)
                         .then(result => {
                         if(result === true){
                             logger.info(`Tasa CER BCRA. Envio de mail correcto. ${result}`)
@@ -702,7 +702,7 @@ async function saveInfolegData(data){
             data.forEach(function(x) {
                 text += `<p>Fecha de publicación: ${moment(x.fecha).format('DD-MM-YYYY')}</p><p>Norma: ${x.norma}</p><p>Asunto: ${x.tag}</p><p>Link: ${x.link}</p><br>`
             });
-            sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesNormas', text)
+            sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizacionesNormas', text)
             .then(result => {
                 if(result === true){
                     logger.info(`Infoleg. Envío de mail correcto. ${result}`)
@@ -893,7 +893,7 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                             logger.error(`Tasa Activa BNA. Error en DDBB. ${err}`)
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
-                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                             logger.info(`Tasa Activa BNA. Envio de mail correcto. ${result}`)
@@ -920,7 +920,7 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                             logger.error(`Tasa Activa BNA. Error en DDBB. ${err}`)
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), datos[tasaModel] , tasaText]
-                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                             logger.info(`Tasa Activa BNA. Envio de mail correcto. ${result}`)
@@ -946,7 +946,7 @@ async function saveTasaActivaData(tasaData, dateData, tasa){
                             logger.error(`Tasa Activa BNA. Error en DDBB. ${err}`)
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, tasaText]
-                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                             logger.info(`Tasa Activa BNA. Envio de mail correcto. ${result}`)
@@ -1056,7 +1056,7 @@ async function actualizacionCategorias(){
                     Categorias.bulkWrite(datosNuevos).then(result => {
                         logger.info(`Categorias. Bulkoperation OK.`)
                         let info = [datosNuevos[0].updateOne.filter.fecha, JSON.stringify(datosNuevos[0].updateOne.update['$set'])]
-                        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'categorias', info)
+                        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'categorias', info)
                         .then(result => {
                           if(result === true){
                             logger.info(`Categorias. Envio de mail correcto. ${result}`)
@@ -1075,7 +1075,7 @@ async function actualizacionCategorias(){
     }else{
         let info = 'No hay actualizaciones disponibles para categorías de autónomos.'
         logger.info(`Categorias. No hay actualizaciones disponibles.`)
-        sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'n/a', info)
+        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'n/a', info)
         .then(result => {
           if(result === true){
             logger.info(`Categorias. Envio de mail correcto. ${result}`)

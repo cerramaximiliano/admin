@@ -50,3 +50,18 @@ exports.usersLogin = (req, res, next) => {
 exports.usersHome = (req, res, next) => {
 res.render(path.join(__dirname, '../views/') + 'home.ejs')
 };
+
+exports.usersDashboard = (req, res, next) => {
+  User.find()
+      .then(result => {
+        return res.render(path.join(__dirname, '../views/') + 'users.ejs', {
+          data: result,
+      })
+      })
+      .catch(err => {
+        return res.status(500).json({
+          ok: false,
+          status: 500
+        })
+      })
+}
