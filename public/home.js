@@ -138,7 +138,19 @@ if(filesTasaPasiva != null){
         modalFiles.show()
     })
 };
-
-
-
+document.querySelector('#logger').addEventListener('click', function(e) {
+    console.log(true)
+    let requestOptions = {
+        method: "GET",
+        redirect: "follow",
+      };
+    fetch('/logger', requestOptions)
+    .then((res) => res.json())
+    .then((result) => {
+        console.log(result.data)
+    })
+    .catch((err) => {
+        console.log(err)
+    });
+})
 });

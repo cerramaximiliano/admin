@@ -19,6 +19,6 @@ router.get('/emailusers', verificaAutenticacion, promotionController.emailUsers)
 router.get('/tasasdashboard', verificaAutenticacion, tasasController.tasasDashboard);
 router.get('/usersdashboard', verificaAutenticacion, userController.usersDashboard);
 router.get('/filesnames', verificaAutenticacion, filesController.getNames)
-
+router.get('/logger', verificaAutenticacion, filesController.getLogger)
 
 module.exports = router;
