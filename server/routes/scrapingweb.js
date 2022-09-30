@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
 const sendEmail = require('../config/email.js');
+const pino = require('pino');
+const {logger} = require('../config/pino');
 const Tasas = require('../models/tasas');
 const TasasMensuales = require('../models/tasasMensuales');
 const DatosPrev = require('../models/datosprevisionales');
@@ -27,28 +29,7 @@ const chromeOptions = {
     ignoreDefaultArgs: ["--disable-extensions"],
     executablePath: '/usr/bin/chromium-browser',
   };
-  //============================PINO LOGGER=================================
-  const pino = require('pino')
-  const logger = pino({
-      transport: {
-      targets :[
-          {
-          target: 'pino-pretty',
-          options: {
-          colorize: true,
-          translateTime: 'dd-mm-yyyy, HH:MM:ss',
-          }},
-          {
-              target: 'pino-pretty',
-              options: {
-              colorize: false,
-              translateTime: 'dd-mm-yyyy, HH:MM:ss',
-              destination: `${pathFiles}/logger.log`,
-              }},
-      ]
-  },
-  },
-  );
+
 //============================FUNCIONES PJN SCRAPING======================
 async function scrapingPjn (){
         const browser = await puppeteer.launch(chromeOptions);
@@ -57,9 +38,7 @@ async function scrapingPjn (){
         'formPublica:camaraNumAni'
 };
 
-
-
-  //============================FUNCIONES TASA PASIVA BNA======================
+//============================FUNCIONES TASA PASIVA BNA======================
 function parseBNAPasiva(routeFile){
 let tasasList = [];
 async function dataTasaPasiva(data, ind){
@@ -205,8 +184,8 @@ async function downloadPBNA(){
         });
         let file_url = 'https://www.bna.com.ar' + url;
         let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
-        let fileRoute = DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + file_name
-        logger.info(`Tasa Pasiva BNA. ${fileRoute}`)
+        let fileRoute = DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + file_name;
+        logger.info(`Tasa Pasiva BNA. ${fileRoute}`);
         let file = fs.createWriteStream(fileRoute, {'flags': 'w'});
         const request = https.get(file_url, function(response) {
             response.pipe(file);
