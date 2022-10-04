@@ -1,6 +1,6 @@
 const fileConfig = require('../config/files.js');
 const fs = require('fs');
-
+const path = require('path');
 
 exports.getNames = async (req, res, next) => {
 
@@ -13,8 +13,7 @@ exports.getNames = async (req, res, next) => {
 };
 
 exports.getLogger = (req, res, next) => {
-    console.log(true)
-    fs.readFile('./server/logger.log', 'utf8', function(err, data) {
+    fs.readFile(path.join('./server/' ,'logger.log'), 'utf8', function(err, data) {
         if (err){
             return res.status(500).json({
                 ok: false,
