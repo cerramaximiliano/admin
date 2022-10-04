@@ -147,8 +147,18 @@ document.querySelector('#logger').addEventListener('click', function(e) {
     fetch('/logger', requestOptions)
     .then((res) => res.json())
     .then((result) => {
-        console.log(result)
-        console.log(result.data)
+        const loggerModal = new bootstrap.Modal(document.querySelector('#modal-logger'));
+        const array = result.data.split('\n');
+        const div = document.querySelector('#modal-logger-div');
+        array.slice().reverse()
+            .forEach(function(ele) {
+            let p = document.createElement('p');
+            p.innerHTML = ele;
+            div.appendChild(p);
+
+        })
+        loggerModal.show();
+        
     })
     .catch((err) => {
         console.log(err)
