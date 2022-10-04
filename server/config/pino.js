@@ -1,4 +1,6 @@
 const pino = require('pino');
+const path = require('path');
+const filePath = path.join(__dirname,  '../');
 const logger = pino({
     transport: {
     targets :[
@@ -13,7 +15,7 @@ const logger = pino({
             options: {
             colorize: false,
             translateTime: 'dd-mm-yyyy, HH:MM:ss',
-            destination: `./server/logger.log`
+            destination: `${filePath}/logger.log`
             }},
     ]
 },
