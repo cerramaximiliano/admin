@@ -147,6 +147,7 @@ document.querySelector('#logger').addEventListener('click', function(e) {
     fetch('/logger', requestOptions)
     .then((res) => res.json())
     .then((result) => {
+        console.log(result)
         console.log(result.data)
     })
     .catch((err) => {
