@@ -263,7 +263,7 @@
                 <% if (data[i].fecha === undefined || data[i].fecha === null) {%>
                   <td style="    color: red; font-weight: bold;"> N/A </td>
                 <% } else { %>
-                <td><%= (new Date(data[i].fecha).getUTCDate()).toString() + '/' + (new Date(data[i].fecha).getMonth() + 1).toString() + '/' + (new Date(data[i].fecha).getFullYear()).toString()  %></td>
+                <td><%= (new Date(data[i].fecha).getUTCDate()).toString() + '/' + (new Date(data[i].fecha).getUTCMonth() + 1).toString() + '/' + (new Date(data[i].fecha).getFullYear()).toString()  %></td>
                 <% } %>
 
                 <% if (data[i].tasaPasivaBCRA === undefined || data[i].tasaPasivaBCRA === null) {%>
