@@ -27,7 +27,7 @@ const chromeOptions = {
     defaultViewport: null,
     args: ['--no-sandbox'],
     ignoreDefaultArgs: ["--disable-extensions"],
-    // executablePath: '/usr/bin/chromium-browser',
+    executablePath: '/admin/node_modules/puppeteer/.local-chromium/linux-982053/chrome-linux/chrome',
   };
 
 //============================FUNCIONES PJN SCRAPING======================
