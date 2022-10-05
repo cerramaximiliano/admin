@@ -27,7 +27,7 @@ const chromeOptions = {
     defaultViewport: null,
     args: ['--no-sandbox'],
     ignoreDefaultArgs: ["--disable-extensions"],
-    executablePath: '/usr/bin/chromium-browser',
+    // executablePath: '/usr/bin/chromium-browser',
   };
 
 //============================FUNCIONES PJN SCRAPING======================
