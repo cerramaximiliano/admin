@@ -26,7 +26,7 @@ const scrapingRoutes = require('./routes/scrapingRoutes');
 const pino = require('pino');
 const {logger} = require('./config/pino');
 const AWS = require('aws-sdk');
-const hour = '09';
+const hour = '10';
 const hourPromotionInitial = '10';
 
 const server = app.listen(3000, async () => {
