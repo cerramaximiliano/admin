@@ -121,14 +121,14 @@ document.querySelector('#tasasDashboard').addEventListener('click', function(e) 
     try {
         window.open('/tasasdashboard', '_self');
     }catch(err){
-        console.log(err)
+        toastr.error(`Ha ocurrido un error en el servidor: ${err}`)
     }
 });
 document.querySelector('#usersDashboard').addEventListener('click', function(e) {
     try{
         window.open('/usersdashboard', '_self');
     }catch (err){
-        console.log(err)
+        toastr.error(`Ha ocurrido un error en el servidor: ${err}`)
     }
 });
 const filesTasaPasiva = document.querySelector('#filesTasaPasiva');
@@ -161,7 +161,7 @@ document.querySelector('#logger').addEventListener('click', function(e) {
         
     })
     .catch((err) => {
-        console.log(err)
+        toastr.error(`Ha ocurrido un error en el servidor: ${err}`)
     });
 })
 
@@ -192,7 +192,7 @@ document.querySelector('#loggerApp').addEventListener('click', function(e) {
         
     })
     .catch((err) => {
-        console.log(err)
+        toastr.error(`Ha ocurrido un error en el servidor: ${err}`)
     });
 })
 
