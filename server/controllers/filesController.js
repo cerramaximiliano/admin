@@ -40,7 +40,7 @@ exports.getLoggerApp = async (req, res, next) => {
         body: JSON.stringify(body),
         headers: {'Content-Type': 'application/json'}
     };
-    const response = await fetch('http://localhost:8080/logger-app', options);
+    const response = await fetch('http:/www.lawanalytics.app/logger-app', options);
     const data = await response.json();
     return  res.status(data.status).json({
         status: data.status,
