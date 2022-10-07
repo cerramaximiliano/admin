@@ -36,7 +36,6 @@ exports.usersLogin = (req, res, next) => {
     res.cookie('access_token', token, {
       maxAge: 86400000,
       httpOnly: true,
-      sameSite: 'strict'
     })
     res.status(200).json({
         ok: true,

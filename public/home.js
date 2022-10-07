@@ -1,6 +1,6 @@
 'use strict';
 window.addEventListener("load", () => {
-console.log(true);
+
 const modalEmails = new bootstrap.Modal(document.querySelector('#modal-EmailMarketing'));
 const forms = document.querySelector('.needs-validation');
 document.querySelector('#updateData').addEventListener('click', (e) => {
@@ -139,7 +139,6 @@ if(filesTasaPasiva != null){
     })
 };
 document.querySelector('#logger').addEventListener('click', function(e) {
-    console.log(true)
     let requestOptions = {
         method: "GET",
         redirect: "follow",
@@ -150,6 +149,7 @@ document.querySelector('#logger').addEventListener('click', function(e) {
         const loggerModal = new bootstrap.Modal(document.querySelector('#modal-logger'));
         const array = result.data.split('\n');
         const div = document.querySelector('#modal-logger-div');
+        div.innerHTML = '';
         array.slice().reverse()
             .forEach(function(ele) {
             let p = document.createElement('p');
@@ -164,4 +164,37 @@ document.querySelector('#logger').addEventListener('click', function(e) {
         console.log(err)
     });
 })
+
+document.querySelector('#loggerApp').addEventListener('click', function(e) {
+    let requestOptions = {
+        method: "GET",
+        redirect: "follow",
+      };
+    fetch('/logger-app', requestOptions)
+    .then((res) => res.json())
+    .then((result) => {
+        if(result.status === 200){
+        const loggerModal = new bootstrap.Modal(document.querySelector('#modal-logger'));
+        const array = result.data.split('\n');
+        const div = document.querySelector('#modal-logger-div');
+        div.textContent = '';
+        array.slice().reverse()
+            .forEach(function(ele) {
+            let p = document.createElement('p');
+            p.innerHTML = ele;
+            div.appendChild(p);
+
+        })
+        loggerModal.show();
+        }else{
+            console.log(`Error`)
+        }
+        
+    })
+    .catch((err) => {
+        console.log(err)
+    });
+})
+
+
 });

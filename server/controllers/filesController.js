@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const pathFiles = path.join(__dirname, '../');
 const pathServer = pathFiles;
+const fetch = require('node-fetch');
 
 exports.getNames = async (req, res, next) => {
     const resultNames = await fileConfig.getNameFiles('./server/files/serverFiles/tasa_pasiva_BNA');
@@ -29,6 +30,21 @@ exports.getLogger = (req, res, next) => {
         })
         
     });
+}
 
+
+exports.getLoggerApp = async (req, res, next) => {
+    const body = {access_token: req.cookies.access_token};
+    const options =  {
+        method: 'post',
+        body: JSON.stringify(body),
+        headers: {'Content-Type': 'application/json'}
+    };
+    const response = await fetch('http://localhost:8080/logger-app', options);
+    const data = await response.json();
+    return  res.status(data.status).json({
+        status: data.status,
+        data: data.data
+    })
 
 }

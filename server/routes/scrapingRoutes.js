@@ -20,5 +20,6 @@ router.get('/tasasdashboard', verificaAutenticacion, tasasController.tasasDashbo
 router.get('/usersdashboard', verificaAutenticacion, userController.usersDashboard);
 router.get('/filesnames', verificaAutenticacion, filesController.getNames)
 router.get('/logger', verificaAutenticacion, filesController.getLogger)
+router.get('/logger-app', verificaAutenticacion, filesController.getLoggerApp)
 
 module.exports = router;
