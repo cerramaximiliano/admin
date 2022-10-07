@@ -26,7 +26,7 @@ const scrapingRoutes = require('./routes/scrapingRoutes');
 const pino = require('pino');
 const {logger} = require('./config/pino');
 const AWS = require('aws-sdk');
-const hour = '05';
+const hour = '12';
 const hourPromotionInitial = '10';
 
 const server = app.listen(3000, async () => {
@@ -118,7 +118,7 @@ cron.schedule(`10 ${hour} * * *`, () => {
     timezone: "America/Argentina/Buenos_Aires"
 });
 
-cron.schedule(`15 ${hour} * * *`, () => {
+cron.schedule(`18 ${hour} * * *`, () => {
 (async () => {
         let today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
         logger.info(`Tasa Activa BNA. Actualizando fecha ${today}`)
@@ -156,7 +156,7 @@ cron.schedule(`15 ${hour} * * *`, () => {
                           };
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
-                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                             logger.info('Tasa Activa BNA. Envio de mail correcto.');
@@ -183,7 +183,7 @@ cron.schedule(`15 ${hour} * * *`, () => {
                             logger.error(`Tasa Activa BNA. Error en Base de Datos ${err}`);
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), datos.tasaActivaBNA , 'Tasa Activa BNA']
-                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                             logger.info('Tasa Activa BNA. Envio de mail correcto.');
@@ -210,7 +210,7 @@ cron.schedule(`15 ${hour} * * *`, () => {
                             logger.error(`Tasa Activa BNA. Error en Base de Datos ${err}`);
                         }else{
                          let info = [moment().format("YYYY-MM-DD"), tasaData, 'Tasa Activa BNA']
-                         sendEmail.sendEmail('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
+                         sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
                          .then(result => {
                            if(result === true){
                             logger.info('Tasa Activa BNA. Envio de mail correcto.');
