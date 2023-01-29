@@ -227,13 +227,13 @@ function downloadBCRADDBB(tasa){
     let file_url;
     let file_name;
     if (tasa === 'pasivaBCRA'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind2022.xls';
+        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind2023.xls';
         file_name = 'data';
     }else if(tasa === 'cer'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer2022.xls'
+        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer2023.xls'
         file_name = 'dataCER';
     }else if(tasa === 'icl'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl2022.xls'
+        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl2023.xls'
         file_name = 'dataICL';
     };
     const filePath = DOWNLOAD_DIR;
