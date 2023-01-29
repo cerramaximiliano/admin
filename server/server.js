@@ -96,6 +96,8 @@ cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {
 
 
 
+downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
+
 cron.schedule(`00 ${hour} * * *`, () => {
     downloadBCRADDBB.downloadBCRADDBB('pasivaBCRA');
     logger.info('Tasa Pasiva BCRA. Funcion de actualizacion ejecutada.');

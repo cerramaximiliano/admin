@@ -240,11 +240,11 @@ function downloadBCRADDBB(tasa){
     const file = download(file_url, filePath)
     .then((result) => {
                 if (tasa === 'pasivaBCRA') {
-                    convertExcelFileToJsonUsingXlsx('ind2022.xls');
+                    convertExcelFileToJsonUsingXlsx('ind2023.xls');
                 }else if(tasa === 'cer'){
-                    convertXlsCER('cer2022.xls');
+                    convertXlsCER('cer2023.xls');
                 }else if(tasa === 'icl'){
-                    convertXlsICL('icl2022.xls');
+                    convertXlsICL('icl2023.xls');
                 }
     })
     .catch((err) => {
@@ -355,7 +355,7 @@ async function convertExcelFileToJsonUsingXlsx (file_read) {
                 logger.info(`Tasa pasiva BCRA. No hay actualizacion disponible.`);
             }
         });
-        return generateJSONFile(parsedData, 'dataBCRATasaPasiva2022.json');
+        return generateJSONFile(parsedData, 'dataBCRATasaPasiva2023.json');
     };
 
 async function convertXlsICL (file_read){
