@@ -53,22 +53,23 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(scrapingRoutes);
 
-const promotionGeneral = ['promotion-1658258964667', 'Promoción general'];
-const promotionLab = ['promotionlaboral-1659113638889', 'Promoción laboral'];
-const promotionPrev =  ['promotionprevisional-1659115051606', 'Promoción previsional'];
+const promotionGeneral = ['promotion-1658258964667', 'Promocion general'];
+const promotionLab = ['promotionlaboral-1659113638889', 'Promocion laboral'];
+const promotionPrev =  ['promotionprevisional-1659115051606', 'Promocion previsional'];
 
 // MANDAR CORREO PROMOCION GENERAL A TODOS LOS CONTACTOS CON ESTADO TRUE QUE NO SE LES HAY ENVIADO EL MAIL PROMOCION GENERAL
 
-cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {
+// cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {
     (async () => {
         const SES_CONFIG = {
-            accessKeyId: process.env.AWS_SES_ACCESS_KEY,
-            secretAccessKey: process.env.AWS_SES_KEY_ID,
+            accessKeyId: process.env.AWS_SES_KEY_ID,
+            secretAccessKey: process.env.AWS_SES_ACCESS_KEY,
             region: 'us-east-1',
         };
         try{
             const dataPromotions = await promotions.findNotEqualStatus(promotionGeneral[0], true, 70)
             logger.info(`Email Marketing. Usuarios para Email ${promotionGeneral[1]}: ${dataPromotions.length}`)
+
             if(dataPromotions.length > 0){
                 const resultsParse = promotions.parseResults(dataPromotions);
                 logger.info(`Email Marketing. Resultados parseados. Cantidad de emails con 14 destinatarios: ${resultsParse.length}`);
@@ -89,10 +90,10 @@ cron.schedule(`40 ${hourPromotionInitial} * *  Monday-Friday`, () => {
             logger.error(`Email Marketing Error: ${err}`)
         };
     })()
-}, {
-    scheduled: true,
-    timezone: "America/Argentina/Buenos_Aires"
-});
+// }, {
+//     scheduled: true,
+//     timezone: "America/Argentina/Buenos_Aires"
+// });
 
 
 
@@ -310,6 +311,7 @@ cron.schedule(`50 20 * * *`, () => {
 scheduled: true,
 timezone: "America/Argentina/Buenos_Aires"
 });
+
 cron.schedule(`55 20 * * *`, () => {
     const SES_CONFIG = {
         accessKeyId: process.env.AWS_SES_ACCESS_KEY,

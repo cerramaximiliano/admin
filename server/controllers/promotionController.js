@@ -8,7 +8,7 @@ const SES_CONFIG = {
     secretAccessKey: process.env.AWS_SES_ACCESS_KEY,
     region: 'us-east-1',
 };
-
+console.log(SES_CONFIG)
 async function findUpdateEstadisticas (addNumber) {
     Tasas.findOne()
                 .sort({fecha: -1})

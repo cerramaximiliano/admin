@@ -11,8 +11,8 @@ module.exports = () => {
                 URLDB = secret.URLDB;
                 CADUCIDAD_TOKEN = secret.CADUCIDAD_TOKEN;
                 SEED = secret.SEED;
-                AWS_SES_USER = secret.AWS_SES_USER;
-                AWS_SES_PASS = secret.AWS_SES_PASS;
+                AWS_SES_USER = secret.AWS_SES_KEY_ID;
+                AWS_SES_PASS = secret.AWS_SES_ACCESS_KEY;
                 SES_CONFIG = JSON.stringify({
                     accessKeyId: secret.AWS_SES_KEY_ID,
                     secretAccessKey: secret.AWS_SES_ACCESS_KEY,

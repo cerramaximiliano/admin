@@ -9,6 +9,7 @@ const pathFiles = path.join(__dirname, '../');
 
 function sendAWStemplateEmail (recipientEmail, template, templateData, SES_CONFIG) {
   console.log(true, 'template')
+  console.log(SES_CONFIG)
   const AWS_SES = new AWS.SES(SES_CONFIG);
   let params = {
   Destinations:  recipientEmail,
