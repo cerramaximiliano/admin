@@ -227,24 +227,24 @@ function downloadBCRADDBB(tasa){
     let file_url;
     let file_name;
     if (tasa === 'pasivaBCRA'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind2022.xls';
+        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind2023.xls';
         file_name = 'data';
     }else if(tasa === 'cer'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer2022.xls'
+        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer2023.xls'
         file_name = 'dataCER';
     }else if(tasa === 'icl'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl2022.xls'
+        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl2023.xls'
         file_name = 'dataICL';
     };
     const filePath = DOWNLOAD_DIR;
     const file = download(file_url, filePath)
     .then((result) => {
                 if (tasa === 'pasivaBCRA') {
-                    convertExcelFileToJsonUsingXlsx('ind2022.xls');
+                    convertExcelFileToJsonUsingXlsx('ind2023.xls');
                 }else if(tasa === 'cer'){
-                    convertXlsCER('cer2022.xls');
+                    convertXlsCER('cer2023.xls');
                 }else if(tasa === 'icl'){
-                    convertXlsICL('icl2022.xls');
+                    convertXlsICL('icl2023.xls');
                 }
     })
     .catch((err) => {
@@ -355,7 +355,7 @@ async function convertExcelFileToJsonUsingXlsx (file_read) {
                 logger.info(`Tasa pasiva BCRA. No hay actualizacion disponible.`);
             }
         });
-        return generateJSONFile(parsedData, 'dataBCRATasaPasiva2022.json');
+        return generateJSONFile(parsedData, 'dataBCRATasaPasiva2023.json');
     };
 
 async function convertXlsICL (file_read){
