@@ -2,8 +2,6 @@ const mongoose = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
 let Schema = mongoose.Schema;
 
-
-
 let datosPrevSchema = new Schema({
     fecha: {
     type: Date,
