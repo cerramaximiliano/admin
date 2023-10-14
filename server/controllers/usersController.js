@@ -3,6 +3,25 @@ const User = require('../models/users');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const {collections} = require('../db');
+
+exports.getUserByEmail = async (email) => {
+    try {
+        const user = await collections.Users.findOne({email});
+        return user;
+    }catch(err){
+        throw new Error(err)
+    }
+};
+
+exports.getAllUsers = async () => {
+    try {
+        const users = await collections.Users.find({}).toArray();
+         return users;
+    }catch(err){
+        throw new Error(err)
+    }
+};
 
 exports.usersLogin = (req, res, next) => {
     const email = req.body.email;
@@ -43,23 +62,3 @@ exports.usersLogin = (req, res, next) => {
     })
       });
 };
-
-
-exports.usersHome = (req, res, next) => {
-res.render(path.join(__dirname, '../views/') + 'home.ejs')
-};
-
-exports.usersDashboard = (req, res, next) => {
-  User.find()
-      .then(result => {
-        return res.render(path.join(__dirname, '../views/') + 'users.ejs', {
-          data: result,
-      })
-      })
-      .catch(err => {
-        return res.status(500).json({
-          ok: false,
-          status: 500
-        })
-      })
-}
