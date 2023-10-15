@@ -20,4 +20,49 @@ exports.validatePeriod = (inputFromDate, inputToDate) => {
   }else{
     return true
   }
-}
+};
+
+exports.datesSpanish = (date) => {
+  let dateArray = date.split('-');
+  switch (dateArray[1]) {
+      case 'ene':
+          dateArray[1] = 1;
+          break
+      case 'feb':
+          dateArray[1] = 2;
+          break
+      case 'mar':
+          dateArray[1] = 3;
+          break
+      case 'abr':
+          dateArray[1] = 4;
+          break
+      case 'may':
+          dateArray[1] = 5;
+          break
+      case 'jun':
+          dateArray[1] = 6;
+          break
+      case 'jul':
+          dateArray[1] = 7;
+          break
+      case 'ago':
+          dateArray[1] = 8;
+          break
+      case 'sep':
+          dateArray[1] = 9;
+          break
+      case 'oct':
+          dateArray[1] = 10;
+          break
+      case 'nov':
+          dateArray[1] = 11;
+          break
+      case 'dic':
+          dateArray[1] = 12;
+          break
+      default:
+          break;
+  };
+  return dateArray.join('-');
+};

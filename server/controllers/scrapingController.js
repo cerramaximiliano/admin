@@ -1,24 +1,23 @@
 const path = require('path');
 const moment = require('moment');
-const scrapingFunctions = require('../routes/scrapingweb.js');
+const scrapingFunctions = require('../utils/scrapingweb.js');
 const Tasas = require('../models/tasas.js');
 
-exports.downloadUrlFile = (req, res, next) => {
-    const tasa = req.query.tasa;
-    if(tasa === 'icl' || tasa === 'cer' || tasa === 'pasivaBCRA'){
-        scrapingFunctions.downloadBCRADDBB(tasa);
-        res.status(200).json({
-            ok: true,
-            status: 200
-        })
-    }else if(tasa === 'pasivaBNA'){
-        scrapingFunctions.downloadPBNA();
-        res.status(200).json({
-            ok: true,
-            status: 200
-        })
+exports.downloadUrlFile = async (tasa) => {
+    try {
+        if(tasa === 'icl' || tasa === 'cer' || tasa === 'pasivaBCRA'){
+            const findTasa = await scrapingFunctions.downloadBCRADDBB(tasa);
+            console.log(findTasa);
+            return findTasa;
+        }else if(tasa === 'pasivaBNA'){
+            const findTasa = await scrapingFunctions.downloadPBNA();
+            return findTasa
+        }
+    }catch(err){
+        throw new Error(err)
     }
 };
+
 exports.tasasDashboard = async (req, res, next) => {
     Tasas.find({
         estado: true,
