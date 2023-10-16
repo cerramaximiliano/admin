@@ -8,6 +8,7 @@ const TasasMensuales = require('../models/tasasMensuales.js');
 const DatosPrev = require('../models/datosprevisionales.js');
 const Categorias = require('../models/categorias.js');
 const Normas = require('../models/normas.js')
+const Tasks = require('../models/tasks');
 const moment = require('moment');
 const path = require('path');
 const fs = require('fs');
@@ -16,12 +17,19 @@ const pdf = require('pdf-parse');
 const lineReader = require('line-reader');
 const cheerio = require('cheerio');
 const download = require('download');
-const https = require('https');
+const axios = require('axios');
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
 const chromeOptions = require('../config/puppeteer');
-const {convertExcelFileToJsonUsingXlsx, convertXls} = require('../utils/excelToJsonUtils.js');
-const {getLength} = require('../utils/mathUtils');
+const firebaseConfig = require('../config/firebase');
+
+const {initializeApp} = require('firebase/app');
+const { ref, getDownloadURL, uploadBytesResumable } = require('firebase/storage');
+const { getStorage } = require('firebase/storage');
+
+const {convertXls} = require('../utils/excelToJsonUtils.js');
+const {downloadFile} = require('../utils/downloadPdfUtils')
+const {parseBNAPasiva} = require('../utils/parsePdfUtils.js');
 const dateUtils = require('../utils/dateUtils.js');
 
 //============================FUNCIONES PJN SCRAPING======================
@@ -32,134 +40,33 @@ async function scrapingPjn (){
         'formPublica:camaraNumAni'
 };
 
-//============================FUNCIONES TASA PASIVA BNA======================
-function parseBNAPasiva(routeFile){
-let tasasList = [];
-async function dataTasaPasiva(data, ind){
-    let regexNumber = /\d*(\.|\,)?\d*/;
-    let check;
-    let tasas = [];
-    let checkPercentaje = data.search('%');
-    if(checkPercentaje === -1){
-        false
-    }else{
-        let words = data.split('%');
-        let checkWords = words.filter(x => x != '');
-        if(checkWords.length === 0){
-            false
-        }else{
-            words.forEach(function(x, index) {
-                let checkWords = x.match(regexNumber);
-                if (checkWords[0] != undefined && checkWords[0] != '') {
-                    check = parseFloat(checkWords[0].replace(',','.').replace(' ',''))
-                    tasas.push(check);
-                }else{
-                    false
-                }
-            });
-        }
-    }
-    tasasList.push(tasas);
-    return tasasList
-}
-
-let arrayLine = [];
-let datesTasas = [];
-let dataBuffer = fs.readFileSync(routeFile);
-pdf(dataBuffer).then(function(data){
-    let text = data.text;
-    fs.writeFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + 'tasaPasivaBNA.txt',text)
-    arrayLine = fs.readFileSync(DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + 'tasaPasivaBNA.txt').toString().split("\n");
-    arrayLine.forEach(function(x, index){
-        let resultNumbers = dataTasaPasiva(x, index);
-        let myRegexp = /(\d{2}|\d{1})[-.\/](\d{2}|\d{1})(?:[-.\/]\d{2}(\d{2})?)?/g; //Check pattern only
-        let validDate = /(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])?|(?:(?:16|[2468][048]|[3579][26])00)?)))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))(\4)?(?:(?:1[6-9]|[2-9]\d)?\d{2})?$/g;
-        x = myRegexp.exec(x);
-        if(x != null){
-            x[0] = validDate.exec(x[0])
-            if(x[0] != null && moment(x[0][0], 'DD-MM-YY').isValid() === true){
-                datesTasas.push(x[0][0]);
-            }
-        }
-    });
-    tasasList = tasasList.filter(x => x.length != 0);
-    if(typeof tasasList[0][0] === 'number' && moment(datesTasas[0], 'DD-MM-YY').isValid() === true){
-        let dateToSave = moment(moment(datesTasas[0], "DD-MM-YY").format('YYYY-MM-DD') + 'T00:00').utc(true);
-        Tasas.findOne({'tasaPasivaBNA': {$gte: 0}})
-        .sort({'fecha': -1})
-        .exec((err, datos) => {
-            if(err) {
-                logger.error(`Tasa pasiva BNA. Error en base de datos ${err}`)
-            }else{
-                let today = moment(moment().format('YYYY-MM-DD') + 'T00:00').utc(true)
-                if(moment(datos.fecha).isSame(today, 'day')){
-                    logger.info(`Tasa Pasiva BNA. Hoy es igual al ultimo dia DDBB. ${datos.fecha, today}`)
-                }else if(moment(datos.fecha).isBefore(today, 'day')){
-                    logger.info(`Tasa Pasiva BNA. El ultimo dia DDBB es anterior a hoy. Actualizar. ${datos.fecha, today}`)
-                    if(dateToSave.isSameOrBefore(today, 'day')){
-                        logger.info(`Tasa Pasiva BNA. El dia de Hoy es mayor o igual al de la pagina web. Actualizar con WEB. ${dateToSave, today}`)
-                        let filter = {fecha: today};
-                        let update = {tasaPasivaBNA: Number(tasasList[0][0] / 365)};
-                        Tasas.findOneAndUpdate(filter, update, {
-                            new: true,
-                            upsert: true
-                        })
-                        .exec((err, datos) => {
-                            if(err) {
-                                logger.error(`Tasa Pasiva BNA. Error en base de datos ${err}`)
-                            }else{
-                             let info = [moment().format("YYYY-MM-DD"), (tasasList[0][0] / 365), 'Tasa Pasiva BNA']
-                             sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
-                             .then(result => {
-                               if(result === true){
-                                logger.info(`Tasa Pasiva BNA. Envio de mail correcto. ${result}`)
-                               }else{
-                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto ${result}`)
-                               }
-                             })
-                             .catch(err => {
-                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto ${err}`)
-                             })
-                            }
-                        });
-                    }else if(dateToSave.isAfter(today, 'day')){
-                        logger.info(`Tasa Pasiva BNA. El dia de Hoy es anterior al dia de la pagina web. Actualizar con DDBB. ${dateToSave, today}`)
-                        let filter = {fecha: today};
-                        let update = {tasaPasivaBNA: Number(datos.tasaPasivaBNA)};
-                        Tasas.findOneAndUpdate(filter, update, {
-                            new: true,
-                            upsert: true
-                        })
-                        .exec((err, datos) => {
-                            if(err) {
-                                logger.error(`Tasa Pasiva BNA. Error en base de datos ${err}`)
-                            }else{
-                             let info = [moment().format("YYYY-MM-DD"), datos.tasaPasivaBNA, 'Tasa Pasiva BNA']
-                             sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', info)
-                             .then(result => {
-                               if(result === true){
-                                logger.info(`Tasa Pasiva BNA. Envio de mail correcto. ${result}`)
-                               }else{
-                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto. ${result}`)
-                               }
-                             })
-                             .catch(err => {
-                                logger.error(`Tasa Pasiva BNA. Envio de mail incorrecto. ${err}`)
-                             })
-                            }
-                        });
-                    }
-                }
-            }
+//========================FUNCITON TASA ACTIVA=========================================
+async function downloadActivaBNA () {
+    const browser = await puppeteer.launch(chromeOptions);
+    try {
+        const page = await browser.newPage();
+        await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
+        const ele = await page.evaluate(() => {
+            const tag = document.querySelectorAll("#collapseTwo ul li");
+            const title = document.querySelector("#collapseTwo h3");
+            let text = [];
+            text.push(title.innerText);
+            tag.forEach((tag) => {
+                text.push(tag.innerText)
+            })
+            return text
         });
-    }else{
-        logger.warn(`Tasa Pasiva BNA. Requiere actualizacion manual.`)
+        await browser.close();
+        console.log(ele)
+        return ele
     }
-}).catch(function(err){
-    logger.error(`Tasa Pasiva BNA. Requiere actualizacion manual. ${err}`)
-});
-}
-async function downloadPBNA(){
+    catch (err) {
+        throw new Error(err)
+    }
+};
+
+//============================FUNCION TASA PASIVA BNA======================
+async function downloadPasivaBNA(){
     try {
         const browser = await puppeteer.launch(chromeOptions);
         const page = await browser.newPage();
@@ -172,68 +79,66 @@ async function downloadPBNA(){
                 let matchPasivas = $(this).text().match(/tasas de operaciones pasivas/i);
                 if(matchPasivas != null){
                     url = $(this).children().attr('href')
-                    logger.info(`Tasa Pasiva BNA. Busqueda URL: ${url}`)
                 }
             })
         });
-        let file_url = 'https://www.bna.com.ar' + url;
-        let file_name = 'tasa_pasiva_BNA_' + moment().format('YYYY-MM-DD') + '.pdf';
-        let fileRoute = DOWNLOAD_DIR + 'tasa_pasiva_BNA/' + file_name;
-        logger.info(`Tasa Pasiva BNA. ${fileRoute}`);
-        let file = fs.createWriteStream(fileRoute, {'flags': 'w'});
-        const request = https.get(file_url, function(response) {
-            response.pipe(file);
-            file.on('finish', () => {
-                file.close();
-                parseBNAPasiva(fileRoute);
-    });
-    });
+        const file_url = `https://www.bna.com.ar${url}`;
+        const file_name = `${moment().format('YYYY-MM-DD')}.pdf`;
+        const {data} = await axios({
+            method: 'get',
+            url: file_url,
+            responseType: 'arraybuffer',
+          });
+        initializeApp(firebaseConfig);
+        const storage = getStorage();
+        const storageRef = ref(storage, `tasa-pasiva-BNA/${file_name}`);
+        const metadata = {
+            contentType: 'application/pdf'
+        };
+        const snapshot = await uploadBytesResumable(storageRef, data, metadata);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        if(downloadURL){ 
+            const newTask = {
+                task: `Archivo guardado Firebase - Tasa Pasiva BNA`,
+                fecha: new Date(),
+                done: true,
+                description: `${downloadURL}`
+            }
+            await Tasks.findOneAndUpdate({fecha: `${(moment().format('YYYY-MM-DD'))}T00:00`}, {$addToSet: {tasks: newTask}}, {upsert: true})}
+        const parse = parseBNAPasiva(downloadURL);
     }catch(err){
-        logger.error(`Tasa Pasiva BNA. Error al ejectutar función de guardado de pdf: ${err}`)
-
+        throw new Error(err)
     }
 };
 
-
-//===================CONFIGURACION WEB SCRAPING=================================
-//==============================================================================
-//=========================TASA PASIVA==========================================
-
-async function downloadBCRADDBB(tasa){
+//============================FUNCIONES TASAS BCRA /ICL/CER/PASIVA======================
+async function downloadBCRADDBB(tasa, type){
     let file_url;
-    let file_name;
-    if (tasa === 'pasivaBCRA'){
+    if (tasa === 'tasaPasivaBCRA'){
         file_url= process.env.URL_BCRA_PASIVA;
-        file_name = 'data';
     }else if(tasa === 'cer'){
         file_url=process.env.URL_BCRA_CER
-        file_name = 'dataCER';
     }else if(tasa === 'icl'){
         file_url=process.env.URL_BCRA_ICL
-        file_name = 'dataICL';
     };
     const file = await download(file_url, DOWNLOAD_DIR);
     if( !file ) {throw new Error (`Download file ${tasa} fail`)}
     else{
-        if (tasa === 'pasivaBCRA'){
-            const file = await convertExcelFileToJsonUsingXlsx('ind2023.xls');
+        if (tasa === 'tasaPasivaBCRA'){
+            console.log(tasa, 'pasiva');
+            const file = await convertXls('ind2023.xls', tasa, type);
             return file
         }else if (tasa === 'cer') {
-            const file = await convertXls('cer2023.xls', tasa);
+            console.log(tasa, 'cer');
+            const file = await convertXls('cer2023.xls', tasa, type);
             return file
         }else if (tasa === 'icl'){
-            const file = await convertXlsICL('cer2023.xls', tasa);
+            console.log(tasa, 'icl');
+            const file = await convertXls('icl2023.xls', tasa, type);
             return file
         }
     }
 };
-
-
-
-
-
-
-
 
 
 const findLastRecord = DatosPrev.findOne({'estado': true})
@@ -346,30 +251,6 @@ async function scrapingInfoleg(){
 };
 
 
-//========================SCRAPING TASA ACTIVA=========================================
-async function scrapingTasaActiva () {
-    const browser = await puppeteer.launch(chromeOptions);
-    try {
-        const page = await browser.newPage();
-        await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
-        const ele = await page.evaluate(() => {
-            const tag = document.querySelectorAll("#collapseTwo ul li");
-            const title = document.querySelector("#collapseTwo h3");
-            let text = [];
-            text.push(title.innerText);
-            tag.forEach((tag) => {
-                text.push(tag.innerText)
-            })
-            return text
-        });
-        await browser.close();
-        logger.info(`Tasa Activa BNA. Resultados scraping. ${ele}`)
-        return ele
-    }
-    catch (error) {
-        logger.error(`Tasa Activa BNA. Resultados scraping con errores. ${error}`)
-    }
-};
 
 async function regexDates(tasaActiva){
     let myRegexp = /(\d{2}|\d{1})[-.\/](\d{2}|\d{1})(?:[-.\/]\d{2}(\d{2})?)?/g; //Check pattern only
@@ -714,13 +595,12 @@ async function findAndCreateNewDDBB(){
 
 exports.findAndCreateNewDDBB = findAndCreateNewDDBB;
 exports.downloadBCRADDBB = downloadBCRADDBB;
-exports.scrapingTasaActiva = scrapingTasaActiva;
+exports.downloadActivaBNA = downloadActivaBNA;
 exports.regexDates = regexDates;
 exports.regexTextCheck = regexTextCheck;
 exports.findTasa = findTasa;
 exports.dataTasa = dataTasa;
-exports.downloadPBNA = downloadPBNA;
-exports.parseBNAPasiva = parseBNAPasiva;
+exports.downloadPasivaBNA = downloadPasivaBNA;
 exports.scrapingInfoleg = scrapingInfoleg;
 exports.saveInfolegData = saveInfolegData;
 exports.actualizacionCategorias = actualizacionCategorias;

@@ -3,17 +3,20 @@ const moment = require('moment');
 const scrapingFunctions = require('../utils/scrapingweb.js');
 const Tasas = require('../models/tasas.js');
 
-exports.downloadUrlFile = async (tasa) => {
+exports.downloadUrlFile = async (tasa, type) => {
     try {
-        if(tasa === 'icl' || tasa === 'cer' || tasa === 'pasivaBCRA'){
-            const findTasa = await scrapingFunctions.downloadBCRADDBB(tasa);
-            console.log(findTasa);
+        if(tasa === 'icl' || tasa === 'cer' || tasa === 'tasaPasivaBCRA'){
+            const findTasa = await scrapingFunctions.downloadBCRADDBB(tasa, type);
             return findTasa;
-        }else if(tasa === 'pasivaBNA'){
-            const findTasa = await scrapingFunctions.downloadPBNA();
+        }else if(tasa === 'tasaPasivaBNA'){
+            const findTasa = await scrapingFunctions.downloadPasivaBNA();
             return findTasa
+        }else if(tasa === 'tasaActivaBNA'){
+            const findTasa = await scrapingFunctions.downloadActivaBNA();
+            return findTasa;
         }
     }catch(err){
+        console.log(err)
         throw new Error(err)
     }
 };

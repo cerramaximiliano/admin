@@ -1,3 +1,5 @@
+const moment = require('moment');
+
 function arrayToText(array, position){
     let string = ''
     array.forEach(function(x){

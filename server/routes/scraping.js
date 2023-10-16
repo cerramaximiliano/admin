@@ -6,9 +6,9 @@ const tasasController = require('../controllers/scrapingController');
 const promotionController = require('../controllers/promotionController');
 const filesController = require('../controllers/filesController');
 
-const {findTasasByName} = require('../handlers/scrapingHandler');
+const {findAndUpdateTasasByName} = require('../handlers/scrapingHandler');
 
-router.get('/tasas', findTasasByName);
+router.get('/tasas', findAndUpdateTasasByName);
 
 // router.get('/emailusers', verificaAutenticacion, promotionController.emailUsers);
 
