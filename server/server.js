@@ -1,27 +1,15 @@
-const express = require('express');
-const app = express();
-require('./config/config');
-const http = require('http');
-const fs = require('fs');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const cron = require('node-cron');
-app.use(cors());
+const express = require("express");
 
+const router = require("./routes");
+const morgan = require("morgan");
+const cors = require("cors");
+const server = express();
 
-mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useUnifiedTopology: true}, (err, res) => {
-    if(err) throw err;
-    console.log('Base de datos ONLINE');
-});
+server.use(morgan("dev"));
+server.use(express.json({limit: '50mb'}));
+server.use(express.urlencoded({extended: false}, {limit: '50mb'}));
+server.use(cors());
 
+server.use(router);
 
-app.listen(process.env.PORT, () => {
-    console.log('Escuchando el puerto', process.env.PORT);
-
-});
-
-
-
-
-
+module.exports = server;
