@@ -11,12 +11,13 @@ exports.downloadUrlFile = async (tasa, type) => {
         }else if(tasa === 'tasaPasivaBNA'){
             const findTasa = await scrapingFunctions.downloadPasivaBNA();
             return findTasa
-        }else if(tasa === 'tasaActivaBNA'){
-            const findTasa = await scrapingFunctions.downloadActivaBNA();
+        }else if( tasa === 'tasaActivaCNAT2658'){
+            const findTasa = await scrapingFunctions.downloadActivaBNA(tasa);
             return findTasa;
+        }else if( tasa === 'tasaActivaBNA' ){
+            
         }
     }catch(err){
-        console.log(err)
         throw new Error(err)
     }
 };
