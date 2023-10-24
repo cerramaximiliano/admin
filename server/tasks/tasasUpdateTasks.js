@@ -2,7 +2,7 @@ const axios = require('axios');
 const cron = require('node-cron');
 const URL_BASE = 'http://localhost:4000'
 
-cron.schedule(`25 8 * * *`, async () => {
+cron.schedule(`33 8 * * *`, async () => {
 const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
 console.log(requestCer)
 const requestPasivaBCRA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBCRA`);
