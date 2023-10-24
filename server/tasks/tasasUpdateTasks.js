@@ -5,7 +5,7 @@ const URL_BASE = 'http://localhost:3000'
 const moment = require('moment');
 const hour = moment().get('hours');
 const minute = moment().get('minutes')+1;
-
+console.log(hour, minute);
 
 cron.schedule(`${minute} ${hour} * * *`, async () => {
 const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
