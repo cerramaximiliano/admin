@@ -12,9 +12,7 @@ const moment = require('moment');
 const path = require('path');
 const fs = require('fs');
 const puppeteer = require('puppeteer');
-
 const cheerio = require('cheerio');
-const download = require('download');
 const axios = require('axios');
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
@@ -37,6 +35,7 @@ async function downloadActivaBNA ( tasa ) {
     try {
         console.log('puppeter tasa activa')
         const browser = await puppeteer.launch(chromeOptions);
+        console.log(browser)
         const page = await browser.newPage();
         await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
         const ele = await page.evaluate(() => {

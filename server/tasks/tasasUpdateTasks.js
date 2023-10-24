@@ -3,21 +3,16 @@ const cron = require('node-cron');
 const URL_BASE = 'http://localhost:3000'
 
 const moment = require('moment');
-const hour = moment().get('hours')-3;
-const minute = moment().get('minutes')+1;
-console.log(hour, minute);
+// const hour = moment().get('hours')-3;
+// const minute = moment().get('minutes')+1;
+// console.log(hour, minute);
 
-cron.schedule(`${minute} ${hour} * * *`, async () => {
+cron.schedule(`${0} ${6} * * *`, async () => {
 const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
-console.log(requestCer.data)
 const requestPasivaBCRA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBCRA`);
-console.log(requestPasivaBCRA.data)
 const requestIcl = await axios(`${URL_BASE}/scraping/tasas?tasa=icl`);
-console.log(requestIcl.data);
 const requestActivaBNA2658 = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaActivaCNAT2658`);
-console.log(requestActivaBNA2658.data);
 const requestPasivaBNA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBNA`);
-console.log(requestPasivaBNA.data);
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
