@@ -1,6 +1,6 @@
 const axios = require('axios');
 const cron = require('node-cron');
-const URL_BASE = 'http://localhost:4000'
+const URL_BASE = 'http://localhost:3000'
 
 cron.schedule(`33 8 * * *`, async () => {
 const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
