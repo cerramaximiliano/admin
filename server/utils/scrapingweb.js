@@ -181,13 +181,13 @@ async function downloadBCRADDBB(tasa, type){
     if( !downloadURL ) {throw new Error (`Download file ${tasa} fail`)}
     else{
         if (tasa === 'tasaPasivaBCRA'){
-            const file = await convertXls('ind2023.xls', tasa, type, downloadURL);
+            const file = await convertXls(downloadURL, tasa, type);
             return file
         }else if (tasa === 'cer') {
-            const file = await convertXls('cer2023.xls', tasa, type, downloadURL);
+            const file = await convertXls(downloadURL, tasa, type);
             return file
         }else if (tasa === 'icl'){
-            const file = await convertXls('icl2023.xls', tasa, type, downloadURL);
+            const file = await convertXls(downloadURL, tasa, type);
             return file
         }
     }
