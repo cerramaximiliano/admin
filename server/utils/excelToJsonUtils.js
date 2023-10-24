@@ -12,7 +12,6 @@ const Tasas = require('../models/tasas');
 const Tasks = require('../models/tasks');
 
 async function convertXls (url, tasa, type){
-    console.log(true, 14)
     try {
         const {data} = await axios({
             method: 'get',
@@ -24,9 +23,7 @@ async function convertXls (url, tasa, type){
         const tempData = xlsx.utils.sheet_to_json(file.Sheets[sheetNames[0]]);
         const parsedData = tasa === 'tasaPasivaBCRA' ? parseDataForPasivaBcra(tempData) : parseDataForIclCer(tempData);
         const findTasas = await Tasas.findOne({[tasa]: {$gte: 0}}).sort({fecha: -1});
-        console.log(true, 22)
         if ( findTasas ){
-            console.log(true, 24)
             let actualizaciones = [];
             if (type === 'all') {
                 actualizaciones.push(...parsedData);
@@ -62,7 +59,6 @@ async function convertXls (url, tasa, type){
                     return saveTasks;
             }
         }else {
-            console.log(true, 59)
             const find = filterUpdateObject(parsedData, tasa)
             const bulkOp = await Tasas.bulkWrite(find);
             let date = (moment().format('YYYY-MM-DD')) + 'T00:00';
@@ -76,7 +72,6 @@ async function convertXls (url, tasa, type){
             return saveTasks;
         }
     }catch(err){
-        console.log(err)
         throw new Error(err)
     }
 }

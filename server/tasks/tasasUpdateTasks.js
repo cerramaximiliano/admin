@@ -9,15 +9,15 @@ console.log(hour, minute);
 
 cron.schedule(`${minute} ${hour} * * *`, async () => {
 const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
-console.log(requestCer)
+console.log(requestCer.data)
 const requestPasivaBCRA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBCRA`);
-console.log(requestPasivaBCRA)
+console.log(requestPasivaBCRA.data)
 const requestIcl = await axios(`${URL_BASE}/scraping/tasas?tasa=icl`);
-console.log(requestIcl);
+console.log(requestIcl.data);
 const requestActivaBNA2658 = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaActivaCNAT2658`);
-console.log(requestActivaBNA2658);
+console.log(requestActivaBNA2658.data);
 const requestPasivaBNA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBNA`);
-console.log(requestPasivaBNA);
+console.log(requestPasivaBNA.data);
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
