@@ -35,7 +35,7 @@ const { IoTSecureTunneling } = require('aws-sdk');
 //========================FUNCITON TASA ACTIVA=========================================
 async function downloadActivaBNA ( tasa ) {
     try {
-        console.log('puppeter tasa pasiva')
+        console.log('puppeter tasa activa')
         const browser = await puppeteer.launch(chromeOptions);
         const page = await browser.newPage();
         await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
@@ -181,7 +181,6 @@ async function downloadBCRADDBB(tasa, type){
     };
     const snapshot = await uploadBytesResumable(storageRef, data, metadata);
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log(downloadURL)
     if( !downloadURL ) {throw new Error (`Download file ${tasa} fail`)}
     else{
         if (tasa === 'tasaPasivaBCRA'){
