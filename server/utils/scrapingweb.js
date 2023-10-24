@@ -35,6 +35,7 @@ const { IoTSecureTunneling } = require('aws-sdk');
 //========================FUNCITON TASA ACTIVA=========================================
 async function downloadActivaBNA ( tasa ) {
     try {
+        console.log('puppeter tasa pasiva')
         const browser = await puppeteer.launch(chromeOptions);
         const page = await browser.newPage();
         await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
@@ -110,6 +111,7 @@ async function downloadActivaBNA ( tasa ) {
 //============================FUNCION TASA PASIVA BNA======================
 async function downloadPasivaBNA(){
     try {
+        console.log('puppeter tasa pasiva')
         const browser = await puppeteer.launch(chromeOptions);
         const page = await browser.newPage();
         await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
@@ -149,6 +151,7 @@ async function downloadPasivaBNA(){
             await Tasks.findOneAndUpdate({fecha: `${(moment().format('YYYY-MM-DD'))}T00:00`}, {$addToSet: {tasks: newTask}}, {upsert: true})}
         const parse = parseBNAPasiva(downloadURL);
     }catch(err){
+        console.log(err)
         throw new Error(err)
     }
 };
