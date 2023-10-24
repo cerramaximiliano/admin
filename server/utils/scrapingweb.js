@@ -1,7 +1,6 @@
 const express = require('express');
 const app = express();
 const sendEmail = require('../config/email.js');
-const pino = require('pino');
 const {logger} = require('../config/pino.js');
 const Tasas = require('../models/tasas.js');
 const TasasMensuales = require('../models/tasasMensuales.js');
@@ -13,6 +12,7 @@ const moment = require('moment');
 const path = require('path');
 const fs = require('fs');
 const puppeteer = require('puppeteer');
+
 const cheerio = require('cheerio');
 const download = require('download');
 const axios = require('axios');

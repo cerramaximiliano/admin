@@ -5,7 +5,7 @@ const chromeOptions =
     defaultViewport: null,
     args: ['--no-sandbox'],
     ignoreDefaultArgs: ["--disable-extensions"],
-    executablePath: '/usr/bin/google-chrome-stable',
+    executablePath: '/admin/node_modules/puppeteer/.local-chromium/linux-982053/chrome-linux/chrome',
   };
 
 module.exports = chromeOptions;
