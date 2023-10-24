@@ -3,7 +3,7 @@ const cron = require('node-cron');
 const URL_BASE = 'http://localhost:3000'
 
 const moment = require('moment');
-const hour = moment().get('hours');
+const hour = moment().get('hours')-3;
 const minute = moment().get('minutes')+1;
 console.log(hour, minute);
 
