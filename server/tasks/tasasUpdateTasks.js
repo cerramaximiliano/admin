@@ -2,12 +2,17 @@ const axios = require('axios');
 const cron = require('node-cron');
 const URL_BASE = 'http://localhost:4000'
 
-cron.schedule(`30 21 * * *`, async () => {
+cron.schedule(`57 22 * * *`, async () => {
 const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
+console.log(requestCer)
 const requestPasivaBCRA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBCRA`);
+console.log(requestPasivaBCRA)
 const requestIcl = await axios(`${URL_BASE}/scraping/tasas?tasa=icl`);
+console.log(requestIcl);
 const requestActivaBNA2658 = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaActivaCNAT2658`);
+console.log(requestActivaBNA2658);
 const requestPasivaBNA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBNA`);
+console.log(requestPasivaBNA);
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"
