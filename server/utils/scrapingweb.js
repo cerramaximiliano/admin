@@ -102,6 +102,7 @@ async function downloadActivaBNA ( tasa ) {
         }
     }
     catch (err) {
+        console.log(err)
         throw new Error(err)
     }
 };
