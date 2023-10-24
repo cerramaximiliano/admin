@@ -173,6 +173,7 @@ async function downloadBCRADDBB(tasa, type){
         }else if (tasa === 'cer') {
             console.log(tasa, 'cer');
             const file = await convertXls('cer2023.xls', tasa, type);
+            console.log(file)
             return file
         }else if (tasa === 'icl'){
             console.log(tasa, 'icl');
