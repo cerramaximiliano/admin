@@ -162,22 +162,32 @@ async function downloadBCRADDBB(tasa, type){
     }else if(tasa === 'icl'){
         file_url=process.env.URL_BCRA_ICL
     };
-    const file = await download(file_url, DOWNLOAD_DIR);
-    if( !file ) {throw new Error (`Download file ${tasa} fail`)}
+    // const file = await download(file_url, DOWNLOAD_DIR);
+    const {data} = await axios({
+        method: 'get',
+        url: file_url,
+        responseType: 'arraybuffer',
+      });
+
+    initializeApp(firebaseConfig);
+    const storage = getStorage();
+    const storageRef = ref(storage, `tasa-${tasa}/${tasa}-${moment().format('YYYY-MM-DD')}.xls`);
+    const metadata = {
+        contentType: 'application/vnd.ms-excel',
+    };
+    const snapshot = await uploadBytesResumable(storageRef, data, metadata);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    console.log(downloadURL)
+    if( !downloadURL ) {throw new Error (`Download file ${tasa} fail`)}
     else{
         if (tasa === 'tasaPasivaBCRA'){
-            console.log(tasa, 'pasiva');
-            const file = await convertXls('ind2023.xls', tasa, type);
-            console.log(file)
+            const file = await convertXls('ind2023.xls', tasa, type, downloadURL);
             return file
         }else if (tasa === 'cer') {
-            console.log(tasa, 'cer');
-            const file = await convertXls('cer2023.xls', tasa, type);
-            console.log(file)
+            const file = await convertXls('cer2023.xls', tasa, type, downloadURL);
             return file
         }else if (tasa === 'icl'){
-            console.log(tasa, 'icl');
-            const file = await convertXls('icl2023.xls', tasa, type);
+            const file = await convertXls('icl2023.xls', tasa, type, downloadURL);
             return file
         }
     }

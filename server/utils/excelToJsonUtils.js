@@ -1,6 +1,7 @@
 const moment = require('moment');
 const xlsx = require('xlsx');
 const fs = require('fs');
+const axios = require('axios')
 const path = require('path');
 const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
@@ -10,11 +11,15 @@ const {filterUpdateObject} = require('./ddbbUtils');
 const Tasas = require('../models/tasas');
 const Tasks = require('../models/tasks');
 
-async function convertXls (file_read, tasa, type){
+async function convertXls (url, tasa, type){
     console.log(true, 14)
     try {
-        const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
-        console.log(true, 15)
+        const {data} = await axios({
+            method: 'get',
+            url: url,
+            responseType: 'arraybuffer',
+        });
+        const file = xlsx.read(data);
         const sheetNames = file.SheetNames;
         const tempData = xlsx.utils.sheet_to_json(file.Sheets[sheetNames[0]]);
         const parsedData = tasa === 'tasaPasivaBCRA' ? parseDataForPasivaBcra(tempData) : parseDataForIclCer(tempData);
