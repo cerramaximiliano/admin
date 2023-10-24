@@ -93,12 +93,14 @@ async function downloadActivaBNA ( tasa ) {
                     description: `Tasa de interés no actualizada.`
                 }
                 await Tasks.findOneAndUpdate({fecha: `${(moment().format('YYYY-MM-DD'))}T00:00`}, {$addToSet: {tasks}}, {upsert: true})
-                throw new Error(`Fail to update ${tasa}`)
+                return {
+                    error: `Fail to update ${tasa}`,
+                    message: updateTasa
+                }
             }
         }else if ( tasa === 'tasaActivaBNA'){
             let checkTasa = await downloadBCRADDBB.regexTextCheck(1, ele[0]);
             let dateData = await downloadBCRADDBB.regexDates(ele);
-            console.log(checkTasa, dateData);
         }
     }
     catch (err) {
