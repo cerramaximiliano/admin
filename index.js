@@ -2,7 +2,7 @@ const retrieveSecrets = require('./server/config/env');
 const fsPromises = require('fs').promises;
 const dotenv = require('dotenv');
 dotenv.config();
-const tasks = require('./server/tasks/tasasUpdateTasks');
+
 
 (async () => {
     try{
@@ -13,6 +13,7 @@ const tasks = require('./server/tasks/tasasUpdateTasks');
         db.once('open', async () => {
             const app = server.listen(4000, async () => {
             console.log(`Server listen on PORT ${app.address().port}`);
+            const tasks = require('./server/tasks/tasasUpdateTasks');
         });
         });
     }catch(err){

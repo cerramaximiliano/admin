@@ -66,6 +66,7 @@ async function convertXls (file_read, tasa, type){
             return saveTasks;
         }
     }catch(err){
+        console.log(err)
         throw new Error(err)
     }
 }

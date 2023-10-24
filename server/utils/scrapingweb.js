@@ -168,6 +168,7 @@ async function downloadBCRADDBB(tasa, type){
         if (tasa === 'tasaPasivaBCRA'){
             console.log(tasa, 'pasiva');
             const file = await convertXls('ind2023.xls', tasa, type);
+            console.log(file)
             return file
         }else if (tasa === 'cer') {
             console.log(tasa, 'cer');
