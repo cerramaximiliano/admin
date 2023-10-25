@@ -373,16 +373,21 @@ async function saveTasaActivaData(tasaData, dateData, query){
                 if( today.isSame(dateData, 'day') ) {
                     // La fecha actual es igual a la fecha del sitio
                     const updateSame = await Tasas.findOneAndUpdate({fecha: today}, update, {new: true,upsert: true})
+                    console.log(updateSame)
                     return updateSame;
                 }else if( today.isBefore(dateData, 'day') ){
                     // La fecha actual es anterior a la fecha del sitio
                     const updateBefore = await Tasas.findOneAndUpdate({fecha: today}, {[query]: lastTasa[query] }, {new: true,upsert: true})
+                    console.log(updateBefore)
                     return updateBefore;
                 }else {
                     const updateAfter = awaitTasas.findOneAndUpdate({fecha: today}, update, {new: true,upsert: true});
+                    console.log(updateAfter)
                     return updateAfter;
                 }
             }
+        }else{
+            return null
         }
     }catch(err){
         throw new Error(err)
