@@ -23,7 +23,10 @@ Follow instructions to config GitHub Actions:
 
 https://www.youtube.com/watch?v=cgWXQqL-ZU8
 
+
 Commands Linux
+
 Kill all node process
+
 killall -9 node
 
