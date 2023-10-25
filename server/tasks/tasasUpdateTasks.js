@@ -6,7 +6,7 @@ const moment = require('moment');
 const hour = moment().get('hours')-3;
 const minute = moment().get('minutes')+1;
 
-cron.schedule(`${0} ${6} * * *`, async () => {
+cron.schedule(`${hour} ${minute} * * *`, async () => {
 const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
 const requestPasivaBCRA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBCRA`);
 const requestIcl = await axios(`${URL_BASE}/scraping/tasas?tasa=icl`);
