@@ -7,11 +7,11 @@ const hour = moment().get('hours')-3;
 const minute = moment().get('minutes')+1;
 
 cron.schedule(`${minute} ${hour} * * *`, async () => {
-const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
-const requestPasivaBCRA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBCRA`);
-const requestIcl = await axios(`${URL_BASE}/scraping/tasas?tasa=icl`);
+// const requestCer = await axios(`${URL_BASE}/scraping/tasas?tasa=cer`);
+// const requestPasivaBCRA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBCRA`);
+// const requestIcl = await axios(`${URL_BASE}/scraping/tasas?tasa=icl`);
 const requestActivaBNA2658 = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaActivaCNAT2658`);
-const requestPasivaBNA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBNA`);
+// const requestPasivaBNA = await axios(`${URL_BASE}/scraping/tasas?tasa=tasaPasivaBNA`);
 }, {
     scheduled: true,
     timezone: "America/Argentina/Buenos_Aires"

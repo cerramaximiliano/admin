@@ -9,7 +9,7 @@ let tasksSchema = new Schema(
   unique: true,
   default: new Date()
   },
-  tasks: [{task: String, fecha: Date, done: Boolean, description: String}],
+  tasks: [{task: String, fecha: Date, done: Boolean, description: String, message: String}],
   },
   {
     collection: 'tasks'
