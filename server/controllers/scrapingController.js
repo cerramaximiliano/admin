@@ -10,9 +10,11 @@ exports.downloadUrlFile = async (tasa, type) => {
             return findTasa;
         }else if(tasa === 'tasaPasivaBNA'){
             const findTasa = await scrapingFunctions.downloadPasivaBNA();
+            console.log(findTasa)
             return findTasa
         }else if( tasa === 'tasaActivaCNAT2658'){
             const findTasa = await scrapingFunctions.downloadActivaBNA(tasa);
+            console.log(findTasa)
             return findTasa;
         }else if( tasa === 'tasaActivaBNA' ){
             

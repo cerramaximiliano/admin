@@ -33,7 +33,9 @@ const { IoTSecureTunneling } = require('aws-sdk');
 //========================FUNCITON TASA ACTIVA=========================================
 async function downloadActivaBNA ( tasa ) {
     try {
+        console.log('Activa')
         const browser = await puppeteer.launch(chromeOptions);
+        console.log(browser)
         const page = await browser.newPage();
         await page.goto('https://www.bna.com.ar/Home/InformacionAlUsuarioFinanciero');
         const ele = await page.evaluate(() => {
