@@ -9,15 +9,14 @@ exports.downloadUrlFile = async (tasa, type) => {
             const findTasa = await scrapingFunctions.downloadBCRADDBB(tasa, type);
             return findTasa;
         }else if(tasa === 'tasaPasivaBNA'){
-            const findTasa = await scrapingFunctions.downloadPasivaBNA();
-            console.log(findTasa)
+            const findTasa = await scrapingFunctions.downloadPasivaBNA(tasa);
             return findTasa
         }else if( tasa === 'tasaActivaCNAT2658'){
             const findTasa = await scrapingFunctions.downloadActivaBNA(tasa);
-            console.log(findTasa)
             return findTasa;
         }else if( tasa === 'tasaActivaBNA' ){
-            
+            const findTasa = await scrapingFunctions.downloadActivaBNA(tasa);
+            return findTasa
         }
     }catch(err){
         throw new Error(err)
@@ -46,4 +45,31 @@ exports.tasasDashboard = async (req, res, next) => {
             data: result,
         })
     })
+};
+
+exports.updateTasaByDate = async (tasaData, dateData, query) => {
+    try {
+        const today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
+        const update = {[query]: Number(tasaData)};
+        const lastTasa = await Tasas.findOne({[query]: {$gte: 0}}).sort({'fecha': -1});
+        if( lastTasa ){
+            if( moment(lastTasa.fecha).utc().isSame(today, 'day') ) return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} ya fue actualizada previamente`, ok: false}
+            else {
+                if( today.isSame(dateData, 'day') ) {
+                    const updateSame = await Tasas.findOneAndUpdate({fecha: today}, update, {new: true,upsert: true})
+                    return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} fue actualizada con la publicación del sitio (publicación contiene la misma fecha)`, ok: true};
+                }else if( today.isBefore(dateData, 'day') ){
+                    const updateBefore = await Tasas.findOneAndUpdate({fecha: today}, {[query]: lastTasa[query] }, {new: true,upsert: true})
+                    return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} fue actualizada con la base de datos (publicación contiene fecha posterior: ${dateData})`, ok: true};
+                }else {
+                    const updateAfter = await Tasas.findOneAndUpdate({fecha: today}, update, {new: true,upsert: true});
+                    return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} fue actualizada con la publicación del sitio (publicación contiene fecha anterio: ${dateData})`, ok: true};
+                }
+            }
+        }else{
+            return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} no se pudo actualizar porque no se encontró la búsqueda en base de datos la última tasa actualizada`, ok: false}
+        }
+    }catch(err){
+        throw new Error(err)
+    }
 };

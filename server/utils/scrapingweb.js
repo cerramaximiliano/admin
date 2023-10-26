@@ -18,16 +18,16 @@ const pathFiles = path.join(__dirname, '../');
 const DOWNLOAD_DIR = pathFiles + '/files/serverFiles/';
 const chromeOptions = require('../config/puppeteer');
 const firebaseConfig = require('../config/firebase');
+const scrapingControllers = require('../controllers/scrapingController');
 
 const {initializeApp} = require('firebase/app');
 const { ref, getDownloadURL, uploadBytesResumable } = require('firebase/storage');
 const { getStorage } = require('firebase/storage');
 
 const {convertXls} = require('../utils/excelToJsonUtils.js');
-const {downloadFile} = require('../utils/downloadPdfUtils')
 const {parseBNAPasiva} = require('../utils/parsePdfUtils.js');
 const dateUtils = require('../utils/dateUtils.js');
-const {regexDates} = require('../utils/regexUtils');
+const {regexDates, regexTextCheck} = require('../utils/regexUtils');
 const { IoTSecureTunneling } = require('aws-sdk');
 
 //========================FUNCITON TASA ACTIVA=========================================
@@ -55,7 +55,12 @@ async function downloadActivaBNA ( tasa ) {
         const file_name = `${moment().format('YYYY-MM-DD')}`;
         const storageRef = ref(storage, `tasa-activa-BNA/${file_name}`);
         const metadata = {
-            contentType: 'image/jpeg'
+            contentType: 'image/jpeg',
+            customMetadata: {
+                'fecha de tasa': ele[0],
+                'Tasa Activa BNA - TEM': ele[1],
+                'TEA': ele[3]
+              }
         };
         const snapshot = await uploadBytesResumable(storageRef, file, metadata);
         const downloadURL = await getDownloadURL(snapshot.ref);
@@ -73,7 +78,7 @@ async function downloadActivaBNA ( tasa ) {
             const parseTasa =  regexDates(ele);
             const findTasaMensual = await findTasa(2, ele);
             let tasaData = await dataTasa(ele, findTasaMensual[1]);
-            const updateTasa = await saveTasaActivaData(tasaData, parseTasa, tasa);
+            const updateTasa = await scrapingControllers.updateTasaByDate(tasaData, parseTasa, tasa);
             if( updateTasa ) {
                 const tasks = {
                     task: `Tasa interés Activa BNA 2658`,
@@ -99,8 +104,35 @@ async function downloadActivaBNA ( tasa ) {
                 }
             }
         }else if ( tasa === 'tasaActivaBNA'){
-            let checkTasa = await downloadBCRADDBB.regexTextCheck(1, ele[0]);
-            let dateData = await downloadBCRADDBB.regexDates(ele);
+            let checkTasa = regexTextCheck(1, ele[0]);
+            let dateData = regexDates(ele);
+            let tasaResult = await findTasa(1, ele);
+            let results = await dataTasa(ele, tasaResult[1]);
+            const updateTasa = await scrapingControllers.updateTasaByDate(results, dateData, tasa);
+            if( updateTasa ) {
+                const tasks = {
+                    task: `Tasa interés Activa BNA 2658`,
+                    fecha: new Date(),
+                    done: true,
+                    description: `Tasa de interés actualizada.`,
+                    message: updateTasa.message
+                }
+                await Tasks.findOneAndUpdate({fecha: `${(moment().format('YYYY-MM-DD'))}T00:00`}, {$addToSet: {tasks}}, {upsert: true})
+                return updateTasa
+            }else{
+                const tasks = {
+                    task: `Tasa interés Activa BNA 2658`,
+                    fecha: new Date(),
+                    done: false,
+                    description: `Tasa de interés no actualizada.`,
+                    message: updateTasa.message
+                }
+                await Tasks.findOneAndUpdate({fecha: `${(moment().format('YYYY-MM-DD'))}T00:00`}, {$addToSet: {tasks}}, {upsert: true})
+                return {
+                    error: `Fail to update ${tasa}`,
+                    message: updateTasa.message
+                }
+            }
         }
     }
     catch (err) {
@@ -110,7 +142,7 @@ async function downloadActivaBNA ( tasa ) {
 };
 
 //============================FUNCION TASA PASIVA BNA======================
-async function downloadPasivaBNA(){
+async function downloadPasivaBNA(tasa){
     try {
         const browser = await puppeteer.launch(chromeOptions);
         const page = await browser.newPage();
@@ -128,16 +160,21 @@ async function downloadPasivaBNA(){
         });
         const file_url = `https://www.bna.com.ar${url}`;
         const file_name = `${moment().format('YYYY-MM-DD')}.pdf`;
+        const parseData = await parseBNAPasiva(file_url);
         const {data} = await axios({
             method: 'get',
             url: file_url,
             responseType: 'arraybuffer',
-          });
+        });
         initializeApp(firebaseConfig);
         const storage = getStorage();
         const storageRef = ref(storage, `tasa-pasiva-BNA/${file_name}`);
         const metadata = {
-            contentType: 'application/pdf'
+            contentType: 'application/pdf',
+            customMetadata: {
+                'fecha': parseData[0],
+                'TEA': parseData[1]
+            }
         };
         const snapshot = await uploadBytesResumable(storageRef, data, metadata);
         const downloadURL = await getDownloadURL(snapshot.ref);
@@ -148,8 +185,14 @@ async function downloadPasivaBNA(){
                 done: true,
                 description: `${downloadURL}`
             }
-            await Tasks.findOneAndUpdate({fecha: `${(moment().format('YYYY-MM-DD'))}T00:00`}, {$addToSet: {tasks: newTask}}, {upsert: true})}
-        const parse = parseBNAPasiva(downloadURL);
+            await Tasks.findOneAndUpdate({fecha: `${(moment().format('YYYY-MM-DD'))}T00:00`}, {$addToSet: {tasks: newTask}}, {upsert: true})
+        }
+        if( parseData ){
+            const update = scrapingControllers.updateTasaByDate(parseData[1], parseData[0], tasa)
+            return update
+        }else{
+            return {ok: false, message: `Couldn't update tasa ${tasa}`}
+        }
     }catch(err){
         console.log(err)
         throw new Error(err)
@@ -306,16 +349,6 @@ async function scrapingInfoleg(){
 };
 
 
-
-
-async function regexTextCheck(regex, text){
-    let regexToUse;
-    if (regex === 1) {
-        regexToUse = new RegExp(/tasa activa/i);
-    };
-    let check = regexToUse.test(text);
-    return check
-};
 async function findTasa(regex, iterator){
     let regexToUse;
     let check;
@@ -360,35 +393,6 @@ async function dataTasa(tasa, index){
         false
     }
     return check
-};
-
-
-async function saveTasaActivaData(tasaData, dateData, query){
-    try {
-        const today = moment(moment().format("YYYY-MM-DD") + 'T00:00').utc(true);
-        console.log();
-        const update = {[query]: Number(tasaData)};
-        const lastTasa = await Tasas.findOne({[query]: {$gte: 0}}).sort({'fecha': -1});
-        if( lastTasa ){
-            if( moment(lastTasa.fecha).utc().isSame(today, 'day') ) return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} ya fue actualizada previamente`, ok: false}
-            else {
-                if( today.isSame(dateData, 'day') ) {
-                    const updateSame = await Tasas.findOneAndUpdate({fecha: today}, update, {new: true,upsert: true})
-                    return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} fue actualizada con la publicación del sitio (publicación contiene la misma fecha)`, ok: true};
-                }else if( today.isBefore(dateData, 'day') ){
-                    const updateBefore = await Tasas.findOneAndUpdate({fecha: today}, {[query]: lastTasa[query] }, {new: true,upsert: true})
-                    return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} fue actualizada con la base de datos (publicación contiene fecha posterior: ${dateData})`, ok: true};
-                }else {
-                    const updateAfter = await Tasas.findOneAndUpdate({fecha: today}, update, {new: true,upsert: true});
-                    return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} fue actualizada con la publicación del sitio (publicación contiene fecha anterio: ${dateData})`, ok: true};
-                }
-            }
-        }else{
-            return {message: `Tasa de fecha ${today.format('DD-MM-YYYY')} no se pudo actualizar porque no se encontró la búsqueda en base de datos la última tasa actualizada`, ok: false}
-        }
-    }catch(err){
-        throw new Error(err)
-    }
 };
 
 //=========================ACTUALIZACION CATEGORIAS================================
@@ -570,4 +574,3 @@ exports.downloadPasivaBNA = downloadPasivaBNA;
 exports.scrapingInfoleg = scrapingInfoleg;
 exports.saveInfolegData = saveInfolegData;
 exports.actualizacionCategorias = actualizacionCategorias;
-exports.saveTasaActivaData = saveTasaActivaData;

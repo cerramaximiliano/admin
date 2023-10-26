@@ -69,8 +69,9 @@ async function convertXls (url, tasa, type){
                 description: `Actualización de tasa de interés disponible.`
             }
             const saveTasks = await Tasks.findOneAndUpdate({ fecha: date }, {$addToSet: {tasks: newTask}}, {upsert: true, returnOriginal: false})
-            return saveTasks;
-        }
+            if(saveTasks) return {ok: true, message: `Tasa ${tasa} succesfuly update`}
+            else return {ok: false, messag: `Tasa ${tasa}, couldn't update`}
+        }   
     }catch(err){
         throw new Error(err)
     }

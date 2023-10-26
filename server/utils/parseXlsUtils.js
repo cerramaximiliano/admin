@@ -7,14 +7,19 @@ const parseDataForIclCer = (tempData) => {
     let dataIndex = [];
     tempData.forEach(function(x){
         Object.keys(x).forEach(function(arr){
+            // console.log(arr, x)
             if(isInt(x[arr]) === true){
                 if(getLength(x[arr]) === 8 && moment(x[arr], "YYYYMMDD").isValid()){
                 data.push(x[arr]);
                 }
             }else if(typeof x[arr] === 'number' && arr === 'INTEREST RATES AND ADJUSTMENT COEFFICIENTS ESTABLISHED BY THE BCRA'){
-                countDecimals(x[arr]) > 10 ? dataIndex.push(x[arr]) : false;
+                if(countDecimals(x[arr]) >= 1) {
+                    dataIndex.push(x[arr])
+                }else {
+                    false
+                }  
             }
-        })
+        });
         data[0] != undefined && dataIndex[0] != undefined ? parsedData.push([data[0], dataIndex[0]]) : false
         data = [];
         dataIndex = [];
@@ -24,7 +29,6 @@ const parseDataForIclCer = (tempData) => {
 
 
 const parseDataForPasivaBcra = (tempData) => {
-    console.log('pasiva');
     let parsedData = [];
     let data = [];
     let dataIndex = [];

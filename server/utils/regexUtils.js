@@ -10,5 +10,13 @@ function regexDates(tasaActiva){
     tasaActiva[0][0] = validDate.exec(tasaActiva[0][0]);
     return moment(moment(tasaActiva[0][0][0],"DD/MM/YYYY").format('YYYY-MM-DD') + 'T00:00').utc(true);
 };
+function regexTextCheck(regex, text){
+    let regexToUse;
+    if (regex === 1) {
+        regexToUse = new RegExp(/tasa activa/i);
+    };
+    let check = regexToUse.test(text);
+    return check
+};
 
-module.exports = {myRegexp, validDate, regexDates};
+module.exports = {myRegexp, validDate, regexDates, regexTextCheck};
