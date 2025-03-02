@@ -20,6 +20,7 @@ const MONGODB = {
   options: {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    strictQuery: false
   }
 };
 
