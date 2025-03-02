@@ -216,103 +216,7 @@ async function processExcelCER(filePath) {
     });
     
     // Verificar últimos datos almacenados
-    const lastRecord = await Tasas.findOne({ 'icl': { $gte: 0 } }).sort({ 'fecha': -1 });
-    
-    if (!lastRecord) {
-      // Si no hay registros, crear todos
-      let bulkOps = [];
-      
-      for (const item of parsedData) {
-        const date = moment(item[0], "YYYYMMDD").format('YYYY-MM-DD') + 'T00:00';
-        
-        bulkOps.push({
-          updateOne: {
-            filter: { fecha: moment(date).utc(true) },
-            update: { icl: Number(item[1]) },
-            upsert: true
-          }
-        });
-      }
-      
-      await Tasas.bulkWrite(bulkOps);
-      logger.info(`ICL: Se han creado ${bulkOps.length} registros nuevos`);
-      
-    } else {
-      // Filtrar sólo las actualizaciones nuevas
-      const updates = parsedData.filter(item => 
-        moment(moment(item[0], "YYYYMMDD").format("YYYY-MM-DD") + 'T00:00').utc(true)
-          .isAfter(moment(lastRecord.fecha))
-      );
-      
-      if (updates.length === 0) {
-        logger.info('ICL: No hay actualizaciones disponibles');
-        
-        // Enviar email informando que no hay actualizaciones
-        await emailService.sendEmail(
-          config.email.defaultSender,
-          config.email.supportEmail,
-          config.email.supportEmail,
-          null,
-          null,
-          null,
-          null,
-          'actualizacionesND',
-          ['ICL']
-        );
-        
-      } else {
-        // Hay actualizaciones, guardarlas
-        let bulkOps = [];
-        
-        for (const item of updates) {
-          const date = moment(item[0], "YYYYMMDD").format('YYYY-MM-DD') + 'T00:00';
-          
-          bulkOps.push({
-            updateOne: {
-              filter: { fecha: moment(date).utc(true) },
-              update: { icl: Number(item[1]) },
-              upsert: true
-            }
-          });
-        }
-        
-        await Tasas.bulkWrite(bulkOps);
-        logger.info(`ICL: Se han actualizado ${bulkOps.length} registros`);
-        
-        // Preparar texto del email
-        let updateText = updates.map(x => 
-          `[ Fecha: ${moment(x[0], 'YYYYMMDD').format('DD/MM/YYYY')} - Indice: ${x[1]} ]`
-        ).join('');
-        
-        // Enviar email con las actualizaciones
-        await emailService.sendEmail(
-          config.email.defaultSender,
-          config.email.supportEmail,
-          config.email.supportEmail,
-          null,
-          null,
-          null,
-          null,
-          'actualizacionesArray',
-          ['ICL', updateText]
-        );
-      }
-    }
-    
-    // Generar archivo JSON con todos los datos
-    generateJSONFile(parsedData, 'dataBCRATasaICL.json');
-  } catch (error) {
-    logger.error(`Error al procesar Excel de ICL: ${error.message}`);
-    throw error;
-  }
-}
-
-module.exports = {
-  downloadTasaPasivaBCRA,
-  downloadCER,
-  downloadICL
-};
-const lastRecord = await Tasas.findOne({ 'cer': { $gte: 0 } }).sort({ 'fecha': -1 });
+    const lastRecord = await Tasas.findOne({ 'cer': { $gte: 0 } }).sort({ 'fecha': -1 });
     
     if (!lastRecord) {
       // Si no hay registros, crear todos
@@ -461,3 +365,101 @@ async function processExcelICL(filePath) {
       data = [];
       dataIndex = [];
     });
+    
+    // Verificar últimos datos almacenados
+    const lastRecord = await Tasas.findOne({ 'icl': { $gte: 0 } }).sort({ 'fecha': -1 });
+    
+    if (!lastRecord) {
+      // Si no hay registros, crear todos
+      let bulkOps = [];
+      
+      for (const item of parsedData) {
+        const date = moment(item[0], "YYYYMMDD").format('YYYY-MM-DD') + 'T00:00';
+        
+        bulkOps.push({
+          updateOne: {
+            filter: { fecha: moment(date).utc(true) },
+            update: { icl: Number(item[1]) },
+            upsert: true
+          }
+        });
+      }
+      
+      await Tasas.bulkWrite(bulkOps);
+      logger.info(`ICL: Se han creado ${bulkOps.length} registros nuevos`);
+      
+    } else {
+      // Filtrar sólo las actualizaciones nuevas
+      const updates = parsedData.filter(item => 
+        moment(moment(item[0], "YYYYMMDD").format("YYYY-MM-DD") + 'T00:00').utc(true)
+          .isAfter(moment(lastRecord.fecha))
+      );
+      
+      if (updates.length === 0) {
+        logger.info('ICL: No hay actualizaciones disponibles');
+        
+        // Enviar email informando que no hay actualizaciones
+        await emailService.sendEmail(
+          config.email.defaultSender,
+          config.email.supportEmail,
+          config.email.supportEmail,
+          null,
+          null,
+          null,
+          null,
+          'actualizacionesND',
+          ['ICL']
+        );
+        
+      } else {
+        // Hay actualizaciones, guardarlas
+        let bulkOps = [];
+        
+        for (const item of updates) {
+          const date = moment(item[0], "YYYYMMDD").format('YYYY-MM-DD') + 'T00:00';
+          
+          bulkOps.push({
+            updateOne: {
+              filter: { fecha: moment(date).utc(true) },
+              update: { icl: Number(item[1]) },
+              upsert: true
+            }
+          });
+        }
+        
+        await Tasas.bulkWrite(bulkOps);
+        logger.info(`ICL: Se han actualizado ${bulkOps.length} registros`);
+        
+        // Preparar texto del email
+        let updateText = updates.map(x => 
+          `[ Fecha: ${moment(x[0], 'YYYYMMDD').format('DD/MM/YYYY')} - Indice: ${x[1]} ]`
+        ).join('');
+        
+        // Enviar email con las actualizaciones
+        await emailService.sendEmail(
+          config.email.defaultSender,
+          config.email.supportEmail,
+          config.email.supportEmail,
+          null,
+          null,
+          null,
+          null,
+          'actualizacionesArray',
+          ['ICL', updateText]
+        );
+      }
+    }
+    
+    // Generar archivo JSON con todos los datos
+    generateJSONFile(parsedData, 'dataBCRATasaICL.json');
+  } catch (error) {
+    logger.error(`Error al procesar Excel de ICL: ${error.message}`);
+    throw error;
+  }
+}
+
+module.exports = {
+  downloadTasaPasivaBCRA,
+  downloadCER,
+  downloadICL
+};
