@@ -1,7 +1,6 @@
 const express = require('express');
 const app = express();
 const sendEmail = require('../config/email.js');
-const pino = require('pino');
 const {logger} = require('../config/pino');
 const Tasas = require('../models/tasas');
 const TasasMensuales = require('../models/tasasMensuales');
@@ -206,11 +205,13 @@ async function downloadPBNA(){
 //=========================TASA PASIVA==========================================
 
 function isInt(value) {
-        return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value))
-};
+    return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value));
+}
 function getlength(number) {
-        return number.toString().length;
+    return number.toString().length;
 };
+
+
 function countDecimals (number) {
     if(Math.floor(number.valueOf()) === number.valueOf()) return 0;
     return number.toString().split(".")[1].length || 0; 
@@ -223,140 +224,215 @@ function compareArray (arr1, arr2){
     }
 }
 
-function downloadBCRADDBB(tasa){
+async function downloadBCRADDBB(tasa) {
+    const currentYear = new Date().getFullYear();
     let file_url;
     let file_name;
-    if (tasa === 'pasivaBCRA'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind2023.xls';
-        file_name = 'data';
-    }else if(tasa === 'cer'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer2023.xls'
-        file_name = 'dataCER';
-    }else if(tasa === 'icl'){
-        file_url='http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl2023.xls'
-        file_name = 'dataICL';
-    };
-    const filePath = DOWNLOAD_DIR;
-    const file = download(file_url, filePath)
-    .then((result) => {
-                if (tasa === 'pasivaBCRA') {
-                    convertExcelFileToJsonUsingXlsx('ind2023.xls');
-                }else if(tasa === 'cer'){
-                    convertXlsCER('cer2023.xls');
-                }else if(tasa === 'icl'){
-                    convertXlsICL('icl2023.xls');
-                }
-    })
-    .catch((err) => {
-        return err
-    })
-
-    // const file = fs.createWriteStream(filePath, {'flags': 'w'});
-        // const httpRequest = request.get(file_url, function(err, response) {
-        //     if(err){
-        //         console.log(err)
-        //     }
-        //     if(response.statusCode != 200){
-        //         console.log(`Error: código ${response.statusCode}`)
-        //     }
-        //     file.on('finish', function(){
-        //         file.close()
-        //     });
-        //     response.pipe(file).on('error', (err) => console.log(`Error en el grabado de archivo: ${err}`))
-        //     file.on('error', (err) => console.log(`Error en el archivo grabado: ${err}`))
     
-            // response.pipe(file);
-            // file.on('finish', () => {
-            //     file.close()
-                // if (tasa === 'pasivaBCRA') {
-                //     convertExcelFileToJsonUsingXlsx();
-                // }else if(tasa === 'cer'){
-                //     convertXlsCER();
-                // }else if(tasa === 'icl'){
-                //     console.log('convert icl')
-                //     convertXlsICL();
-                // }
-            // }).on('error', (err) => console.log(`Error en la creación de achivo ${err}`))
+    // Configurar URL y nombre de archivo según el tipo de tasa
+    if (tasa === 'pasivaBCRA') {
+        file_url = `http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/ind${currentYear}.xls`;
+        file_name = 'data';
+    } else if (tasa === 'cer') {
+        file_url = `http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/cer${currentYear}.xls`;
+        file_name = 'dataCER';
+    } else if (tasa === 'icl') {
+        file_url = `http://www.bcra.gov.ar/Pdfs/PublicacionesEstadisticas/icl${currentYear}.xls`;
+        file_name = 'dataICL';
+    } else {
+        throw new Error(`Tipo de tasa no soportado: ${tasa}`);
+    }
+
+    const filePath = DOWNLOAD_DIR;
+    
+    try {
+        logger.info(`Iniciando descarga de ${tasa} desde ${file_url}`);
+        
+        // Implementar retry pattern para la descarga
+        let retries = 3;
+        let success = false;
+        let lastError;
+        
+        while (retries > 0 && !success) {
+            try {
+                await download(file_url, filePath);
+                success = true;
+                logger.info(`Descarga exitosa de ${tasa}`);
+            } catch (error) {
+                lastError = error;
+                logger.warn(`Intento de descarga fallido para ${tasa}, intentos restantes: ${retries-1}`);
+                retries--;
+                // Esperar antes de reintentar (backoff exponencial)
+                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, 3-retries)));
+            }
+        }
+        
+        if (!success) {
+            throw lastError || new Error(`Descarga fallida después de múltiples intentos`);
+        }
+        
+        // Procesar el archivo descargado según su tipo
+        if (tasa === 'pasivaBCRA') {
+            await convertExcelFileToJsonUsingXlsx(`ind${currentYear}.xls`);
+        } else if (tasa === 'cer') {
+            await convertXlsCER(`cer${currentYear}.xls`);
+        } else if (tasa === 'icl') {
+            await convertXlsICL(`icl${currentYear}.xls`);
+        }
+        
+        return true;
+    } catch (error) {
+        logger.error(`Error en downloadBCRADDBB para ${tasa}: ${error.message}`);
+        // Notificar el error
+        await notifyScrapingFailure('downloadBCRADDBB', error);
+        throw error;
+    }
+}
+
+/**
+ * Notifica fallos en el proceso de scraping
+ */
+async function notifyScrapingFailure(operation, error) {
+    const errorDetails = {
+        operation,
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Logging
+    logger.error(errorDetails);
 
 };
 
-async function convertExcelFileToJsonUsingXlsx (file_read) {
-        const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
+
+async function updateDatabaseWithExcelData(parsedData) {
+    try {
+        // Filtrar solo los datos para el día actual (si existe)
+        const today = moment().format('YYYYMMDD');
+        const todayData = parsedData.find(x => moment(x[0], "YYYYMMDD").format('YYYYMMDD') === today);
+        
+        if (todayData) {
+            logger.info(`Encontrada actualización para el día de hoy (${today})`);
+            
+            const date = moment(todayData[0], "YYYYMMDD").format('YYYY-MM-DD') + 'T00:00';
+            const dateToFind = moment(date).utc(true);
+            const filter = { fecha: dateToFind };
+            const update = { tasaPasivaBCRA: Number(todayData[1]) };
+            
+            // Actualizar o crear registro en la base de datos
+            const updatedData = await Tasas.findOneAndUpdate(filter, update, {
+                new: true,
+                upsert: true
+            });
+            
+            // Enviar email de notificación sobre la actualización
+            const info = [...todayData, 'Tasa Pasiva BCRA'];
+            await sendEmail.sendAWSEmailNodemailer(
+                'soporte@lawanalytics.app', 
+                'soporte@lawanalytics.app', 
+                0, 0, 0, 0, 
+                'actualizaciones', 
+                info
+            );
+            
+            logger.info(`Base de datos actualizada para el ${date}`);
+        } else {
+            logger.info(`No hay datos disponibles para el día de hoy (${today})`);
+        }
+    } catch (error) {
+        logger.error(`Error actualizando la base de datos: ${error.message}`);
+        throw error;
+    }
+}
+
+async function convertExcelFileToJsonUsingXlsx(file_read) {
+    try {
+        logger.info(`Iniciando procesamiento de archivo Excel: ${file_read}`);
+        
+        // Verificar si el archivo existe
+        const filePath = path.join(DOWNLOAD_DIR, file_read);
+        try {
+            await fs.promises.access(filePath, fs.constants.F_OK);
+        } catch (error) {
+            throw new Error(`El archivo ${file_read} no existe en ${DOWNLOAD_DIR}`);
+        }
+        
+        // Leer el archivo Excel
+        const file = xlsx.readFile(filePath, {
+            type: 'binary',
+            cellDates: true, // Asegurar que las fechas se procesen correctamente
+            dateNF: 'yyyy-mm-dd' // Formato de fecha
+        });
+        
+        // Verificar si el archivo tiene hojas
         const sheetNames = file.SheetNames;
-        const totalSheets = sheetNames.length;
-        const tempData = xlsx.utils.sheet_to_json(file.Sheets['Serie_diaria']);
+        if (!sheetNames || sheetNames.length === 0) {
+            throw new Error(`El archivo ${file_read} no contiene hojas de cálculo`);
+        }
+        
+        // Verificar si existe la hoja específica
+        const sheetName = 'Serie_diaria';
+        if (!sheetNames.includes(sheetName)) {
+            throw new Error(`La hoja '${sheetName}' no existe en el archivo. Hojas disponibles: ${sheetNames.join(', ')}`);
+        }
+        
+        // Convertir la hoja a JSON
+        const tempData = xlsx.utils.sheet_to_json(file.Sheets[sheetName]);
+        if (!tempData || tempData.length === 0) {
+            throw new Error(`No se encontraron datos en la hoja '${sheetName}'`);
+        }
+        
+        logger.info(`Procesados ${tempData.length} registros del archivo ${file_read}`);
+        
+        // Procesar los datos
         let parsedData = [];
         let data = [];
         let dataIndex = [];
-        tempData.forEach(function(x, index){
-            Object.keys(x).forEach(function(arr, ind, total){
-                if(isInt(x[arr]) === true){
-                    if(getlength(x[arr]) === 8 && moment(x[arr], "YYYYMMDD").isValid()){
-                        data.push(x[arr]);
-                        if(data.length === 2){
-                            dataIndex.push(x[total[total.length-1]])
-                        }
-                    }else{
-                        false
+        
+        for (const x of tempData) {
+            for (const [arr, value] of Object.entries(x)) {
+                if (isInt(value) && getlength(value) === 8 && moment(value, "YYYYMMDD").isValid()) {
+                    data.push(value);
+                    if (data.length === 2) {
+                        // Asumiendo que "total" es el array de claves
+                        const total = Object.keys(x);
+                        dataIndex.push(x[total[total.length-1]]);
                     }
-                }else{
-                    false
                 }
-            });
-            if(data.length >= 3){
-                parsedData.push([data[data.length-1],dataIndex[0]]);
-            }else if (data.length === 2){
-                parsedData.push([data[1],dataIndex[0]]);
-            }else{
-                false
-            };
+            }
+            
+            // Construir el dato procesado
+            if (data.length >= 3) {
+                parsedData.push([data[data.length-1], dataIndex[0]]);
+            } else if (data.length === 2) {
+                parsedData.push([data[1], dataIndex[0]]);
+            }
+            
+            // Reiniciar variables para el siguiente registro
             data = [];
             dataIndex = [];
-        });
-        parsedData.forEach(function(x){
-            if (moment(x[0], "YYYYMMDD").isSame(moment(), 'days') === true){
-                logger.info(`Tasa pasiva BCRA. Hay actualizacion disponible.`)
-                let date = (moment(x[0], "YYYYMMDD").format('YYYY-MM-DD')) + 'T00:00'
-                let dateToFind = moment(date).utc(true);
-                let filter = {fecha: dateToFind}
-                let update = {tasaPasivaBCRA: Number(x[1])};
-                Tasas.findOneAndUpdate(filter, update, {
-                    new: true,
-                    upsert: true
-                })
-                .exec((err, datos) => {
-                    if(err) {
-                        logger.error(`Tasa Pasiva BCRA. Error en DDBB. ${err}`)
-                      return {
-                      ok: false,
-                      err
-                      };
-                    }else{
-                        let info = x.push('Tasa Pasiva BCRA')
-                        sendEmail.sendAWSEmailNodemailer('soporte@lawanalytics.app', 'soporte@lawanalytics.app', 0, 0, 0, 0, 'actualizaciones', x)
-                        .then(result => {
-                          if(result === true){
-                            logger.info(`Tasa Pasiva BCRA. Envio de mail correcto. ${result}`)
-                          }else{
-                            logger.error(`Tasa Pasiva BCRA. Envio de mail incorrecto. ${result}`)
-                          }
-                        })
-                        .catch(err => {
-                            logger.error(`Tasa Pasiva BCRA. Envio de mail incorrecto. ${err}`)
-                        })
-                        return {
-                        ok: true,
-                        datos: datos
-                        }
-                        }
-                    });
-            }else {
-                false;
-                logger.info(`Tasa pasiva BCRA. No hay actualizacion disponible.`);
-            }
-        });
-        return generateJSONFile(parsedData, 'dataBCRATasaPasiva2023.json');
-    };
+        }
+        
+        // Verificar si se procesaron datos
+        if (parsedData.length === 0) {
+            throw new Error(`No se pudieron extraer datos válidos del archivo ${file_read}`);
+        }
+        
+        logger.info(`Procesamiento completo: ${parsedData.length} registros extraídos`);
+        
+        // Actualizar la base de datos con los datos procesados si hay actualizaciones para el día actual
+        await updateDatabaseWithExcelData(parsedData);
+        
+        // Generar el archivo JSON con los datos procesados
+        await generateJSONFile(parsedData, `dataBCRATasaPasiva${new Date().getFullYear()}.json`);
+        
+        return parsedData;
+    } catch (error) {
+        logger.error(`Error en convertExcelFileToJsonUsingXlsx: ${error.message}`);
+        throw error;
+    }
+}
 
 async function convertXlsICL (file_read){
     const file = xlsx.readFile(DOWNLOAD_DIR + file_read, {type: 'binary'})
@@ -582,14 +658,16 @@ async function convertXlsCER (file_read){
         }
     })
 }
-function generateJSONFile(data, file) {
-        try {
-            fs.writeFileSync(DOWNLOAD_DIR + file, JSON.stringify(data))
-        } catch (err) {
-            logger.error(`Error en escritura de archivo json. ${err}`)
-        }
-};
-
+async function generateJSONFile(data, file) {
+    try {
+        const filePath = path.join(DOWNLOAD_DIR, file);
+        await fs.promises.writeFile(filePath, JSON.stringify(data));
+        logger.info(`Archivo JSON generado: ${file}`);
+    } catch (error) {
+        logger.error(`Error generando archivo JSON ${file}: ${error.message}`);
+        throw error;
+    }
+}
 
 
   function datesSpanish(date){
