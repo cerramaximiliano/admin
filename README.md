@@ -1,175 +1,131 @@
-## Descripción General
-Law Analytics es una aplicación web enfocada en servicios legales que ofrece herramientas para cálculos jurídicos, seguimiento de tasas de interés y envío automatizado de correos electrónicos con actualizaciones. El sistema está diseñado específicamente para profesionales del derecho en Argentina.
+# Law Analytics - Sistema de Scraping y Actualizaciones
 
----
+Sistema para el scraping automático de tasas financieras, normativas legales y datos previsionales, con notificaciones por email y API REST.
 
-## Características Principales
+## Características
 
-### **Gestión de Tasas e Índices**
-- Sincronización automática de tasas desde fuentes oficiales (**BCRA, BNA, CPACF**).
-- Seguimiento de múltiples tipos de tasas:
-  - **Tasa Pasiva BCRA**
-  - **Tasa Pasiva BNA**
-  - **Tasa Activa BNA**
-  - **Tasa Activa CNAT 2601**
-  - **Tasa Activa CNAT 2658**
-  - **Tasa Activa CNAT 2764**
-  - **CER (Coeficiente de Estabilización de Referencia)**
-  - **ICL (Índice de Contratos de Locación)**
-- Verificación automática de datos faltantes y corrección.
+- Scraping de tasas desde múltiples fuentes (BCRA, BNA, CPACF)
+- Scraping de normativas legales desde Infoleg
+- Actualización automática de categorías basadas en movilidad previsional
+- Notificaciones por email sobre actualizaciones
+- API REST para consulta de datos
+- Panel de administración para gestión de tareas
+- Sistema de tareas programadas configurables
+- Registro detallado de actividades
 
-### **Sistema de Correos Electrónicos**
-- Envío de informes automáticos sobre actualizaciones de tasas.
-- Gestión de promociones por email para usuarios.
-- Plantillas de correo para diferentes propósitos:
-  - **Verificación de cuentas**
-  - **Reseteo de contraseñas**
-  - **Resultados de cálculos**
-  - **Actualizaciones de tasas e índices**
-  - **Actualizaciones normativas**
-  - **Promociones segmentadas**
+## Requisitos previos
 
-### **Datos Legales y Financieros**
-- Información de categorías impositivas.
-- Datos previsionales.
-- Escalas salariales (**comercio, servicio doméstico**).
-- Normativas legales actualizadas.
+- Node.js 14.x o superior
+- MongoDB 4.x o superior
+- AWS CLI configurado para acceso a SecretsManager y SES
+- Credenciales de CPACF para acceso a tasas
 
-### **Scraping Web Automatizado**
-- Extracción de información desde sitios oficiales.
-- Procesamiento automático de archivos **PDF, XLS y páginas web**.
-- Actualización diaria de tasas e índices.
+## Instalación
 
-### **Seguridad y Autenticación**
-- Sistema de autenticación basado en **JWT**.
-- Almacenamiento seguro de credenciales en **AWS Secrets Manager**.
-- Control de acceso a endpoints mediante **middleware**.
-
-### **Programación de Tareas**
-- Sistema de tareas programadas mediante **node-cron**.
-- Verificaciones periódicas de datos.
-- Actualizaciones automáticas de la base de datos.
-
----
-
-## **Arquitectura Técnica**
-
-### **Backend**
-- **Node.js con Express**.
-- **MongoDB** como base de datos principal.
-- **Mongoose** para modelado de datos.
-- **Autenticación mediante JWT**.
-- **Logger con Pino** para registro de eventos.
-
-### **Servicios AWS**
-- **SES (Simple Email Service)** para envío de correos.
-- **Secrets Manager** para gestión segura de credenciales.
-- **S3** (implícito) para almacenamiento de archivos.
-
-### **Herramientas de Scraping**
-- **Puppeteer** para navegación headless.
-- **Cheerio** para parsing de HTML.
-- **XLSX** para procesamiento de archivos Excel.
-- **PDF-Parse** para extracción de datos de archivos PDF.
-
----
-
-## **Modelos de Datos**
-El sistema cuenta con varios modelos de datos, incluyendo:
-
-- **Usuarios**: gestión de cuentas y permisos.
-- **Tasas**: diferentes tipos de tasas de interés y fechas.
-- **Promociones**: usuarios y campañas de email marketing.
-- **Categorías**: información sobre categorías impositivas.
-- **Datos Previsionales**: información sobre haberes previsionales.
-- **Normas**: registro de normativas legales actualizadas.
-- **Estadísticas**: datos de uso y estadísticas del sistema.
-
----
-
-## **Instalación**
-
-1. **Clonar el repositorio**
+1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/tuusuario/law-analytics-backend.git
-   cd law-analytics-backend
+   git clone https://github.com/your-username/law-analytics.git
+   cd law-analytics
    ```
 
-2. **Instalar dependencias**
+2. Instalar dependencias:
    ```bash
    npm install
    ```
 
-3. **Configurar variables de entorno** (AWS credentials, MongoDB URL, etc.).
-
-4. **Iniciar el servidor**
+3. Configurar variables de entorno (o usar AWS SecretsManager):
    ```bash
-   node server/server.js
+   cp .env.example .env
+   # Editar .env con los valores apropiados
    ```
 
----
+4. Iniciar la aplicación:
+   ```bash
+   npm start
+   ```
 
-## **Configuración**
-El sistema utiliza **AWS Secrets Manager** para recuperar configuraciones sensibles, que se almacenan localmente como **variables de entorno** en tiempo de ejecución. Las principales configuraciones incluyen:
+## Estructura del proyecto
 
-- **Credenciales de base de datos (MongoDB)**.
-- **Claves de API para AWS SES**.
-- **Semilla para generación de JWT**.
-- **Configuración de caducidad de tokens**.
+```
+server/
+├── config/                  # Configuraciones (DB, AWS, etc.)
+├── controllers/             # Controladores para las rutas
+├── middlewares/             # Middlewares de Express
+├── models/                  # Modelos de MongoDB
+├── routes/                  # Rutas organizadas por dominio
+├── services/                # Lógica de negocio
+│   ├── scrapers/            # Servicios de scraping separados por fuente
+│   ├── email/               # Servicios de email
+│   └── tasks/               # Tareas programadas
+├── utils/                   # Utilidades generales
+├── tests/                   # Tests unitarios y de integración
+│   ├── unit/                # Tests unitarios
+│   └── integration/         # Tests de integración
+├── views/                   # Plantillas de vistas EJS
+└── app.js                   # Punto de entrada principal
+```
 
----
+## Tareas programadas
 
-## **Tareas Programadas**
-El sistema incluye múltiples tareas programadas que se ejecutan automáticamente:
+La aplicación incluye varias tareas programadas que se ejecutan automáticamente:
 
-- **Actualizaciones diarias de tasas** (9:00 AM Argentina).
-- **Verificación de datos faltantes**.
-- **Scraping de sitios web oficiales**.
-- **Envío de correos con actualizaciones**.
-- **Campañas de email marketing (configurables)**.
+| Tarea | Descripción | Programación |
+|-------|-------------|--------------|
+| `bcra-tasa-pasiva` | Descarga y procesa tasa pasiva BCRA | Diario 9:00 AM |
+| `bcra-cer` | Descarga y procesa CER | Diario 9:05 AM |
+| `bcra-icl` | Descarga y procesa ICL | Diario 9:10 AM |
+| `bna-tasa-pasiva` | Descarga y procesa tasa pasiva BNA | Diario 9:20 AM |
+| `bna-tasa-activa` | Actualiza tasa activa BNA | Diario 9:18 AM |
+| `cpacf-tasa-activa-bna` | Scraping de tasa activa BNA desde CPACF | Diario 11:58 AM |
+| `cpacf-tasa-pasiva-bna` | Scraping de tasa pasiva BNA desde CPACF | Diario 11:59 AM |
+| `cpacf-tasa-acta-2658` | Scraping de tasa acta 2658 desde CPACF | Diario 12:00 PM |
+| `cpacf-tasa-acta-2764` | Scraping de tasa acta 2764 desde CPACF | Diario 12:01 PM |
+| `infoleg-normativas` | Actualiza normativas desde Infoleg | Diario 9:25 AM |
+| `actualizar-categorias` | Actualiza categorías según movilidad | Diario 9:30 AM |
 
----
+## API REST
 
-## **Endpoints API**
+La API incluye los siguientes endpoints:
 
-### **Autenticación**
-- `POST /login` → Iniciar sesión.
-- `GET /home` → Acceso a la página principal (requiere autenticación).
+### Tasas
 
-### **Tasas**
-- `GET /tasas` → Descarga de archivos de tasas.
-- `GET /tasasdashboard` → Panel de control de tasas.
+- `GET /api/tasas/download?tasa=tipo` - Descarga y procesa una tasa específica
+- `GET /api/tasas/dashboard` - Obtiene las tasas más recientes para el dashboard
+- `GET /api/tasas/periodo?startDate=X&endDate=Y&tipo=Z` - Obtiene tasas para un período
+- `GET /api/tasas/ultimos` - Obtiene los últimos valores registrados para cada tipo
+- `GET /api/tasas/check/:tipo` - Verifica y actualiza fechas para una tasa
 
-### **Usuarios**
-- `GET /usersdashboard` → Panel de control de usuarios.
+### Tareas programadas
 
-### **Email Marketing**
-- `POST /emailpromotion` → Registro de emails para promociones.
-- `POST /emailpromotion-erase` → Eliminación de emails de promociones.
-- `GET /emailusers` → Listado de usuarios para promociones.
+- `GET /api/tasks` - Obtiene lista de tareas programadas
+- `POST /api/tasks/:taskId/execute` - Ejecuta una tarea inmediatamente
+- `POST /api/tasks/:taskId/stop` - Detiene una tarea
+- `POST /api/tasks/:taskId/start` - Inicia una tarea detenida
 
-### **Archivos**
-- `GET /filesnames` → Obtener nombres de archivos.
-- `GET /logger` → Acceso a logs del sistema.
-- `GET /logger-app` → Acceso a logs de la aplicación.
+### Usuarios y autenticación
 
-### **Mantenimiento**
-- Verificación regular de tareas cron.
-- Monitoreo de logs para detectar errores.
-- Actualización manual de tasas en caso de fallos en el scraping automático.
-- Comprobación periódica de la integridad de la base de datos.
+- `POST /api/login` - Inicia sesión
+- `GET /api/home` - Página principal (requiere autenticación)
+- `GET /api/users/dashboard` - Dashboard de usuarios (requiere autenticación)
 
----
+## Pruebas
 
-## **Requisitos del Sistema**
+Ejecutar pruebas unitarias:
 
-- **Node.js** 12+
-- **MongoDB** 4+
-- **Cuenta AWS** con acceso a SES y Secrets Manager.
-- **Memoria**: Mínimo 2GB RAM.
-- **Sistema operativo**: Linux (preferido), Windows o macOS.
+```bash
+npm test
+```
 
----
+Ejecutar pruebas específicas:
 
-## **Licencia**
-Todos los derechos reservados © **Law Analytics**.
+```bash
+npm test -- --grep "BCRA Service"
+```
+
+## Configuración
+
+La configuración se maneja a través de variables de entorno y el archivo `config/index.js`. Las variables críticas se pueden almacenar en AWS SecretsManager.
+
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - ver el archivo LICENSE para más detalles.
