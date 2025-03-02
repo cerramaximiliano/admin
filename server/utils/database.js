@@ -9,7 +9,8 @@ const logger = require('./logger');
  */
 exports.connect = async () => {
   try {
-    // Configurar Mongoose
+    // Configurar Mongoose 
+    // La opción strictQuery debe configurarse antes de la conexión y no como parte de las opciones
     mongoose.set('strictQuery', false);
     
     // Agregar monitoreo de eventos
@@ -34,7 +35,7 @@ exports.connect = async () => {
     
     // Conectar a la base de datos
     logger.info(`MongoDB: Conectando a ${config.mongodb.url}`);
-    await mongoose.connect(config.mongodb.url, config.mongodb.options);
+    await mongoose.connect(config.mongodb.url);
     
     return mongoose.connection;
   } catch (error) {

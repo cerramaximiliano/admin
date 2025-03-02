@@ -20,7 +20,12 @@ const MONGODB = {
   options: {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    strictQuery: false
+    maxPoolSize: 10, // Limite de conexiones simultáneas
+    serverSelectionTimeoutMS: 5000, // Tiempo límite para selección de servidor
+    socketTimeoutMS: 45000, // Tiempo límite para operaciones de socket
+    family: 4, // Usar IPv4
+    keepAlive: true, // Mantener conexiones activas
+    keepAliveInitialDelay: 300000 // Tiempo antes de enviar sondeos keep-alive
   }
 };
 

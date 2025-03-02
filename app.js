@@ -12,7 +12,7 @@ const moment = require('moment');
 // Cargar configuración
 const config = require('./server/config');
 const logger = require('./server/utils/logger');
-const database = require("./server/utils/database");
+const database = require("./server/utils/database")
 
 // Obtener secretos de AWS
 const retrieveSecrets = require('./server/config/env');
