@@ -41,17 +41,17 @@ const cronConfig = {
             busquedaFechas: '45 7 * * *'               // Búsqueda de fechas faltantes
         }
     },
-    // Configuración para verificación de actualizaciones
+// Configuración para verificación de actualizaciones
     verificacion: {
         // Verificación después del ciclo matutino
-        matutina: '34 13 * * *',     // A las 9:00 AM, después de todas las tareas de la mañana
-
+        matutina: '0 9 * * *',     // A las 9:00 AM, después de todas las tareas de la mañana
+        
         // Verificación después de cada ciclo de actualización
         ciclica: '55 7,9,11,13,15,21 * * *',  // 5 minutos después del último scraping del ciclo
-
+        
         // Verificación diaria completa
         diaria: '0 23 * * *'      // A las 11:00 PM, reporte diario completo
-    }
+      }
 };
 
 module.exports = cronConfig;
