@@ -89,11 +89,12 @@ La API incluye los siguientes endpoints:
 
 ### Tasas
 
-- `GET /api/tasas/download?tasa=tipo` - Descarga y procesa una tasa específica
-- `GET /api/tasas/dashboard` - Obtiene las tasas más recientes para el dashboard
-- `GET /api/tasas/periodo?startDate=X&endDate=Y&tipo=Z` - Obtiene tasas para un período
-- `GET /api/tasas/ultimos` - Obtiene los últimos valores registrados para cada tipo
-- `GET /api/tasas/check/:tipo` - Verifica y actualiza fechas para una tasa
+- `GET /api/tasas/consulta` - Consulta tasas por rango de fechas y campo específico
+  - Parámetros:
+    - `fechaDesde`: Fecha inicial del rango (YYYY-MM-DD)
+    - `fechaHasta`: Fecha final del rango (YYYY-MM-DD)
+    - `campo`: Campo a consultar (tasaPasivaBNA, tasaPasivaBCRA, tasaActivaBNA, cer, icl, tasaActivaCNAT2601, tasaActivaCNAT2658)
+    - `completo`: Booleano (true/false) que determina si se devuelve el rango completo o solo los extremos
 
 ### Tareas programadas
 

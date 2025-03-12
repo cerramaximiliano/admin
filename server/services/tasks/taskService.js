@@ -2,13 +2,14 @@ const cron = require('node-cron');
 const moment = require('moment');
 const config = require('../../config');
 const logger = require('../../utils/logger');
+const database = require('../../utils/database');
 
 // Importar servicios
-const bcraService = require('../scrapers/bcraService');
-const bnaService = require('../scrapers/bnaService');
-const cpacfService = require('../scrapers/cpacfService');
-const infolegService = require('../scrapers/infolegService');
-const categoriasService = require('../categorias/categoriasService');
+const { mainConsejoService, findMissingDataService } = require('../scrapers/tasas/consejoService');
+const { actualizarTasaActivaBNAConReintentos } = require('../scrapers/tasas/bnaService');
+const { mainBnaPasivaService } = require("../scrapers/tasas/bnaProcesadorPDF")
+const { getCurrentRateAndSave, findMissingDataServiceBcra } = require("../scrapers/tasas/bcraService");
+const { findMissingDataColegio } = require('../scrapers/tasas/colegioService');
 
 // Colección de tareas programadas
 const tasks = new Map();
@@ -24,37 +25,58 @@ const tasks = new Map();
  */
 function scheduleTask(taskId, cronExpression, taskFunction, description) {
   try {
-    // Verificar si la tarea ya existe
+    // Verificar si la tarea ya existe y detenerla si es así
     if (tasks.has(taskId)) {
-      logger.warn(`La tarea ${taskId} ya está programada`);
-      return false;
+      stopTask(taskId);
+      logger.info(`Deteniendo tarea existente ${taskId} para reprogramarla`);
     }
-    
+
     // Verificar expresión cron
     if (!cron.validate(cronExpression)) {
       logger.error(`Expresión cron inválida para la tarea ${taskId}: ${cronExpression}`);
       return false;
     }
-    
-    // Programar tarea
-    const task = cron.schedule(cronExpression, async () => {
+
+    // Crear una función envoltorio que verifique la conexión a MongoDB
+    const wrappedTaskFunction = async () => {
+      // Verificar la conexión a MongoDB antes de ejecutar la tarea
+      if (!database.isConnected()) {
+        logger.warn(`La tarea ${taskId} no se ejecutará porque MongoDB no está conectado`);
+        return { success: false, skipped: true, reason: 'MongoDB desconectado' };
+      }
+
       logger.info(`Ejecutando tarea: ${taskId} - ${description}`);
-      
+
       try {
         const startTime = process.hrtime();
         const result = await taskFunction();
         const elapsedTime = process.hrtime(startTime);
         const elapsedTimeMs = (elapsedTime[0] * 1000 + elapsedTime[1] / 1000000).toFixed(2);
-        
+
+        // Actualizar información de última ejecución
+        const taskInfo = tasks.get(taskId);
+        if (taskInfo) {
+          taskInfo.lastRun = new Date();
+          tasks.set(taskId, taskInfo);
+        }
+
         logger.info(`Tarea ${taskId} completada en ${elapsedTimeMs}ms con resultado: ${JSON.stringify(result)}`);
+        return { success: true, result, elapsedTimeMs };
       } catch (error) {
         logger.error(`Error al ejecutar tarea ${taskId}: ${error.message}`);
+        return { success: false, error: error.message };
       }
-    }, {
+    };
+
+    // Programar tarea
+    const task = cron.schedule(cronExpression, wrappedTaskFunction, {
       scheduled: true,
       timezone: config.server.timezone
     });
-    
+
+    // Guardar referencia a la función original para ejecuciones manuales
+    task.job = wrappedTaskFunction;
+
     // Guardar tarea
     tasks.set(taskId, {
       id: taskId,
@@ -64,7 +86,7 @@ function scheduleTask(taskId, cronExpression, taskFunction, description) {
       lastRun: null,
       status: 'scheduled'
     });
-    
+
     logger.info(`Tarea programada: ${taskId} - ${description} con expresión cron: ${cronExpression}`);
     return true;
   } catch (error) {
@@ -84,13 +106,13 @@ function stopTask(taskId) {
     logger.warn(`La tarea ${taskId} no existe`);
     return false;
   }
-  
+
   try {
     const taskInfo = tasks.get(taskId);
     taskInfo.task.stop();
     taskInfo.status = 'stopped';
     tasks.set(taskId, taskInfo);
-    
+
     logger.info(`Tarea detenida: ${taskId}`);
     return true;
   } catch (error) {
@@ -110,19 +132,19 @@ function startTask(taskId) {
     logger.warn(`La tarea ${taskId} no existe`);
     return false;
   }
-  
+
   try {
     const taskInfo = tasks.get(taskId);
-    
+
     if (taskInfo.status !== 'stopped') {
       logger.warn(`La tarea ${taskId} no está detenida`);
       return false;
     }
-    
+
     taskInfo.task.start();
     taskInfo.status = 'scheduled';
     tasks.set(taskId, taskInfo);
-    
+
     logger.info(`Tarea iniciada: ${taskId}`);
     return true;
   } catch (error) {
@@ -142,22 +164,22 @@ async function executeTaskNow(taskId) {
     logger.warn(`La tarea ${taskId} no existe`);
     return { success: false, error: 'Tarea no encontrada' };
   }
-  
+
   try {
     const taskInfo = tasks.get(taskId);
     logger.info(`Ejecutando tarea inmediatamente: ${taskId} - ${taskInfo.description}`);
-    
-    const startTime = process.hrtime();
+
+    // Verificar la conexión a MongoDB antes de ejecutar la tarea
+    if (!database.isConnected()) {
+      logger.warn(`La ejecución manual de la tarea ${taskId} no se realizará porque MongoDB no está conectado`);
+      return { success: false, skipped: true, reason: 'MongoDB desconectado' };
+    }
+
     const result = await taskInfo.task.job();
-    const elapsedTime = process.hrtime(startTime);
-    const elapsedTimeMs = (elapsedTime[0] * 1000 + elapsedTime[1] / 1000000).toFixed(2);
-    
-    // Actualizar información de última ejecución
-    taskInfo.lastRun = new Date();
-    tasks.set(taskId, taskInfo);
-    
-    logger.info(`Tarea ${taskId} ejecutada inmediatamente. Completada en ${elapsedTimeMs}ms`);
-    return { success: true, result, elapsedTimeMs };
+
+    // La información de última ejecución ya se actualiza en el job
+
+    return result;
   } catch (error) {
     logger.error(`Error al ejecutar tarea ${taskId} inmediatamente: ${error.message}`);
     return { success: false, error: error.message };
@@ -171,7 +193,7 @@ async function executeTaskNow(taskId) {
  */
 function getTasksList() {
   const tasksList = [];
-  
+
   tasks.forEach((taskInfo, taskId) => {
     tasksList.push({
       id: taskId,
@@ -181,8 +203,27 @@ function getTasksList() {
       lastRun: taskInfo.lastRun ? moment(taskInfo.lastRun).format('YYYY-MM-DD HH:mm:ss') : null
     });
   });
-  
+
   return tasksList;
+}
+
+/**
+ * Detiene todas las tareas programadas
+ */
+function stopAllTasks() {
+  logger.info('Deteniendo todas las tareas programadas');
+
+  tasks.forEach((taskInfo, taskId) => {
+    try {
+      taskInfo.task.stop();
+      taskInfo.status = 'stopped';
+      tasks.set(taskId, taskInfo);
+    } catch (error) {
+      logger.error(`Error al detener tarea ${taskId}: ${error.message}`);
+    }
+  });
+
+  logger.info(`Se detuvieron ${tasks.size} tareas programadas`);
 }
 
 /**
@@ -190,109 +231,121 @@ function getTasksList() {
  */
 function initializeTasks() {
   logger.info('Inicializando tareas programadas');
-  
+
+  // Detener todas las tareas existentes
+  stopAllTasks();
+
+  // Tareas de BNA - Tasa Activa
+  scheduleTask(
+    'bna-tasa-activa-bna',
+    '0 7,9,11,13,15,21 * * *',
+    actualizarTasaActivaBNAConReintentos,
+    'Scraping de tasa activa BNA desde BNA'
+  );
+
+  scheduleTask(
+    'búsqueda-fechas-activa-bna',
+    `10 7 * * *`,
+    () => findMissingDataService("tasa_activa_BN", "tasaActivaBNA"),
+    'Búsqueda de fechas sin datos y scraping de tasa activa BNA desde Consejo'
+  );
+
+  scheduleTask(
+    'consejo-tasa-activa-bna',
+    `0 22 * * *`,
+    () => mainConsejoService({ tasa: "tasa_activa_BN", database: "tasaActivaBNA" }),
+    'Scraping de tasa activa BNA desde Consejo'
+  );
+
+  // Tareas Tasa Pasiva BNA
+  scheduleTask(
+    'bna-tasa-pasiva-bna',
+    `15 7,9,11,13,15,21 * * *`,
+    //`59 14 * * *`,
+    mainBnaPasivaService,
+    'Scraping de tasa pasiva BNA desde BNA'
+  );
+
+  scheduleTask(
+    'consejo-tasa-pasiva-bna',
+    `25 7 * * *`,
+    () => mainConsejoService({ tasa: "tasa_pasiva_BN", database: "tasaPasivaBNA" }),
+    'Scraping de tasa pasiva BNA desde Consejo'
+  );
+
+  scheduleTask(
+    'búsqueda-fechas-pasiva-bna',
+    //`15 7 * * *`,
+    `10 22 * * *`,
+    () => findMissingDataService("tasa_pasiva_BN", "tasaPasivaBNA"),
+    'Búsqueda de fechas sin datos y scraping de tasa pasiva BNA desde Consejo'
+  );
+
   // Tareas de BCRA
   scheduleTask(
-    'bcra-tasa-pasiva',
-    `00 ${config.tasas.checkIntervals.pasivaBCRA.hour} * * *`,
-    bcraService.downloadTasaPasivaBCRA,
-    'Descarga y procesa tasa pasiva BCRA'
+    'bcra-pasiva-bcra',
+    `30 7,9,11,13,15,21 * * *`,
+    () => getCurrentRateAndSave("tasaPasivaBCRA", "43"),
+    'Búsqueda de último dato de API BCRA'
   );
-  
+
   scheduleTask(
-    'bcra-cer',
-    `05 ${config.tasas.checkIntervals.cer.hour} * * *`,
-    bcraService.downloadCER,
-    'Descarga y procesa CER'
+    'búsqueda-fechas-pasiva-bcra',
+    `20 22 * * *`,
+    () => findMissingDataServiceBcra("tasaPasivaBCRA", "43"),
+    'Búsqueda de fechas sin datos y scraping de tasa pasiva BCRA desde API BCRA'
   );
-  
+
   scheduleTask(
-    'bcra-icl',
-    `10 ${config.tasas.checkIntervals.icl.hour} * * *`,
-    bcraService.downloadICL,
-    'Descarga y procesa ICL'
+    'bcra-cer-bcra',
+    `40 7,9,11,13,15,21 * * *`,
+    //`58 9 * * *`,
+    () => getCurrentRateAndSave("cer", "30"),
+    'Búsqueda de último dato de API BCRA - Tasa CER'
   );
-  
-  // Tareas de BNA
+
   scheduleTask(
-    'bna-tasa-pasiva',
-    `20 ${config.tasas.checkIntervals.pasivaBNA.hour} * * *`,
-    bnaService.downloadTasaPasivaBNA,
-    'Descarga y procesa tasa pasiva BNA'
+    'búsqueda-fechas-cer-bcra',
+    `40 22 * * *`,
+    //'17 10 * * *',
+    () => findMissingDataServiceBcra("cer", "30"),
+    'Búsqueda de fechas sin datos y scraping de tasa cer BCRA desde API BCRA'
   );
-  
+
   scheduleTask(
-    'bna-tasa-activa',
-    `18 ${config.tasas.checkIntervals.activaBNA.hour} * * *`,
-    bnaService.updateTasaActivaBNA,
-    'Actualiza tasa activa BNA'
+    'bcra-icl-bcra',
+    //`55 7,9,11,13,15,21 * * *`,
+    `23 10 * * *`,
+    () => getCurrentRateAndSave("icl", "40"),
+    'Búsqueda de último dato de API BCRA - Tasa ICL'
   );
-  
-  // Tareas de CPACF
+
   scheduleTask(
-    'cpacf-tasa-activa-bna',
-    `58 11 * * *`,
-    () => cpacfService.scrapingCpacfTasas(
-      '1', 
-      config.tasas.scraping.cpacf.credentials.dni,
-      config.tasas.scraping.cpacf.credentials.tomo,
-      config.tasas.scraping.cpacf.credentials.folio
-    ),
-    'Scraping de tasa activa BNA desde CPACF'
+    'búsqueda-fechas-icl-bcra',
+    //`45 22 * * *`,
+    '24 10 * * *',
+    () => findMissingDataServiceBcra("icl", "40"),
+    'Búsqueda de fechas sin datos y scraping de tasa icl BCRA desde API BCRA'
   );
-  
+
+  // Tareas Colegio
   scheduleTask(
-    'cpacf-tasa-pasiva-bna',
-    `59 11 * * *`,
-    () => cpacfService.scrapingCpacfTasas(
-      '2', 
-      config.tasas.scraping.cpacf.credentials.dni,
-      config.tasas.scraping.cpacf.credentials.tomo,
-      config.tasas.scraping.cpacf.credentials.folio
-    ),
-    'Scraping de tasa pasiva BNA desde CPACF'
-  );
-  
-  scheduleTask(
-    'cpacf-tasa-acta-2658',
-    `00 12 * * *`,
-    () => cpacfService.scrapingCpacfTasas(
-      '22', 
-      config.tasas.scraping.cpacf.credentials.dni,
-      config.tasas.scraping.cpacf.credentials.tomo,
-      config.tasas.scraping.cpacf.credentials.folio
-    ),
-    'Scraping de tasa acta 2658 desde CPACF'
-  );
-  
-  scheduleTask(
-    'cpacf-tasa-acta-2764',
-    `01 12 * * *`,
-    () => cpacfService.scrapingCpacfTasas(
-      '23', 
-      config.tasas.scraping.cpacf.credentials.dni,
-      config.tasas.scraping.cpacf.credentials.tomo,
-      config.tasas.scraping.cpacf.credentials.folio
-    ),
-    'Scraping de tasa acta 2764 desde CPACF'
-  );
-  
-  // Tarea de Infoleg
-  scheduleTask(
-    'infoleg-normativas',
-    `25 ${config.tasas.checkIntervals.pasivaBCRA.hour} * * *`,
-    infolegService.updateInfoleg,
-    'Actualiza normativas desde Infoleg'
-  );
-  
-  // Tarea de categorías
-  scheduleTask(
-    'actualizar-categorias',
-    `30 ${config.tasas.checkIntervals.pasivaBCRA.hour} * * *`,
-    categoriasService.actualizarCategorias,
-    'Actualiza categorías según movilidad'
-  );
-  
+      'busqueda-fechas-tasaActivaCNAT2658',
+      '30 22 * * *',
+      //'55 17 * * *',
+      () => findMissingDataColegio("tasaActivaCNAT2658", "22"),
+      'Búsqueda de fechas sin datos y scraping de tasa CNAT 2658'
+  )
+
+
+
+
+  // Registrar este servicio en la utilidad de base de datos
+  // para permitir la reinicialización automática en caso de reconexión
+  if (typeof database.registerTaskService === 'function') {
+    database.registerTaskService(module.exports);
+  }
+
   logger.info(`Se inicializaron ${tasks.size} tareas programadas`);
 }
 
@@ -302,5 +355,6 @@ module.exports = {
   startTask,
   executeTaskNow,
   getTasksList,
-  initializeTasks
-};  
+  initializeTasks,
+  stopAllTasks
+};

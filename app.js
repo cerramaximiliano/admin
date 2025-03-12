@@ -1,10 +1,8 @@
 const express = require('express');
 const path = require('path');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-const ejs = require('ejs');
 const fs = require('fs').promises;
 const dotenv = require('dotenv');
 const moment = require('moment');
@@ -18,19 +16,12 @@ const database = require("./server/utils/database")
 const retrieveSecrets = require('./server/config/env');
 dotenv.config()
 
-// Rutas
-const apiRoutes = require('./server/routes/apiRoutes');
-
 // Servicios
 const taskService = require('./server/services/tasks/taskService');
 
 // Configurar Express
 const app = express();
 
-// Configurar plantillas
-app.set('views', path.join(__dirname, 'views'));
-app.engine('html', ejs.renderFile);
-app.set('view engine', 'ejs');
 
 // Middleware
 app.use(cors());
@@ -40,12 +31,7 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Registrar rutas
-app.use('/api', apiRoutes);
-
-// Ruta principal
-app.get('/', (req, res) => {
-    res.redirect('/api/home');
-});
+const routes = require('./server/routes/index');
 
 // Manejador de errores
 app.use((err, req, res, next) => {
@@ -58,6 +44,9 @@ app.use((err, req, res, next) => {
         error: 'Error interno del servidor'
     });
 });
+
+// Configurar rutas principales con prefijo /api
+app.use('/api', routes);
 
 /**
  * Inicialización de la aplicación
@@ -83,9 +72,11 @@ async function inicializarApp() {
         taskService.initializeTasks();
 
         // Iniciar servidor
-        const server = app.listen(config.server.port, () => {
+        const server = app.listen(config.server.port, async () => {
             logger.info(`Servidor escuchando en el puerto ${config.server.port}`);
+
         });
+
 
         // Manejar cierre ordenado
         process.on('SIGTERM', () => {
@@ -96,8 +87,6 @@ async function inicializarApp() {
                 process.exit(0);
             });
         });
-
-        // No es necesario manejar SIGINT aquí ya que lo hace el utilitario de base de datos
 
         return server;
     } catch (error) {

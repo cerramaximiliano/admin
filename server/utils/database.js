@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const config = require('../config');
 const logger = require('./logger');
 
+// Referencia para reiniciar tareas tras reconexión
+let taskService = null;
+
 /**
  * Inicializa la conexión a MongoDB
  * 
@@ -9,7 +12,7 @@ const logger = require('./logger');
  */
 exports.connect = async () => {
   try {
-    // Configurar Mongoose 
+    // Configurar Mongoose
     // La opción strictQuery debe configurarse antes de la conexión y no como parte de las opciones
     mongoose.set('strictQuery', false);
     
@@ -24,6 +27,17 @@ exports.connect = async () => {
     
     mongoose.connection.on('error', (err) => {
       logger.error(`MongoDB: Error en conexión: ${err.message}`);
+    });
+    
+    // Añadir evento de reconexión para reiniciar tareas
+    mongoose.connection.on('reconnected', () => {
+      logger.info('MongoDB: Reconexión establecida');
+      
+      // Reiniciar tareas si el servicio está disponible
+      if (taskService) {
+        logger.info('Reinicializando tareas programadas tras reconexión...');
+        taskService.initializeTasks();
+      }
     });
     
     // Manejar eventos de proceso para cerrar conexión ordenadamente
@@ -83,4 +97,23 @@ exports.getStatus = () => {
     host: mongoose.connection.host || 'Ninguno',
     name: mongoose.connection.name || 'Ninguno'
   };
+};
+
+/**
+ * Registra el servicio de tareas para poder reiniciarlo en caso de reconexión
+ * 
+ * @param {Object} service - Servicio de tareas
+ */
+exports.registerTaskService = (service) => {
+  taskService = service;
+  logger.info('Servicio de tareas registrado para reinicialización automática');
+};
+
+/**
+ * Verifica si la conexión a MongoDB está activa
+ * 
+ * @returns {Boolean} - true si está conectado
+ */
+exports.isConnected = () => {
+  return mongoose.connection.readyState === 1;
 };

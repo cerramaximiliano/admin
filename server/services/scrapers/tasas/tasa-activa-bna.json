@@ -1,0 +1,14 @@
+{
+  "fechaVigencia": "6/3/2025",
+  "tna": 34.27,
+  "tem": 2.816,
+  "tea": 40.2,
+  "textoOriginal": {
+    "titulo": "Tasa Activa Cartera General Diversas vigente desde el 6/3/2025",
+    "tna": "Tasa Nominal Anual Vencida con capitalización cada 30 días = T.N.A. (30 días) = 34,27%",
+    "tem": "Tasa Efectiva Mensual Vencida = T.E.M. (30 días) = 2,816%",
+    "tea": "Tasa Efectiva Anual Vencida = T.E.A. = 40,20%"
+  },
+  "fechaVigenciaISO": "2025-03-06T00:00:00.000Z",
+  "fechaFormateada": "2025-03-06"
+}
