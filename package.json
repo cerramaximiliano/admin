@@ -24,6 +24,7 @@
   "author": "Law Analytics Team",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.758.0",
     "aws-sdk": "^2.1150.0",
     "axios": "^1.8.1",
     "bcrypt": "^5.0.1",

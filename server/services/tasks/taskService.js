@@ -3,13 +3,15 @@ const moment = require('moment');
 const config = require('../../config');
 const logger = require('../../utils/logger');
 const database = require('../../utils/database');
+const cronConfig = require('../../config/cronConfig');
 
 // Importar servicios
 const { mainConsejoService, findMissingDataService } = require('../scrapers/tasas/consejoService');
 const { actualizarTasaActivaBNAConReintentos } = require('../scrapers/tasas/bnaService');
-const { mainBnaPasivaService } = require("../scrapers/tasas/bnaProcesadorPDF")
+const { mainBnaPasivaService } = require("../scrapers/tasas/bnaProcesadorPDF");
 const { getCurrentRateAndSave, findMissingDataServiceBcra } = require("../scrapers/tasas/bcraService");
 const { findMissingDataColegio } = require('../scrapers/tasas/colegioService');
+const { programarVerificacionTasas } = require('../../utils/verificadorTasas');
 
 // Colección de tareas programadas
 const tasks = new Map();
@@ -238,21 +240,21 @@ function initializeTasks() {
   // Tareas de BNA - Tasa Activa
   scheduleTask(
     'bna-tasa-activa-bna',
-    '0 7,9,11,13,15,21 * * *',
+    cronConfig.bna.tasaActiva.scraping,
     actualizarTasaActivaBNAConReintentos,
     'Scraping de tasa activa BNA desde BNA'
   );
 
   scheduleTask(
     'búsqueda-fechas-activa-bna',
-    `10 7 * * *`,
+    cronConfig.bna.tasaActiva.busquedaFechas,
     () => findMissingDataService("tasa_activa_BN", "tasaActivaBNA"),
     'Búsqueda de fechas sin datos y scraping de tasa activa BNA desde Consejo'
   );
 
   scheduleTask(
     'consejo-tasa-activa-bna',
-    `0 22 * * *`,
+    cronConfig.bna.tasaActiva.consejo,
     () => mainConsejoService({ tasa: "tasa_activa_BN", database: "tasaActivaBNA" }),
     'Scraping de tasa activa BNA desde Consejo'
   );
@@ -260,23 +262,21 @@ function initializeTasks() {
   // Tareas Tasa Pasiva BNA
   scheduleTask(
     'bna-tasa-pasiva-bna',
-    `15 7,9,11,13,15,21 * * *`,
-    //`59 14 * * *`,
+    cronConfig.bna.tasaPasiva.scraping,
     mainBnaPasivaService,
     'Scraping de tasa pasiva BNA desde BNA'
   );
 
   scheduleTask(
     'consejo-tasa-pasiva-bna',
-    `25 7 * * *`,
+    cronConfig.bna.tasaPasiva.consejo,
     () => mainConsejoService({ tasa: "tasa_pasiva_BN", database: "tasaPasivaBNA" }),
     'Scraping de tasa pasiva BNA desde Consejo'
   );
 
   scheduleTask(
     'búsqueda-fechas-pasiva-bna',
-    //`15 7 * * *`,
-    `10 22 * * *`,
+    cronConfig.bna.tasaPasiva.busquedaFechas,
     () => findMissingDataService("tasa_pasiva_BN", "tasaPasivaBNA"),
     'Búsqueda de fechas sin datos y scraping de tasa pasiva BNA desde Consejo'
   );
@@ -284,61 +284,83 @@ function initializeTasks() {
   // Tareas de BCRA
   scheduleTask(
     'bcra-pasiva-bcra',
-    `30 7,9,11,13,15,21 * * *`,
+    cronConfig.bcra.tasaPasiva.scraping,
     () => getCurrentRateAndSave("tasaPasivaBCRA", "43"),
     'Búsqueda de último dato de API BCRA'
   );
 
   scheduleTask(
     'búsqueda-fechas-pasiva-bcra',
-    `20 22 * * *`,
+    cronConfig.bcra.tasaPasiva.busquedaFechas,
     () => findMissingDataServiceBcra("tasaPasivaBCRA", "43"),
     'Búsqueda de fechas sin datos y scraping de tasa pasiva BCRA desde API BCRA'
   );
 
   scheduleTask(
     'bcra-cer-bcra',
-    `40 7,9,11,13,15,21 * * *`,
-    //`58 9 * * *`,
+    cronConfig.bcra.cer.scraping,
     () => getCurrentRateAndSave("cer", "30"),
     'Búsqueda de último dato de API BCRA - Tasa CER'
   );
 
   scheduleTask(
     'búsqueda-fechas-cer-bcra',
-    `40 22 * * *`,
-    //'17 10 * * *',
+    cronConfig.bcra.cer.busquedaFechas,
     () => findMissingDataServiceBcra("cer", "30"),
     'Búsqueda de fechas sin datos y scraping de tasa cer BCRA desde API BCRA'
   );
 
   scheduleTask(
     'bcra-icl-bcra',
-    //`55 7,9,11,13,15,21 * * *`,
-    `23 10 * * *`,
+    cronConfig.bcra.icl.scraping,
     () => getCurrentRateAndSave("icl", "40"),
     'Búsqueda de último dato de API BCRA - Tasa ICL'
   );
 
   scheduleTask(
     'búsqueda-fechas-icl-bcra',
-    //`45 22 * * *`,
-    '24 10 * * *',
+    cronConfig.bcra.icl.busquedaFechas,
     () => findMissingDataServiceBcra("icl", "40"),
     'Búsqueda de fechas sin datos y scraping de tasa icl BCRA desde API BCRA'
   );
 
   // Tareas Colegio
   scheduleTask(
-      'busqueda-fechas-tasaActivaCNAT2658',
-      '30 22 * * *',
-      //'55 17 * * *',
-      () => findMissingDataColegio("tasaActivaCNAT2658", "22"),
-      'Búsqueda de fechas sin datos y scraping de tasa CNAT 2658'
-  )
+    'busqueda-fechas-tasaActivaCNAT2658',
+    cronConfig.colegio.tasaActivaCNAT2658.busquedaFechas,
+    () => findMissingDataColegio("tasaActivaCNAT2658", "22"),
+    'Búsqueda de fechas sin datos y scraping de tasa CNAT 2658'
+  );
 
 
+  programarVerificacionTasas(module.exports, {
+    cronExpression: cronConfig.verificacion.matutina,
+    taskId: 'verificacion-tasas-matutina',
+    soloTasasActivas: true,
+    enviarEmail: true,
+    notificarExito: true, // Enviar email incluso cuando todo está bien
+    emailDestinatario: "cerramaximiliano@gmail.com"
+  });
 
+  // Verificación después de cada ciclo de actualización
+  programarVerificacionTasas(module.exports, {
+    cronExpression: cronConfig.verificacion.ciclica,
+    taskId: 'verificacion-tasas-ciclica',
+    soloTasasActivas: true,
+    enviarEmail: true,
+    notificarExito: false, // No notificar éxito en las verificaciones cíclicas (sería demasiado frecuente)
+    emailDestinatario: "cerramaximiliano@gmail.com"
+  });
+
+  // Verificación diaria completa
+  programarVerificacionTasas(module.exports, {
+    cronExpression: cronConfig.verificacion.diaria,
+    taskId: 'verificacion-tasas-diaria',
+    soloTasasActivas: false, // Verificar todas las tasas, incluso las inactivas
+    enviarEmail: true,
+    notificarExito: true, // Enviar email incluso cuando todo está bien
+    emailDestinatario: "cerramaximiliano@gmail.com"
+  });
 
   // Registrar este servicio en la utilidad de base de datos
   // para permitir la reinicialización automática en caso de reconexión
