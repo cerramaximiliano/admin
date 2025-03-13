@@ -75,7 +75,8 @@ async function extraerTasaActivaBNAConReintentos(screenshot = false, html = fals
                 browser = await puppeteer.launch({
                     headless: "new",
                     args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1366,768'],
-                    defaultViewport: { width: 1366, height: 768 }
+                    defaultViewport: { width: 1366, height: 768 },
+                    executablePath: '/usr/bin/chromium-browser',
                 });
 
                 const page = await browser.newPage();

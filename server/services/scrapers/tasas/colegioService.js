@@ -30,9 +30,10 @@ class CPACFScraper {
         try {
             logger.info('Iniciando navegador...');
             this.browser = await puppeteer.launch({
-                headless: false, // Usando el nuevo modo headless
+                headless: "new", // Usando el nuevo modo headless
                 args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                defaultViewport: { width: 1366, height: 768 }
+                defaultViewport: { width: 1366, height: 768 },
+                executablePath: '/usr/bin/chromium-browser',
             });
 
             this.page = await this.browser.newPage();
