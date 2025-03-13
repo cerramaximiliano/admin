@@ -1080,7 +1080,7 @@ async function consejoService(opciones = {}) {
         browser = await puppeteer.launch({
             headless: config.headless,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1366,768'],
-            defaultViewport: { width: 1366, height: 768 }, 
+            defaultViewport: { width: 1366, height: 768 },
             executablePath: '/usr/bin/chromium-browser',
         });
 
