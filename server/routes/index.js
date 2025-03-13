@@ -3,6 +3,7 @@ const router = express.Router();
 
 // Importar todas las rutas específicas
 const tasasRoutes = require('./tasasRoutes');
+const tasksRoutes = require('./tasksRoutes');
 
 // Configurar una ruta base para verificar que la API está funcionando
 router.get('/', (req, res) => {
@@ -16,6 +17,7 @@ router.get('/', (req, res) => {
 
 // Registrar todas las rutas
 router.use('/tasas', tasasRoutes);
+router.use('/tasks', tasksRoutes);
 
 // Aquí puedes agregar otras rutas cuando las necesites
 // router.use('/otroRecurso', otroRecursoRoutes);
