@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const logger = require('../utils/logger');
 
 // Importar todas las rutas específicas
 const tasasRoutes = require('./tasasRoutes');
@@ -18,6 +19,12 @@ router.get('/', (req, res) => {
 // Registrar todas las rutas
 router.use('/tasas', tasasRoutes);
 router.use('/tasks', tasksRoutes);
+
+if (process.env.NODE_ENV === 'development') {
+  const tasksDevRoutes = require('./tasksDevRoutes');
+  router.use('/dev/tasks', tasksDevRoutes);
+  logger.warn('¡ATENCIÓN! Rutas de desarrollo sin autenticación habilitadas en /api/dev/tasks');
+}
 
 // Aquí puedes agregar otras rutas cuando las necesites
 // router.use('/otroRecurso', otroRecursoRoutes);

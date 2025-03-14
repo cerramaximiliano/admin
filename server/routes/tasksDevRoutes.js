@@ -2,17 +2,14 @@ const express = require('express');
 const router = express.Router();
 const taskManager = require('../services/tasks/taskService'); // Ajusta la ruta según corresponda
 const logger = require('../utils/logger');
-const { verificaAutenticacion, verificaAdmin } = require('../middlewares/auth');
 
-// Aplicar middleware de autenticación a todas las rutas
-router.use(verificaAutenticacion);
 
 /**
  * @route   GET /api/tasks
  * @desc    Obtener lista de todas las tareas programadas
- * @access  Private (Admin)
+ * @access  Public
  */
-router.get('/', verificaAdmin, (req, res) => {
+router.get('/', (req, res) => {
     try {
         const tasks = taskManager.getTasksList();
         return res.json({ success: true, tasks });
@@ -25,13 +22,12 @@ router.get('/', verificaAdmin, (req, res) => {
 /**
  * @route   POST /api/tasks/:taskId/execute
  * @desc    Ejecutar una tarea específica inmediatamente
- * @access  Private (Admin)
+ * @access  Public
  */
-router.post('/:taskId/execute', verificaAdmin, async (req, res) => {
+router.post('/:taskId/execute', async (req, res) => {
     const { taskId } = req.params;
 
     try {
-        logger.info(`Usuario ${req.usuario.email} está ejecutando la tarea ${taskId}`);
         const result = await taskManager.executeTaskNow(taskId);
 
         if (!result.success && !result.skipped) {
@@ -58,13 +54,12 @@ router.post('/:taskId/execute', verificaAdmin, async (req, res) => {
 /**
  * @route   POST /api/tasks/:taskId/stop
  * @desc    Detener una tarea programada
- * @access  Private (Admin)
+ * @access  Public
  */
-router.post('/:taskId/stop', verificaAdmin, (req, res) => {
+router.post('/:taskId/stop', (req, res) => {
     const { taskId } = req.params;
 
     try {
-        logger.info(`Usuario ${req.usuario.email} está deteniendo la tarea ${taskId}`);
         const result = taskManager.stopTask(taskId);
 
         if (!result) {
@@ -90,13 +85,12 @@ router.post('/:taskId/stop', verificaAdmin, (req, res) => {
 /**
  * @route   POST /api/tasks/:taskId/start
  * @desc    Iniciar una tarea detenida
- * @access  Private (Admin)
+ * @access  Public
  */
-router.post('/:taskId/start', verificaAdmin, (req, res) => {
+router.post('/:taskId/start', (req, res) => {
     const { taskId } = req.params;
 
     try {
-        logger.info(`Usuario ${req.usuario.email} está iniciando la tarea ${taskId}`);
         const result = taskManager.startTask(taskId);
 
         if (!result) {
@@ -122,11 +116,10 @@ router.post('/:taskId/start', verificaAdmin, (req, res) => {
 /**
  * @route   POST /api/tasks/initialize
  * @desc    Reinicializar todas las tareas programadas
- * @access  Private (Admin)
+ * @access  Public
  */
-router.post('/initialize', verificaAdmin, (req, res) => {
+router.post('/initialize', (req, res) => {
     try {
-        logger.info(`Usuario ${req.usuario.email} está reinicializando todas las tareas`);
         taskManager.initializeTasks();
         return res.json({
             success: true,
@@ -144,11 +137,10 @@ router.post('/initialize', verificaAdmin, (req, res) => {
 /**
  * @route   POST /api/tasks/stop-all
  * @desc    Detener todas las tareas programadas
- * @access  Private (Admin)
+ * @access  Public
  */
-router.post('/stop-all', verificaAdmin, (req, res) => {
+router.post('/stop-all', (req, res) => {
     try {
-        logger.info(`Usuario ${req.usuario.email} está deteniendo todas las tareas`);
         taskManager.stopAllTasks();
         return res.json({
             success: true,
