@@ -4,7 +4,9 @@ const path = require('path');
 const moment = require('moment');
 const logger = require('../../../utils/logger');
 const { guardarTasaActivaBNA } = require('../../../controllers/tasasController');
+const { getPuppeteerConfig } = require('../../../config/puppeteer');
 
+const configPuppeteer = getPuppeteerConfig();
 
 /**
  * Implementa una estrategia de reintentos con backoff exponencial
@@ -73,10 +75,13 @@ async function extraerTasaActivaBNAConReintentos(screenshot = false, html = fals
 
                 // Lanzar navegador
                 browser = await puppeteer.launch({
-                    headless: "new",
-                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1366,768'],
-                    defaultViewport: { width: 1366, height: 768 },
-                    executablePath: '/usr/bin/chromium-browser',
+                    headless: configPuppeteer.headless,
+                    args: configPuppeteer.args,
+                    defaultViewport: configPuppeteer.defaultViewport,
+                    executablePath: configPuppeteer.executablePath,
+                    handleSIGINT: false,
+                    handleSIGTERM: false,
+                    handleSIGHUP: false
                 });
 
                 const page = await browser.newPage();
@@ -231,8 +236,16 @@ async function extraerTasaActivaBNAConReintentos(screenshot = false, html = fals
                 return resultado;
             } finally {
                 if (browser) {
-                    await browser.close();
-                    logger.info(`Navegador cerrado (intento ${attempt + 1})`);
+                    try {
+                        await browser.close();
+                        logger.info(`Navegador cerrado (intento ${attempt + 1})`);
+
+                    } catch (error) {
+                        const browserProcess = browser.process();
+                        if (browserProcess) {
+                            browserProcess.kill('SIGKILL');
+                        }
+                    }
                 }
             }
         },

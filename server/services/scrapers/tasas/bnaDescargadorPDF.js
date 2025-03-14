@@ -5,6 +5,7 @@ const logger = require('../../../utils/logger');
 const moment = require('moment');
 const https = require('https');
 const Tasas = require('../../../models/tasas');
+const { getPuppeteerConfig } = require('../../../config/puppeteer');
 
 
 /**
@@ -14,29 +15,32 @@ const Tasas = require('../../../models/tasas');
  * @param {String} options.directorioPdf - Directorio donde guardar el PDF
  * @returns {Promise<Object>} - Resultado de la descarga
  */
+
+const configPuppeteer = getPuppeteerConfig();
+
 async function descargarPdfTasasPasivas(options = {}) {
     const {
         capturarEvidencia = true,
         directorioPdf = path.join(__dirname, 'pdfs')
     } = options;
-    
+
     let browser;
     let pdfPath = null;
     let pdfDetected = false;
     let pdfUrl = null;
-    
+
     try {
         logger.info('Iniciando descarga del PDF de tasas pasivas del BNA');
-        
+
         // Crear directorio para PDFs si no existe
         await fs.mkdir(directorioPdf, { recursive: true });
-        
+
         // Lanzar navegador
         browser = await puppeteer.launch({
-            headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1366,768'],
-            defaultViewport: { width: 1366, height: 768 },
-            executablePath: '/usr/bin/chromium-browser',
+            headless: configPuppeteer.headless,
+            args: configPuppeteer.args,
+            defaultViewport: configPuppeteer.defaultViewport,
+            executablePath: configPuppeteer.executablePath,
         });
 
         const page = await browser.newPage();
@@ -55,11 +59,11 @@ async function descargarPdfTasasPasivas(options = {}) {
 
         // Buscar el enlace de tasas pasivas
         logger.info('Buscando enlace de tasas pasivas');
-        
+
         const linkExists = await page.evaluate(() => {
             const links = Array.from(document.querySelectorAll('a.link'));
-            const tasasPasivasLink = links.find(link => 
-                link.textContent.includes('Tasas de Operaciones Pasivas') && 
+            const tasasPasivasLink = links.find(link =>
+                link.textContent.includes('Tasas de Operaciones Pasivas') &&
                 link.getAttribute('href').includes('.pdf')
             );
             return tasasPasivasLink ? tasasPasivasLink.getAttribute('href') : null;
@@ -70,37 +74,37 @@ async function descargarPdfTasasPasivas(options = {}) {
         }
 
         logger.info(`Enlace del PDF encontrado: ${linkExists}`);
-        
+
         // Construir la URL completa del PDF
         pdfUrl = new URL(linkExists, 'https://www.bna.com.ar').href;
         logger.info(`URL completa del PDF: ${pdfUrl}`);
-        
+
         // Descargar el PDF utilizando https en lugar de a través del navegador
         const pdfBuffer = await downloadPdf(pdfUrl);
-        
+
         // Crear nombre de archivo con fecha
         const fechaActual = moment().format('YYYY-MM-DD');
         const nombreArchivoPdf = `tasas_pasivas_${fechaActual}.pdf`;
         pdfPath = path.join(directorioPdf, nombreArchivoPdf);
-        
+
         // Guardar el PDF
         await fs.writeFile(pdfPath, pdfBuffer);
-        
+
         logger.info(`PDF descargado y guardado en: ${pdfPath}`);
         logger.info(`Nombre del archivo PDF: ${nombreArchivoPdf}`);
-        
+
         // Extraer la fecha del nombre del archivo PDF para tener la fecha de actualización
         const nombreArchivo = path.basename(linkExists);
         const matchFecha = nombreArchivo.match(/tasas_ope_(\d+)\.pdf/);
         let fechaArchivo = null;
-        
+
         if (matchFecha && matchFecha[1]) {
             // Intentar determinar si el número es una fecha en formato DDMM o algún otro formato
             const numeroArchivo = matchFecha[1];
             // Guardamos el número como referencia
             fechaArchivo = numeroArchivo;
         }
-        
+
         // Crear el resultado
         const result = {
             status: 'success',
@@ -116,15 +120,15 @@ async function descargarPdfTasasPasivas(options = {}) {
                 referenciaArchivo: fechaArchivo
             }
         };
-        
+
         // Asegurar que todos los logs anteriores se han procesado
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         return result;
-        
+
     } catch (error) {
         logger.error(`Error al descargar PDF de tasas pasivas: ${error.message}`);
-        
+
         // Capturar evidencia del error si está habilitado
         if (capturarEvidencia && browser) {
             try {
@@ -137,10 +141,10 @@ async function descargarPdfTasasPasivas(options = {}) {
                 logger.error(`Error al capturar evidencia del error: ${captureError.message}`);
             }
         }
-        
+
         // Asegurar que todos los logs de error se han procesado
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         return {
             status: 'error',
             message: `Error al descargar PDF: ${error.message}`
@@ -149,7 +153,7 @@ async function descargarPdfTasasPasivas(options = {}) {
         if (browser) {
             await browser.close();
             logger.info('Navegador cerrado');
-            
+
             // Asegurar que el log de cierre se ha procesado
             await new Promise(resolve => setTimeout(resolve, 500));
         }
@@ -169,14 +173,14 @@ function downloadPdf(url) {
                 reject(new Error(`HTTP Error: ${response.statusCode}`));
                 return;
             }
-            
+
             // Verificar que la respuesta sea un PDF
             const contentType = response.headers['content-type'];
             if (contentType && !contentType.includes('application/pdf')) {
                 reject(new Error(`Content-Type incorrecto: ${contentType}`));
                 return;
             }
-            
+
             // Recopilar los datos
             const chunks = [];
             response.on('data', (chunk) => chunks.push(chunk));
@@ -197,45 +201,45 @@ async function descargarPdfTasasPasivasConReintentos(options = {}) {
         factor = 2,
         ...descargarOptions
     } = options;
-    
+
     let attempt = 0;
     let delay = initialDelay;
-    
+
     while (true) {
         try {
             logger.info(`Intento ${attempt + 1}/${maxRetries} de descarga del PDF`);
-            
+
             // Asegurar que el log del intento se ha procesado
             await new Promise(resolve => setTimeout(resolve, 200));
-            
+
             const result = await descargarPdfTasasPasivas({
                 ...descargarOptions,
                 capturarEvidencia: descargarOptions.capturarEvidencia || attempt > 0
             });
-            
+
             return result;
-            
+
         } catch (error) {
             attempt++;
-            
+
             // Si alcanzamos el número máximo de reintentos, lanzar el error
             if (attempt >= maxRetries) {
                 logger.error(`Se agotaron los reintentos (${maxRetries}) para descargar el PDF`);
-                
+
                 // Asegurar que el log de error se ha procesado
                 await new Promise(resolve => setTimeout(resolve, 500));
-                
+
                 return {
                     status: 'error',
                     message: `Fallaron todos los intentos: ${error.message}`,
                     attempts: attempt
                 };
             }
-            
+
             // Calcular el próximo delay con jitter (variación aleatoria)
             const jitter = Math.random() * 0.3 + 0.85; // Entre 0.85 y 1.15
             delay = Math.min(delay * factor * jitter, maxDelay);
-            
+
             // Esperar antes del próximo intento
             logger.info(`Reintento ${attempt}/${maxRetries} en ${Math.round(delay)}ms`);
             await new Promise(resolve => setTimeout(resolve, delay));

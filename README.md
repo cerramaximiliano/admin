@@ -123,6 +123,136 @@ Ejecutar pruebas específicas:
 npm test -- --grep "BCRA Service"
 ```
 
+# Configuración de Puppeteer
+
+## Instalación optimizada
+
+Para evitar que cada instalación de Puppeteer descargue su propia copia de Chromium (lo que puede resultar en múltiples copias redundantes), recomendamos instalar Puppeteer usando la siguiente configuración:
+
+```bash
+# Evitar la descarga automática de Chromium
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install puppeteer
+```
+
+Esta configuración requiere que tengas una instalación global de Chromium en tu sistema que será utilizada por Puppeteer.
+
+## Configuración con PM2
+
+Si estás utilizando PM2 (como se recomienda para este proyecto), la configuración de Chromium se gestiona a través del archivo `ecosystem.config.js`:
+
+```javascript
+module.exports = {
+  apps: [
+    {
+      name: 'law-analytics',
+      script: './app.js',
+      // ... otras configuraciones
+      env: {
+        NODE_ENV: 'development',
+        PORT: 3000,
+        CHROMIUM_PATH: '/usr/bin/chromium-browser'  // Ruta a tu instalación de Chromium
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        CHROMIUM_PATH: '/usr/bin/chromium-browser'  // Ruta a tu instalación de Chromium
+      },
+      // ... resto de configuración
+    },
+  ],
+};
+```
+
+### Iniciar la aplicación con PM2
+
+```bash
+# Usar configuración predeterminada (desarrollo)
+pm2 start ecosystem.config.js
+
+# O específicamente para entorno de producción
+pm2 start ecosystem.config.js --env production
+```
+
+## Configuración sin PM2
+
+Si no estás utilizando PM2, debes asegurarte de establecer la variable de entorno `CHROMIUM_PATH` antes de iniciar la aplicación:
+
+```bash
+# Linux/macOS
+export CHROMIUM_PATH=/usr/bin/chromium-browser
+node app.js
+
+# Windows
+set CHROMIUM_PATH=C:\Ruta\A\chromium.exe
+node app.js
+```
+
+## Solución de problemas
+
+### Encontrar la ruta correcta de Chromium
+
+Para encontrar la ruta correcta a tu instalación de Chromium:
+
+```bash
+# En sistemas Linux
+which chromium-browser
+# o
+which chromium
+
+# En macOS
+which chromium
+
+# En Windows, verificar la ubicación de instalación
+# Típicamente en:
+# C:\Program Files\Chromium\Application\chrome.exe
+# o
+# C:\Program Files (x86)\Chromium\Application\chrome.exe
+```
+
+### Errores comunes
+
+- **Error `kill EACCES`**: Este error ocurre cuando el usuario que ejecuta la aplicación no tiene permisos para manipular el proceso de Chromium. Para resolverlo:
+  - Usa la versión de Chromium que viene con Puppeteer (sin establecer `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD`)
+  - Asegúrate de que el usuario tenga permisos adecuados para ejecutar Chromium
+  - Considera usar la aplicación con un usuario con más privilegios
+
+- **Error `Failed to launch the browser process`**: Verifica que la ruta especificada en `CHROMIUM_PATH` sea correcta y que Chromium esté instalado.
+
+## Verificación de instalación
+
+Para verificar que Puppeteer puede acceder correctamente a Chromium, puedes ejecutar este script de prueba:
+
+```javascript
+// test-puppeteer.js
+const puppeteer = require('puppeteer');
+
+(async () => {
+  console.log('Ruta de Chromium configurada:', process.env.CHROMIUM_PATH);
+  
+  try {
+    const browser = await puppeteer.launch({
+      executablePath: process.env.CHROMIUM_PATH,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    console.log('Puppeteer iniciado correctamente');
+    const version = await browser.version();
+    console.log('Versión del navegador:', version);
+    
+    await browser.close();
+    console.log('Navegador cerrado correctamente');
+  } catch (error) {
+    console.error('Error al iniciar Puppeteer:', error);
+  }
+})();
+```
+
+Ejecútalo con:
+
+```bash
+node test-puppeteer.js
+```
+
 ## Configuración
 
 La configuración se maneja a través de variables de entorno y el archivo `config/index.js`. Las variables críticas se pueden almacenar en AWS SecretsManager.

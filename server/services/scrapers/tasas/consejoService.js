@@ -5,7 +5,8 @@ const moment = require('moment');
 const logger = require('../../../utils/logger');
 const { parseFechaISO, obtenerDiaSiguiente, obtenerFechaActualISO } = require('../../../utils/format');
 const { getUltimaTasaHastaFecha, bulkUpsertTasas, obtenerRangoFechasFaltantes, procesarActualizacionTasas, verificarFechasFaltantes } = require('../../../controllers/tasasController');
-
+const { getPuppeteerConfig } = require('../../../config/puppeteer');
+const configPuppeteer = getPuppeteerConfig();
 
 /**
  * Convierte una fecha en formato DD/MM/YYYY a un objeto Date
@@ -1078,10 +1079,10 @@ async function consejoService(opciones = {}) {
 
         // Configurar y lanzar navegador
         browser = await puppeteer.launch({
-            headless: config.headless,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1366,768'],
-            defaultViewport: { width: 1366, height: 768 },
-            executablePath: '/usr/bin/chromium-browser',
+            headless: configPuppeteer.headless,
+            args: configPuppeteer.args,
+            defaultViewport: configPuppeteer.defaultViewport,
+            executablePath: configPuppeteer.executablePath,
         });
 
         const page = await browser.newPage();

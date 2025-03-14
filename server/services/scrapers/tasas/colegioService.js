@@ -4,7 +4,10 @@ const logger = require('../../../utils/logger');
 const Tasas = require('../../../models/tasas');
 const { actualizarFechasFaltantes, verificarFechasFaltantes } = require('../../../controllers/tasasController');
 const { obtenerFechaActualISO } = require('../../../utils/format');
+const { getPuppeteerConfig } = require('../../../config/puppeteer');
 require('dotenv').config();
+
+const configPuppeteer = getPuppeteerConfig();
 
 /**
  * Clase para realizar scraping del sitio tasas.cpacf.org.ar
@@ -30,10 +33,10 @@ class CPACFScraper {
         try {
             logger.info('Iniciando navegador...');
             this.browser = await puppeteer.launch({
-                headless: "new", // Usando el nuevo modo headless
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                defaultViewport: { width: 1366, height: 768 },
-                executablePath: '/usr/bin/chromium-browser',
+                headless: configPuppeteer.headless,
+                args: configPuppeteer.args,
+                defaultViewport: configPuppeteer.defaultViewport,
+                executablePath: configPuppeteer.executablePath,
             });
 
             this.page = await this.browser.newPage();
