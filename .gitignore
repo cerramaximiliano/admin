@@ -4,3 +4,5 @@ node_modules/
 /server/logger.log
 /server/files/serverFiles/
 /logs
+/server/services/scrapers/tasas/pdfs
+/server/files/

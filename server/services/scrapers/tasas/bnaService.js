@@ -223,9 +223,13 @@ async function extraerTasaActivaBNAConReintentos(screenshot = false, html = fals
                     }
                 }
 
+
                 // Guardar resultado en archivo JSON para referencia
+                const rootDir = path.resolve(__dirname, '../../../../');
+                const saveDir = path.join(rootDir, 'server', 'files');
+                await fs.mkdir(saveDir, { recursive: true });
                 await fs.writeFile(
-                    path.join(__dirname, `tasa-activa-bna-intento-${attempt + 1}.json`),
+                    path.join(saveDir, `tasa-activa-bna-intento-${attempt + 1}.json`),
                     JSON.stringify(resultado, null, 2)
                 );
 
@@ -286,7 +290,11 @@ async function extraerTasaActivaBNAConReintentos(screenshot = false, html = fals
 async function guardarCaptura(page, prefix) {
     try {
         const timestamp = new Date().toISOString().replace(/:/g, '-');
-        const screenshotPath = path.join(__dirname, `${prefix}-${timestamp}.png`);
+        const rootDir = path.resolve(__dirname, '../../../../')
+        const saveDir = path.join(rootDir, 'server', 'files');
+        await fs.mkdir(saveDir, { recursive: true });
+
+        const screenshotPath = path.join(saveDir, `${prefix}-${timestamp}.png`);
         await page.screenshot({ path: screenshotPath, fullPage: true });
         logger.info(`Captura guardada: ${prefix}-${timestamp}.png`);
     } catch (error) {
@@ -300,7 +308,12 @@ async function guardarCaptura(page, prefix) {
 async function guardarHTML(page, filename) {
     try {
         const html = await page.content();
-        const htmlPath = path.join(__dirname, `${filename}.html`);
+
+        const rootDir = path.resolve(__dirname, '../../../../')
+        const saveDir = path.join(rootDir, 'server', 'files');
+        await fs.mkdir(saveDir, { recursive: true });
+
+        const htmlPath = path.join(saveDir, `${filename}.html`);
         await fs.writeFile(htmlPath, html);
         logger.info(`HTML guardado en ${filename}.html`);
     } catch (error) {
