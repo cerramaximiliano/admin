@@ -64,7 +64,7 @@ async function verificarTasasActualizadas(options = {}) {
             // 1. Su fecha de última actualización es hoy (mismo día), O
             // 2. Su fecha de última actualización es futura (días negativos)
             const estaActualizada =
-                moment(fechaUltima).isSame(fechaActual, 'day') ||
+                moment(fechaUltima).isSameOrAfter(fechaActual, 'day') ||
                 diasDesde < 0; // Fecha futura
 
             // Guardar resultado con información adicional
