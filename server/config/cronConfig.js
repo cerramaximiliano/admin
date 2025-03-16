@@ -51,6 +51,10 @@ const cronConfig = {
             busquedaFechas: '53 7 * * *'
         }
     },
+
+    manager_files: {
+        cleanup: '0 0 * * *'
+    },
 // Configuración para verificación de actualizaciones
     verificacion: {
         // Verificación después del ciclo matutino

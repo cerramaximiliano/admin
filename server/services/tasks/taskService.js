@@ -12,6 +12,7 @@ const { mainBnaPasivaService } = require("../scrapers/tasas/bnaProcesadorPDF");
 const { getCurrentRateAndSave, findMissingDataServiceBcra } = require("../scrapers/tasas/bcraService");
 const { findMissingDataColegio } = require('../scrapers/tasas/colegioService');
 const { programarVerificacionTasas } = require('../../utils/verificadorTasas');
+const { cleanServerFiles } = require('../file_manager/file_manager');
 
 // Colección de tareas programadas
 const tasks = new Map();
@@ -353,6 +354,14 @@ function initializeTasks() {
     'Búsqueda de fechas sin datos y scraping de tasa Activa Cartera general (préstamos) nominal anual vencida a 30 días del Banco Nacion.'
   );
 
+
+  scheduleTask(
+    'eliminar-files',
+    cronConfig.manager_files.cleanup,
+    cleanServerFiles,
+    'Elimina todos los archivos de la carpeta files',
+  )
+  
 
   programarVerificacionTasas(module.exports, {
     cronExpression: cronConfig.verificacion.matutina,
