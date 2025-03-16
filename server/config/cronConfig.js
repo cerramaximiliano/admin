@@ -39,18 +39,17 @@ const cronConfig = {
     // Búsqueda de fechas faltantes
     colegio: {
         tasaActivaCNAT2658: {
-            busquedaFechas: '47 7 * * *'
+            busquedaFechas: '47 7,18,21 * * *'
         }, 
         tasaActivaCNAT2764: {
-            busquedaFechas: '49 7 * * *'
+            busquedaFechas: '49 7,18,21 * * *'
         },
         tasaActivaBNA: {
-            busquedaFechas: '23 10 * * *'
-            //'51 7 * * *'
+            busquedaFechas: '51 7,18,21 * * *'
 
         },
         tasaActivaTnaBNA: {
-            busquedaFechas: '53 7 * * *'
+            busquedaFechas: '53 7,18,21 * * *'
         }
     },
 
