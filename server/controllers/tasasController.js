@@ -117,7 +117,9 @@ exports.getUltimosTasasValues = async (req, res) => {
       'cer',
       'icl',
       'tasaActivaCNAT2601',
-      'tasaActivaCNAT2658'
+      'tasaActivaCNAT2658',
+      'tasaActivaCNAT2764',
+      'tasaActivaTnaBNA',
     ];
 
     const result = {};
@@ -390,7 +392,9 @@ exports.verificarFechasFaltantes = async (tipoTasa) => {
       'cer',
       'icl',
       'tasaActivaCNAT2601',
-      'tasaActivaCNAT2658'
+      'tasaActivaCNAT2658',
+      'tasaActivaCNAT2764',
+      'tasaActivaTnaBNA',
     ];
 
     if (!tiposValidos.includes(tipoTasa)) {
@@ -510,7 +514,10 @@ exports.obtenerRangoFechasFaltantes = async (tipoTasa, opciones = {}) => {
       'cer',
       'icl',
       'tasaActivaCNAT2601',
-      'tasaActivaCNAT2658'
+      'tasaActivaCNAT2658',
+      'tasaActivaCNAT2764',
+      'tasaActivaTnaBNA',
+
     ];
 
     if (!tiposValidos.includes(tipoTasa)) {
@@ -649,7 +656,9 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
       'cer',
       'icl',
       'tasaActivaCNAT2601',
-      'tasaActivaCNAT2658'
+      'tasaActivaCNAT2658',
+      'tasaActivaCNAT2764',
+      'tasaActivaTnaBNA',
     ];
 
     if (!tiposValidos.includes(tipoTasa)) {
@@ -1056,7 +1065,7 @@ exports.consultarPorFechas = async (req, res) => {
     // Verificar que el campo solicitado sea válido
     const camposValidos = [
       'tasaPasivaBNA', 'tasaPasivaBCRA', 'tasaActivaBNA',
-      'cer', 'icl', 'tasaActivaCNAT2601', 'tasaActivaCNAT2658'
+      'cer', 'icl', 'tasaActivaCNAT2601', 'tasaActivaCNAT2658', 'tasaActivaCNAT2764', 'tasaActivaTnaBNA',
     ];
 
     if (!camposValidos.includes(campo)) {

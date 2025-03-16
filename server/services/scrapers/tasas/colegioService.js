@@ -5,9 +5,15 @@ const Tasas = require('../../../models/tasas');
 const { actualizarFechasFaltantes, verificarFechasFaltantes } = require('../../../controllers/tasasController');
 const { obtenerFechaActualISO } = require('../../../utils/format');
 const { getPuppeteerConfig } = require('../../../config/puppeteer');
+const { waitRandom, typeHuman,
+    initializeImproved,
+    loginImproved,
+    calcularImproved } = require('../colegioServiceFunctions');
 require('dotenv').config();
 
 const configPuppeteer = getPuppeteerConfig();
+
+
 
 /**
  * Clase para realizar scraping del sitio tasas.cpacf.org.ar
@@ -31,20 +37,54 @@ class CPACFScraper {
      */
     async initialize() {
         try {
-            logger.info('Iniciando navegador...');
-            this.browser = await puppeteer.launch({
+            logger.info('Iniciando navegador con configuración mejorada...');
+
+            // Configuración mejorada para evitar detección
+            const puppeteerOpts = {
                 headless: configPuppeteer.headless,
                 args: configPuppeteer.args,
                 defaultViewport: configPuppeteer.defaultViewport,
                 executablePath: configPuppeteer.executablePath,
-            });
+                ignoreHTTPSErrors: true,
+                slowMo: 50, // Ralentiza toda la navegación
+            };
 
+            this.browser = await puppeteer.launch(puppeteerOpts);
             this.page = await this.browser.newPage();
 
-            // Configurar timeout
-            await this.page.setDefaultNavigationTimeout(60000);
+            // Simular navegador real añadiendo webgl y otras propiedades
+            await this.page.evaluateOnNewDocument(() => {
+                // Ocultar que estamos usando Puppeteer/Automation
+                Object.defineProperty(navigator, 'webdriver', { get: () => false });
 
-            // Agregar listeners para errores de la página
+                // Simular plugins (como haría un navegador real)
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [
+                        { name: 'Chrome PDF Plugin' },
+                        { name: 'Chrome PDF Viewer' },
+                        { name: 'Native Client' },
+                    ],
+                });
+
+                // Simular idiomas
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['es-ES', 'es', 'en-US', 'en'],
+                });
+
+                // Simular webgl
+                const getParameter = WebGLRenderingContext.prototype.getParameter;
+                WebGLRenderingContext.prototype.getParameter = function (parameter) {
+                    if (parameter === 37445) return 'Intel Inc.';
+                    if (parameter === 37446) return 'Intel Iris OpenGL Engine';
+                    return getParameter.apply(this, arguments);
+                };
+            });
+
+            // Configurar timeouts más largos
+            await this.page.setDefaultNavigationTimeout(120000); // 2 minutos
+            await this.page.setDefaultTimeout(60000); // 1 minuto
+
+            // Añadir listeners para errores de la página
             this.page.on('error', err => {
                 logger.error('Error en la página:', err);
             });
@@ -54,6 +94,9 @@ class CPACFScraper {
                     logger.info(`${msg.type()}: ${msg.text()}`);
                 }
             });
+
+            // Configurar cache y cookies
+            await this.page.setCacheEnabled(true);
 
             return true;
         } catch (error) {
@@ -74,17 +117,21 @@ class CPACFScraper {
             }
 
             logger.info('Navegando a la página de login...');
-            await this.page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
 
-            // Verificar si los campos de login existen
-            const formExists = await this.page.evaluate(() => {
-                return document.querySelector('input[name="dni"]') !== null;
+            // Esperar un tiempo antes de navegar
+            await waitRandom(2000, 4000);
+
+            // Navegar con opciones mejoradas y esperar a que cargue completamente
+            await this.page.goto(this.baseUrl, {
+                waitUntil: 'networkidle2',
+                timeout: 60000
             });
 
-            if (!formExists) {
-                logger.error('No se encontró el formulario de login');
-                throw new Error('Formulario de login no encontrado');
-            }
+            // Esperar un tiempo aleatorio después de cargar
+            await waitRandom(3000, 5000);
+
+            // Verificar si los campos de login existen con tiempo de espera
+            await this.page.waitForSelector('input[name="dni"]', { timeout: 30000 });
 
             // Verificar credenciales
             if (!this.credentials.dni || !this.credentials.tomo || !this.credentials.folio) {
@@ -93,24 +140,73 @@ class CPACFScraper {
 
             logger.info('Completando el formulario de login...');
 
-            // Completar formulario
-            await this.page.type('input[name="dni"]', this.credentials.dni);
-            await this.page.type('input[name="tomo"]', this.credentials.tomo);
-            await this.page.type('input[name="folio"]', this.credentials.folio);
+            // Completar formulario con comportamiento más humano
+            await typeHuman(this.page, 'input[name="dni"]', this.credentials.dni);
+            await waitRandom(800, 1500);
 
-            // Hacer click en el botón de siguiente
+            await typeHuman(this.page, 'input[name="tomo"]', this.credentials.tomo);
+            await waitRandom(800, 1500);
+
+            await typeHuman(this.page, 'input[name="folio"]', this.credentials.folio);
+            await waitRandom(1000, 2000);
+
+            // Hacer click en el botón de siguiente con comportamiento más humano
             logger.info('Haciendo click en SIGUIENTE...');
-            await this.page.evaluate(() => {
+
+            const nextButton = await this.page.evaluate(() => {
                 const links = Array.from(document.querySelectorAll('a'));
                 const nextButton = links.find(link => link.textContent.includes('SIGUIENTE'));
-                if (nextButton) nextButton.click();
-                else document.forms[0].submit();
+                if (nextButton) {
+                    const rect = nextButton.getBoundingClientRect();
+                    return {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2,
+                        exists: true
+                    };
+                } else {
+                    return { exists: false };
+                }
             });
 
-            // Esperar a que la navegación termine
-            await this.page.waitForNavigation({ waitUntil: 'networkidle2' });
+            if (nextButton.exists) {
+                // Mover el mouse hacia el botón gradualmente
+                await this.page.mouse.move(
+                    nextButton.x - 50 + Math.random() * 20,
+                    nextButton.y - 20 + Math.random() * 10,
+                    { steps: 10 }
+                );
 
-            // Verificar si el login fue exitoso (comprobando que ya no estamos en la página de login)
+                await waitRandom(300, 700);
+
+                // Completar el movimiento hacia el centro del botón
+                await this.page.mouse.move(
+                    nextButton.x + Math.random() * 10 - 5,
+                    nextButton.y + Math.random() * 10 - 5,
+                    { steps: 5 }
+                );
+
+                await waitRandom(200, 400);
+
+                // Hacer click
+                await this.page.mouse.down();
+                await waitRandom(50, 150);
+                await this.page.mouse.up();
+            } else {
+                // Si no encuentra el botón, enviar el formulario
+                await this.page.evaluate(() => {
+                    document.forms[0].submit();
+                });
+            }
+
+            // Esperar a que la navegación termine con un timeout generoso
+            await this.page.waitForNavigation({
+                waitUntil: 'networkidle2',
+                timeout: 60000
+            });
+
+            await waitRandom(2000, 4000);
+
+            // Verificar si el login fue exitoso
             const currentUrl = this.page.url();
             this.loggedIn = !currentUrl.includes('newLogin');
 
@@ -124,6 +220,9 @@ class CPACFScraper {
             }
 
             logger.info('Login exitoso');
+
+            // Esperar un tiempo antes de continuar
+            await waitRandom(3000, 5000);
 
             // Analizar la estructura de la página después del login
             await this.analyzePageStructure();
@@ -335,7 +434,7 @@ class CPACFScraper {
      * @param {string} filePath - Ruta del archivo donde guardar los resultados
      * @returns {Promise<boolean>} - Si se guardó correctamente
      */
-    async saveResultsToJSON(resultados, filePath = './server/services/scrapers/tasas/resultados_calculo.json') {
+    async saveResultsToJSON(resultados, filePath = './server/files/resultados_calculo.json') {
         try {
             // Requerir el módulo fs
             const fs = require('fs');
@@ -364,7 +463,10 @@ class CPACFScraper {
      */
     async calcular(params) {
         try {
-            logger.info('Configurando parámetros de cálculo:', params);
+            logger.info('Configurando parámetros de cálculo:', JSON.stringify(params, null, 2));
+
+            // Esperar antes de comenzar para simular comportamiento humano
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 1000));
 
             // Limpiar los campos antes de completarlos para evitar problemas
             await this.page.evaluate(() => {
@@ -381,17 +483,42 @@ class CPACFScraper {
                 if (dateFirstCapitalizationInput) dateFirstCapitalizationInput.value = '';
             });
 
-            // Completar el formulario de cálculo con los nombres EXACTOS de los campos
+            // Completar el formulario con comportamiento más humano
             if (params.capital) {
-                await this.page.type('input[name="capital_0"]', params.capital.toString());
+                // Escribir lentamente, como un humano
+                await this.page.click('input[name="capital_0"]');
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 200));
+
+                for (const char of params.capital.toString()) {
+                    await this.page.type('input[name="capital_0"]', char, { delay: Math.random() * 100 + 50 });
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+                }
+
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 400));
             }
 
             if (params.date_from_0) {
-                await this.page.type('input[name="date_from_0"]', params.date_from_0);
+                await this.page.click('input[name="date_from_0"]');
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 200));
+
+                for (const char of params.date_from_0) {
+                    await this.page.type('input[name="date_from_0"]', char, { delay: Math.random() * 100 + 50 });
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+                }
+
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 400));
             }
 
             if (params.date_to) {
-                await this.page.type('input[name="date_to"]', params.date_to);
+                await this.page.click('input[name="date_to"]');
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 200));
+
+                for (const char of params.date_to) {
+                    await this.page.type('input[name="date_to"]', char, { delay: Math.random() * 100 + 50 });
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+                }
+
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 400));
             }
 
             // Configurar la capitalización si está disponible
@@ -402,9 +529,12 @@ class CPACFScraper {
                 });
 
                 if (capitalizationExists) {
+                    // Hacer click y esperar un poco antes de seleccionar
+                    await this.page.click('select[name="capitalization"]');
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200));
+
                     await this.page.select('select[name="capitalization"]', params.capitalization);
-                } else {
-                    //console.log('Advertencia: No se encontró el selector de capitalización en la página');
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 400));
                 }
             }
 
@@ -415,35 +545,150 @@ class CPACFScraper {
                 });
 
                 if (dateFirstCapExists) {
-                    await this.page.type('input[name="date_first_capitalization"]', params.date_first_capitalization);
-                } else {
-                    //console.log('Advertencia: No se encontró el campo de fecha de primera capitalización');
+                    await this.page.click('input[name="date_first_capitalization"]');
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 200));
+
+                    for (const char of params.date_first_capitalization) {
+                        await this.page.type('input[name="date_first_capitalization"]', char, { delay: Math.random() * 100 + 50 });
+                        await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 400));
                 }
             }
 
+            // Esperar un tiempo más antes de hacer clic en el botón de calcular
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 1000));
+
+            // Tomar captura para diagnóstico antes de calcular
+            await this.page.screenshot({ path: './server/files/before_calculate.png' });
+
             // Hacer click en el botón CALCULAR o enviar el formulario
             logger.info('Enviando formulario para calcular...');
-            await this.page.evaluate(() => {
+
+            // Detectar y hacer clic en el botón de manera más humana
+            const calcularButtonInfo = await this.page.evaluate(() => {
                 // Primero buscar un botón o enlace específico con texto CALCULAR
                 const calcularButton = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn'))
                     .find(el => el.textContent.includes('CALCULAR'));
 
                 if (calcularButton) {
-                    //console.log('Encontrado botón CALCULAR, haciendo click...');
-                    calcularButton.click();
+                    const rect = calcularButton.getBoundingClientRect();
+                    return {
+                        found: true,
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
                 } else {
-                    // Si no hay botón específico, enviar el formulario directamente
-                    //console.log('No se encontró botón CALCULAR, enviando formulario dataForm...');
-                    document.getElementById('dataForm').submit();
+                    return { found: false };
                 }
             });
 
-            // Esperar a que la página de resultados cargue
-            await this.page.waitForNavigation({ waitUntil: 'networkidle2' });
+            if (calcularButtonInfo.found) {
+                // Mover el cursor gradualmente hacia el botón
+                await this.page.mouse.move(
+                    calcularButtonInfo.x - 40 + Math.random() * 30,
+                    calcularButtonInfo.y - 20 + Math.random() * 15,
+                    { steps: 10 }
+                );
+
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 200));
+
+                // Mover al centro del botón
+                await this.page.mouse.move(
+                    calcularButtonInfo.x + Math.random() * 10 - 5,
+                    calcularButtonInfo.y + Math.random() * 10 - 5,
+                    { steps: 5 }
+                );
+
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100));
+
+                // Hacer clic
+                await this.page.mouse.down();
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
+                await this.page.mouse.up();
+            } else {
+                // Si no encuentra el botón, enviar el formulario directamente
+                await this.page.evaluate(() => {
+                    const form = document.getElementById('dataForm');
+                    if (form) form.submit();
+                });
+            }
+
+            // Usar un timeout más largo para esperar la navegación
+            try {
+                await this.page.waitForNavigation({
+                    waitUntil: 'networkidle2',
+                    timeout: 60000 // 60 segundos
+                });
+            } catch (timeoutError) {
+                logger.warn('Timeout esperando navegación después de calcular. Verificando estado actual...');
+
+                // Verificar si hay un error 500 en la página
+                const hasServerError = await this.page.evaluate(() => {
+                    return document.body.textContent.includes('500') &&
+                        document.body.textContent.includes('Server Error');
+                });
+
+                if (hasServerError) {
+                    logger.error('Se detectó un error 500 del servidor.');
+
+                    // Capturar el estado para diagnóstico
+                    await this.page.screenshot({ path: './server/files/server_error.png' });
+
+                    // Intentar navegar hacia atrás y reintentar con un rango de fechas más corto
+                    if (params.date_from_0 && params.date_to) {
+                        logger.info('Intentando reducir el rango de fechas para evitar el error 500...');
+
+                        await new Promise(resolve => setTimeout(resolve, 5000)); // Espera de 5 segundos
+
+                        try {
+                            await this.page.goBack({ timeout: 30000 });
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+
+                            // Reducir el rango de fechas a la mitad
+                            const dateFrom = new Date(params.date_from_0.split('/').reverse().join('-'));
+                            const dateTo = new Date(params.date_to.split('/').reverse().join('-'));
+
+                            const diffTime = Math.abs(dateTo - dateFrom);
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                            if (diffDays > 30) {
+                                const newDateTo = new Date(dateFrom);
+                                newDateTo.setDate(dateFrom.getDate() + Math.min(diffDays / 2, 30));
+
+                                const newDateToStr = `${String(newDateTo.getDate()).padStart(2, '0')}/${String(newDateTo.getMonth() + 1).padStart(2, '0')}/${newDateTo.getFullYear()}`;
+
+                                params.date_to = newDateToStr;
+
+                                logger.info(`Rango reducido: ${params.date_from_0} - ${params.date_to}`);
+
+                                // Reintentar con el rango reducido
+                                return await this.calcular(params);
+                            }
+                        } catch (navError) {
+                            logger.error('Error al intentar navegar hacia atrás:', navError);
+                        }
+                    }
+
+                    throw new Error('Error 500 del servidor al calcular. Intente con un rango de fechas más corto.');
+                }
+            }
+
+            // Capturar página después de calcular para diagnóstico
+            await this.page.screenshot({ path: './server/files/after_calculate.png' });
 
             // Extraer los resultados generales
             const resultados = await this.extractData(() => {
-                // Esta función debe adaptarse según la estructura de la página de resultados
+                // Verificar primero si hay un error 500
+                if (document.body.textContent.includes('500') && document.body.textContent.includes('Server Error')) {
+                    return {
+                        error: 'Error 500 del servidor',
+                        pageContent: document.body.textContent.slice(0, 500)
+                    };
+                }
+
+                // Buscar la tabla de resultados
                 const resultTable = document.querySelector('table.resultados') ||
                     document.querySelector('table.table') ||
                     document.querySelector('table');
@@ -481,36 +726,114 @@ class CPACFScraper {
                 return result;
             });
 
-            //console.log('Cálculo completado.');
+            // Verificar si hay errores en la respuesta
+            if (resultados.error) {
+                logger.error(`Error en los resultados: ${resultados.error}`);
 
-            // Primero intentar usar el extractor específico para CPACF
-            try {
-                //console.log('Intentando extraer detalles con el extractor específico CPACF...');
-                const detallesCPACF = await this.extractCPACFDetalle();
+                if (resultados.error === 'Error 500 del servidor') {
+                    // Si es error 500, intentar nuevamente con rango reducido si es posible
+                    if (params.date_from_0 && params.date_to) {
+                        logger.info('Intentando reducir el rango de fechas para evitar el error 500...');
 
-                if (Array.isArray(detallesCPACF) && detallesCPACF.length > 0) {
-                    resultados.detalles = detallesCPACF;
-                    //console.log(`Extracción exitosa: ${detallesCPACF.length} filas extraídas con el extractor específico`);
-                    return resultados;
+                        await new Promise(resolve => setTimeout(resolve, 3000)); // Espera
+
+                        try {
+                            await this.page.goBack({ timeout: 30000 });
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+
+                            // Reducir el rango de fechas
+                            const dateFrom = new Date(params.date_from_0.split('/').reverse().join('-'));
+                            const dateTo = new Date(params.date_to.split('/').reverse().join('-'));
+
+                            const diffTime = Math.abs(dateTo - dateFrom);
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                            if (diffDays > 30) {
+                                const newDateTo = new Date(dateFrom);
+                                newDateTo.setDate(dateFrom.getDate() + Math.min(diffDays / 2, 30));
+
+                                const newDateToStr = `${String(newDateTo.getDate()).padStart(2, '0')}/${String(newDateTo.getMonth() + 1).padStart(2, '0')}/${newDateTo.getFullYear()}`;
+
+                                params.date_to = newDateToStr;
+
+                                logger.info(`Rango reducido: ${params.date_from_0} - ${params.date_to}`);
+
+                                // Reintentar con el rango reducido
+                                return await this.calcular(params);
+                            }
+                        } catch (navError) {
+                            logger.error('Error al intentar navegar hacia atrás:', navError);
+                        }
+                    }
                 }
-            } catch (extractorSpecificError) {
-                logger.warn('Error en el extractor específico:', extractorSpecificError);
             }
 
-            // Si el extractor específico falló, usar el extractor genérico
-            logger.info('Usando extractor genérico como fallback...');
-            const detallesData = await this.extractDetallesTabla();
+            // Usar el extractor unificado para obtener los detalles
+            logger.info('Extrayendo detalles con el extractor unificado...');
+            const resultadoExtraccion = await this.extractTablaUnificada();
 
-            if (Array.isArray(detallesData) && detallesData.length > 0) {
-                resultados.detalles = detallesData;
-                logger.info(`Se extrajeron ${detallesData.length} filas de detalles con el extractor genérico`);
+            if (resultadoExtraccion.detalles && Array.isArray(resultadoExtraccion.detalles) && resultadoExtraccion.detalles.length > 0) {
+                resultados.detalles = resultadoExtraccion.detalles;
+                resultados.modeloTabla = resultadoExtraccion.modelo;
+                logger.info(`Extracción exitosa con modelo de tabla ${resultadoExtraccion.modelo}: ${resultadoExtraccion.detalles.length} filas extraídas`);
+
+                // Guardar información de debug si está disponible
+                if (resultadoExtraccion.debugInfo) {
+                    logger.info('Información de depuración:', resultadoExtraccion.debugInfo);
+                }
+
+                return resultados;
             } else {
-                logger.warn('No se pudieron obtener los detalles con ningún extractor');
-            }
+                // Si el extractor unificado falló, intentar con los extractores antiguos
+                logger.warn('El extractor unificado no pudo obtener datos. Intentando con extractores específicos...');
 
-            return resultados;
+                try {
+                    logger.info('Intentando extractor específico CPACF...');
+                    const detallesCPACF = await this.extractCPACFDetalle();
+
+                    if (Array.isArray(detallesCPACF) && detallesCPACF.length > 0) {
+                        resultados.detalles = detallesCPACF;
+                        logger.info(`Extracción exitosa con CPACF: ${detallesCPACF.length} filas extraídas`);
+                        return resultados;
+                    }
+                } catch (extractorSpecificError) {
+                    logger.warn('Error en el extractor específico CPACF:', extractorSpecificError);
+                }
+
+                try {
+                    logger.info('Intentando extractor genérico como fallback final...');
+                    const detallesData = await this.extractDetallesTabla();
+
+                    if (Array.isArray(detallesData) && detallesData.length > 0) {
+                        resultados.detalles = detallesData;
+                        logger.info(`Extracción exitosa con extractor genérico: ${detallesData.length} filas extraídas`);
+                        return resultados;
+                    }
+                } catch (extractorGenericoError) {
+                    logger.warn('Error en el extractor genérico:', extractorGenericoError);
+                }
+
+                // Si llegamos aquí, todos los extractores fallaron
+                logger.error('No se pudieron extraer detalles con ningún método');
+                logger.info('Detalles de error de extracción unificada:', resultadoExtraccion);
+
+                // Devolver lo que tengamos, aunque no incluya detalles
+                return resultados;
+            }
         } catch (error) {
             logger.error(`Error al realizar el cálculo: ${error.message}`);
+
+            // Capturar el estado actual para diagnóstico
+            try {
+                await this.page.screenshot({ path: './server/files/error_state.png' });
+                const html = await this.page.content();
+                const fs = require('fs');
+                fs.writeFileSync('./server/files/error_page.html', html);
+                logger.info('Se capturaron pantallas de diagnóstico del error');
+            } catch (captureError) {
+                logger.error('Error al capturar diagnósticos:', captureError);
+            }
+
             throw error;
         }
     }
@@ -579,6 +902,271 @@ class CPACFScraper {
         await this.page.screenshot({ path });
     }
 
+
+    /**
+     * Extrae datos de tablas de tasas de interés, unificando la detección de diferentes modelos de tablas
+     * @returns {Promise<Array|Object>} Array de objetos con detalles o objeto con error
+     */
+    async extractTablaUnificada() {
+        return await this.extractData(() => {
+            // Array para guardar información de depuración
+            const debugInfo = [];
+
+            // Buscar tablas con clases específicas primero (enfoque específico)
+            const specificContainers = [
+                '.table-detalle-calculos',
+                '.detalles',
+                '#detalles',
+                'table.resultados',
+                'table.table-detalle'
+            ];
+
+            let tablesFound = [];
+
+            // Intentar primero contenedores específicos
+            for (const selector of specificContainers) {
+                const containers = document.querySelectorAll(selector);
+                if (containers.length > 0) {
+                    debugInfo.push(`Encontrado contenedor específico: ${selector} (${containers.length})`);
+
+                    // Si el selector es directo a una tabla
+                    if (selector.startsWith('table')) {
+                        Array.from(containers).forEach(table => tablesFound.push(table));
+                    } else {
+                        // Si es un contenedor, buscar tablas dentro
+                        Array.from(containers).forEach(container => {
+                            const tables = container.querySelectorAll('table');
+                            if (tables.length > 0) {
+                                debugInfo.push(`- Encontradas ${tables.length} tablas dentro de ${selector}`);
+                                Array.from(tables).forEach(table => tablesFound.push(table));
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Si no se encontraron tablas específicas, buscar todas las tablas
+            if (tablesFound.length === 0) {
+                debugInfo.push('No se encontraron tablas específicas, buscando todas las tablas');
+                tablesFound = Array.from(document.querySelectorAll('table'));
+                debugInfo.push(`- Encontradas ${tablesFound.length} tablas generales`);
+            }
+
+            // Si no hay tablas, devolver error
+            if (tablesFound.length === 0) {
+                return {
+                    error: 'No se encontraron tablas en la página',
+                    debugInfo
+                };
+            }
+
+            // Procesar cada tabla para detectar su modelo y extraer datos
+            for (const table of tablesFound) {
+                // Verificar si tiene filas
+                const rows = Array.from(table.querySelectorAll('tr'));
+                if (rows.length <= 1) {
+                    debugInfo.push('Tabla ignorada: menos de 2 filas');
+                    continue; // Ignorar tablas sin datos
+                }
+
+                // Obtener encabezados
+                const headerRow = rows[0];
+                const headers = Array.from(headerRow.querySelectorAll('th, td')).map(cell => {
+                    return cell.textContent.trim().toLowerCase();
+                });
+
+                debugInfo.push(`Analizando tabla con encabezados: ${headers.join(', ')}`);
+
+                // Verificar si es una tabla de detalles buscando palabras clave
+                const isDetallesTable = headers.some(h => h.includes('desde')) &&
+                    headers.some(h => h.includes('hasta')) &&
+                    headers.some(h => h.includes('día')) &&
+                    (headers.some(h => h.includes('int')) ||
+                        headers.some(h => h.includes('tasa')));
+
+                if (!isDetallesTable) {
+                    debugInfo.push('Tabla ignorada: no parece contener detalles de tasas');
+                    continue;
+                }
+
+                // Detectar modelo de tabla basado en encabezados
+                let modelo = 0;
+
+                if (headers.some(h => h.includes('int. mensual')) &&
+                    headers.some(h => h.includes('int. diario'))) {
+                    modelo = 1; // Modelo 1: % Int. Mensual y % Int. Diario
+                    debugInfo.push('Detectado Modelo 1: % Int. Mensual y % Int. Diario');
+                } else if (headers.some(h => h.includes('int. anual')) &&
+                    headers.some(h => h.includes('int. diario'))) {
+                    modelo = 2; // Modelo 2: % Int. Anual y % Int. Diario
+                    debugInfo.push('Detectado Modelo 2: % Int. Anual y % Int. Diario');
+                } else if (headers.some(h => h.includes('int.')) &&
+                    !headers.some(h => h.includes('int. diario'))) {
+                    modelo = 3; // Modelo 3: solo % Int. (anual)
+                    debugInfo.push('Detectado Modelo 3: solo % Int. (asumido como anual)');
+                } else {
+                    debugInfo.push('Modelo no reconocido, intentando detección dinámica');
+                }
+
+                // Mapear índices de columnas dinámicamente
+                const indexMap = {
+                    fechaDesde: headers.findIndex(h => h.includes('desde')),
+                    fechaHasta: headers.findIndex(h => h.includes('hasta')),
+                    dias: headers.findIndex(h => h.includes('día')),
+                    capital: headers.findIndex(h => h.includes('capital')),
+                    porcentajeAnual: headers.findIndex(h =>
+                    (h.includes('int. anual') ||
+                        (modelo === 3 && h.includes('int.') && !h.includes('intereses')))),
+                    porcentajeMensual: headers.findIndex(h => h.includes('int. mensual')),
+                    porcentajeDiario: headers.findIndex(h => h.includes('int. diario')),
+                    montoIntereses: headers.findIndex(h =>
+                        h.includes('monto') && (h.includes('intereses') || h.includes('int')))
+                };
+
+                debugInfo.push(`Mapeo de columnas: ${JSON.stringify(indexMap)}`);
+
+                // Verificar si el mapeo es válido (al menos debe tener desde, hasta y algún tipo de interés)
+                const hasRequiredColumns = indexMap.fechaDesde >= 0 &&
+                    indexMap.fechaHasta >= 0 &&
+                    (indexMap.porcentajeAnual >= 0 ||
+                        indexMap.porcentajeMensual >= 0 ||
+                        indexMap.porcentajeDiario >= 0);
+
+                if (!hasRequiredColumns) {
+                    debugInfo.push('Mapeo inválido: faltan columnas requeridas');
+                    continue;
+                }
+
+                // Extraer datos de las filas
+                const dataRows = rows.slice(1); // Ignorar fila de encabezados
+                const detalles = [];
+
+                dataRows.forEach((row, rowIndex) => {
+                    const cells = Array.from(row.querySelectorAll('td'));
+
+                    // Verificar que hay suficientes celdas
+                    if (cells.length < 3) {
+                        debugInfo.push(`Fila ${rowIndex + 1} ignorada: menos de 3 celdas`);
+                        return;
+                    }
+
+                    // Crear objeto de detalle
+                    const detalle = {};
+
+                    // Asignar valores basados en el mapeo
+                    if (indexMap.fechaDesde >= 0 && indexMap.fechaDesde < cells.length) {
+                        detalle.fecha_desde = cells[indexMap.fechaDesde].textContent.trim();
+                    }
+
+                    if (indexMap.fechaHasta >= 0 && indexMap.fechaHasta < cells.length) {
+                        detalle.fecha_hasta = cells[indexMap.fechaHasta].textContent.trim();
+                    }
+
+                    if (indexMap.dias >= 0 && indexMap.dias < cells.length) {
+                        detalle.dias = parseInt(cells[indexMap.dias].textContent.trim().replace(/[^\d]/g, ''), 10) || 0;
+                    }
+
+                    if (indexMap.capital >= 0 && indexMap.capital < cells.length) {
+                        detalle.capital = cells[indexMap.capital].textContent.trim();
+                    }
+
+                    // Procesamiento de porcentajes según el modelo
+
+                    // Modelo 1: Int. Mensual y Diario
+                    if (modelo === 1) {
+                        if (indexMap.porcentajeMensual >= 0 && indexMap.porcentajeMensual < cells.length) {
+                            let porcentajeMensualText = cells[indexMap.porcentajeMensual].textContent.trim();
+                            let porcentajeMensualNum = parseFloat(porcentajeMensualText.replace(/[^\d,.]/g, '').replace(',', '.'));
+
+                            if (!isNaN(porcentajeMensualNum)) {
+                                detalle.porcentaje_interes_mensual = porcentajeMensualNum;
+                                // Calcular anual (mensual * 12)
+                                detalle.porcentaje_interes_anual = parseFloat((porcentajeMensualNum * 12).toFixed(6));
+                            }
+                        }
+
+                        if (indexMap.porcentajeDiario >= 0 && indexMap.porcentajeDiario < cells.length) {
+                            let porcentajeDiarioText = cells[indexMap.porcentajeDiario].textContent.trim();
+                            let porcentajeDiarioNum = parseFloat(porcentajeDiarioText.replace(/[^\d,.]/g, '').replace(',', '.'));
+
+                            if (!isNaN(porcentajeDiarioNum)) {
+                                detalle.porcentaje_interes_diario = porcentajeDiarioNum;
+                            }
+                        }
+                    }
+                    // Modelo 2: Int. Anual y Diario
+                    else if (modelo === 2) {
+                        if (indexMap.porcentajeAnual >= 0 && indexMap.porcentajeAnual < cells.length) {
+                            let porcentajeAnualText = cells[indexMap.porcentajeAnual].textContent.trim();
+                            let porcentajeAnualNum = parseFloat(porcentajeAnualText.replace(/[^\d,.]/g, '').replace(',', '.'));
+
+                            if (!isNaN(porcentajeAnualNum)) {
+                                detalle.porcentaje_interes_anual = porcentajeAnualNum;
+                            }
+                        }
+
+                        if (indexMap.porcentajeDiario >= 0 && indexMap.porcentajeDiario < cells.length) {
+                            let porcentajeDiarioText = cells[indexMap.porcentajeDiario].textContent.trim();
+                            let porcentajeDiarioNum = parseFloat(porcentajeDiarioText.replace(/[^\d,.]/g, '').replace(',', '.'));
+
+                            if (!isNaN(porcentajeDiarioNum)) {
+                                detalle.porcentaje_interes_diario = porcentajeDiarioNum;
+                            }
+                        }
+                    }
+                    // Modelo 3: Solo % Int. (asumido como anual)
+                    else if (modelo === 3) {
+                        if (indexMap.porcentajeAnual >= 0 && indexMap.porcentajeAnual < cells.length) {
+                            let porcentajeText = cells[indexMap.porcentajeAnual].textContent.trim();
+                            let porcentajeNum = parseFloat(porcentajeText.replace(/[^\d,.]/g, '').replace(',', '.'));
+
+                            if (!isNaN(porcentajeNum)) {
+                                detalle.porcentaje_interes_anual = porcentajeNum;
+                                // Calcular diario (anual / 365)
+                                detalle.porcentaje_interes_diario = parseFloat((porcentajeNum / 365).toFixed(6));
+                            }
+                        }
+                    }
+
+                    // Asegurarse de que siempre tengamos porcentaje diario calculado
+                    if (detalle.porcentaje_interes_anual > 0 && detalle.porcentaje_interes_diario === undefined) {
+                        detalle.porcentaje_interes_diario = parseFloat((detalle.porcentaje_interes_anual / 365).toFixed(6));
+                    } else if (detalle.porcentaje_interes_diario > 0 && detalle.porcentaje_interes_anual === undefined) {
+                        detalle.porcentaje_interes_anual = parseFloat((detalle.porcentaje_interes_diario * 365).toFixed(6));
+                    }
+
+                    // Procesar monto de intereses
+                    if (indexMap.montoIntereses >= 0 && indexMap.montoIntereses < cells.length) {
+                        detalle.monto_intereses = cells[indexMap.montoIntereses].textContent.trim();
+                    }
+
+                    // Verificar que tengamos al menos fecha desde, hasta y algún porcentaje
+                    if (detalle.fecha_desde && detalle.fecha_hasta &&
+                        (detalle.porcentaje_interes_anual > 0 || detalle.porcentaje_interes_diario > 0)) {
+                        detalles.push(detalle);
+                    } else {
+                        debugInfo.push(`Fila ${rowIndex + 1} ignorada: datos incompletos`);
+                    }
+                });
+
+                // Si encontramos detalles válidos, retornarlos
+                if (detalles.length > 0) {
+                    debugInfo.push(`Extracción exitosa: ${detalles.length} filas`);
+                    return {
+                        detalles,
+                        modelo,
+                        debugInfo
+                    };
+                }
+            }
+
+            // Si llegamos aquí, no pudimos extraer datos de ninguna tabla
+            return {
+                error: 'No se pudo extraer información de ninguna tabla',
+                debugInfo
+            };
+        });
+    }
     /**
      * Extrae detalles de la tabla de resultados con manejo para diferentes estructuras
      * @returns {Array} - Array de objetos con la información detallada
@@ -606,7 +1194,7 @@ class CPACFScraper {
 
                 if (!isDetallesTable) continue;
 
-                logger.info('Tabla de detalles encontrada. Encabezados:', headers);
+                //logger.info('Tabla de detalles encontrada. Encabezados:', headers);
 
                 // Identificar índices de columnas importantes basados en los encabezados
                 const indexMap = {
@@ -625,7 +1213,7 @@ class CPACFScraper {
                         h.includes('amount') && h.includes('interest'))
                 };
 
-                logger.info('Mapeo de índices de columnas:', indexMap);
+                //logger.info('Mapeo de índices de columnas:', indexMap);
 
                 // Obtener todas las filas de datos (excluyendo la fila de encabezado)
                 const dataRows = Array.from(table.querySelectorAll('tr')).slice(1);
@@ -919,6 +1507,7 @@ async function main({ tasaId, dni, tomo, folio, screenshot, capital, fechaDesde,
                 logger.info(`Número de períodos: ${resultado.detalles.length}`);
 
                 // Mostrar un ejemplo de los datos extraídos
+
                 logger.info(`Ejemplo del primer período:\n- Desde: ${resultado.detalles[0].fecha_desde}\n- Hasta: ${resultado.detalles[0].fecha_hasta}\n- % Int. Anual: ${resultado.detalles[0].porcentaje_interes_anual}\n- % Int. Diario: ${resultado.detalles[0].porcentaje_interes_diario}`);
                 /*                 console.log(`- Desde: ${resultado.detalles[0].fecha_desde}`);
                                 console.log(`- Hasta: ${resultado.detalles[0].fecha_hasta}`);
@@ -926,14 +1515,14 @@ async function main({ tasaId, dni, tomo, folio, screenshot, capital, fechaDesde,
                                 console.log(`- % Int. Diario: ${resultado.detalles[0].porcentaje_interes_diario}`);
                  */
                 // Guardar los resultados en un archivo JSON
-                const jsonFilePath = './server/services/scrapers/tasas/pdfs/resultados_detallados.json';
+                const jsonFilePath = './server/files/resultados_detallados.json';
                 await scraper.saveResultsToJSON(resultado, jsonFilePath);
                 logger.info(`Los detalles del cálculo se han guardado en ${jsonFilePath}`);
-                const procesar = await procesarYGuardarTasas(resultado.detalles);
-                console.log(procesar.fechasProcesadas)
+                const procesar = await procesarYGuardarTasas(resultado.detalles, { tipoTasa: tipoTasa });
+/*                 console.log(procesar.fechasProcesadas) */
                 if (procesar.fechasProcesadas.length > 0) {
                     const actualizacionResult = await actualizarFechasFaltantes(tipoTasa, procesar.fechasProcesadas)
-                    console.log(actualizacionResult)
+                    //console.log(actualizacionResult)
                     logger.info('Resultado de actualización de fechas faltantes:', actualizacionResult);
                 }
                 // Más información de diagnóstico
@@ -957,9 +1546,9 @@ async function main({ tasaId, dni, tomo, folio, screenshot, capital, fechaDesde,
     } catch (error) {
         logger.error('Error durante el scraping:', error);
     } finally {
-        // Cerrar el navegador al finalizar
-        // await scraper.close();
-        // Nota: Se ha comentado el cierre para permitir depuración manual
+
+        await scraper.close();
+
         logger.info('Proceso completado. El navegador sigue abierto para inspección manual.');
     }
 };
@@ -1020,7 +1609,7 @@ function generarRangoFechas(tasaData) {
  * @returns {Promise<Object>} - Resultado del procesamiento
  */
 async function procesarYGuardarTasas(detalles, options = {}) {
-    console.log(detalles);
+    //console.log("Detalles", detalles);
     // Resultados del procesamiento
     const result = {
         total: 0,
@@ -1084,7 +1673,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
                     // Convertir a Date para que el setter del esquema pueda procesarlo
                     fecha: fecha.toDate(),
                     // Asignar el porcentaje diario a tasaActivaCNAT2658
-                    tasaActivaCNAT2658: detalle.porcentaje_interes_diario
+                    [options.tipoTasa]: detalle.porcentaje_interes_diario
                 };
 
                 try {
@@ -1094,7 +1683,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
 
                     if (existingDoc) {
                         // Actualizar el documento existente
-                        existingDoc.tasaActivaCNAT2658 = tasaData.tasaActivaCNAT2658;
+                        existingDoc[options.tipoTasa] = tasaData[options.tipoTasa];
                         await existingDoc.save();
                         result.actualizados++;
 
@@ -1143,7 +1732,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
             });
         }
     }
-
+    //console.log("Resultado", result)
     return result;
 }
 
@@ -1151,6 +1740,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
 async function findMissingDataColegio(tipoTasa, tasaId) {
     logger.info(`Verificacion fechas faltantes para ${tipoTasa}`)
     const verificacion = await verificarFechasFaltantes(tipoTasa)
+    //console.log(verificacion)
     if (verificacion.diasFaltantes > 0) {
         const fechas = await generarRangoFechas(verificacion)
         const scrapingColegio = await main({

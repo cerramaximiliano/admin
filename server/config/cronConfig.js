@@ -36,9 +36,19 @@ const cronConfig = {
     },
 
     // Configuración de horarios para tareas Colegio
+    // Búsqueda de fechas faltantes
     colegio: {
         tasaActivaCNAT2658: {
-            busquedaFechas: '45 7 * * *'               // Búsqueda de fechas faltantes
+            busquedaFechas: '47 7 * * *'
+        }, 
+        tasaActivaCNAT2764: {
+            busquedaFechas: '49 7 * * *'
+        },
+        tasaActivaBNA: {
+            busquedaFechas: '51 7 * * *'
+        },
+        tasaActivaTnaBNA: {
+            busquedaFechas: '53 7 * * *'
         }
     },
 // Configuración para verificación de actualizaciones

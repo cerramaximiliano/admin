@@ -332,6 +332,27 @@ function initializeTasks() {
     'Búsqueda de fechas sin datos y scraping de tasa CNAT 2658'
   );
 
+  scheduleTask(
+    'busqueda-fechas-tasaActivaCNAT2764',
+    cronConfig.colegio.tasaActivaCNAT2764.busquedaFechas,
+    () => findMissingDataColegio("tasaActivaCNAT2764", "23"),
+    'Búsqueda de fechas sin datos y scraping de tasa CNAT 2764'
+  );
+
+  scheduleTask(
+    'busqueda-fechas-tasaActivaBNA',
+    cronConfig.colegio.tasaActivaBNA.busquedaFechas,
+    () => findMissingDataColegio("tasaActivaBNA", "1"),
+    'Búsqueda de fechas sin datos y scraping de tasa Activa Banco Nación. Efectiva mensual vencida.'
+  );
+
+  scheduleTask(
+    'busqueda-fechas-tasaActivaTnaBNA',
+    cronConfig.colegio.tasaActivaTnaBNA.busquedaFechas,
+    () => findMissingDataColegio("tasaActivaTnaBNA", "25"),
+    'Búsqueda de fechas sin datos y scraping de tasa Activa Cartera general (préstamos) nominal anual vencida a 30 días del Banco Nacion.'
+  );
+
 
   programarVerificacionTasas(module.exports, {
     cronExpression: cronConfig.verificacion.matutina,
