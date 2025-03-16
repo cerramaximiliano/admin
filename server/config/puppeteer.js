@@ -17,7 +17,7 @@ function getPuppeteerConfig(options = {}) {
     const defaultConfig = {
         // Usar chromium-browser en sistemas Linux
         executablePath: getChromiumPath(),
-        headless: process.env.NODE_ENV === 'development' ? "new" : false,
+        headless: process.env.NODE_ENV === 'production' ? "new" : false,
         args: [
             '--no-sandbox', '--disable-setuid-sandbox', '--window-size=1366,768'
         ],

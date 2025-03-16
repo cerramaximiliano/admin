@@ -46,6 +46,7 @@ const cronConfig = {
         },
         tasaActivaBNA: {
             busquedaFechas: '51 7 * * *'
+            //'51 7 * * *'
         },
         tasaActivaTnaBNA: {
             busquedaFechas: '53 7 * * *'
