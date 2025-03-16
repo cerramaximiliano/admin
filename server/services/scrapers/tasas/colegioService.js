@@ -1617,46 +1617,46 @@ async function main({ tasaId, dni, tomo, folio, screenshot, capital, fechaDesde,
  * @param {Object} tasaData - Objeto con información de la tasa y fechasFaltantes
  * @returns {Object} - Objeto con fechaDesde y fechaHasta en formato DD/MM/YYYY
  */
-function generarRangoFechas(tasaData) {
-    // Verificar que existan fechas faltantes
-    if (!tasaData.fechasFaltantes || !tasaData.fechasFaltantes.length) {
-        logger.error('No hay fechas faltantes en el objeto proporcionado');
-        return null;
-    }
+    function generarRangoFechas(tasaData) {
+        // Verificar que existan fechas faltantes
+        if (!tasaData.fechasFaltantes || !tasaData.fechasFaltantes.length) {
+            logger.error('No hay fechas faltantes en el objeto proporcionado');
+            return null;
+        }
 
-    // Ordenar las fechas faltantes (por si acaso no están en orden)
-    const fechasOrdenadas = [...tasaData.fechasFaltantes].sort((a, b) => {
-        return new Date(a.fecha) - new Date(b.fecha);
-    });
+        // Ordenar las fechas faltantes (por si acaso no están en orden)
+        const fechasOrdenadas = [...tasaData.fechasFaltantes].sort((a, b) => {
+            return new Date(a.fecha) - new Date(b.fecha);
+        });
 
-    // Obtener la primera y última fecha
-    const primeraFecha = fechasOrdenadas[0].fecha;
-    const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1].fecha;
+        // Obtener la primera y última fecha
+        const primeraFecha = fechasOrdenadas[0].fecha;
+        const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1].fecha;
 
-    // Si solo hay una fecha o las fechas son iguales, generar un rango más amplio
-    if (primeraFecha === ultimaFecha || fechasOrdenadas.length === 1) {
-        // Convertir la fecha a objeto moment
-        const fechaBase = moment(primeraFecha);
+        // Si solo hay una fecha o las fechas son iguales, generar un rango más amplio
+        if (primeraFecha === ultimaFecha || fechasOrdenadas.length === 1) {
+            // Convertir la fecha a objeto moment
+            const fechaBase = moment(primeraFecha);
 
-        // Generar un rango que incluya el mes anterior y el siguiente
-        const fechaDesdeAmpliada = fechaBase.clone().subtract(1, 'month').format('DD/MM/YYYY');
-        const fechaHastaAmpliada = fechaBase.clone().add(1, 'month').format('DD/MM/YYYY');
+            // Generar un rango que incluya el mes anterior y el siguiente
+            const fechaDesdeAmpliada = fechaBase.clone().subtract(1, 'month').format('DD/MM/YYYY');
+            const fechaHastaAmpliada = fechaBase.clone().add(1, 'month').format('DD/MM/YYYY');
+
+            return {
+                fechaDesde: fechaDesdeAmpliada,
+                fechaHasta: fechaHastaAmpliada
+            };
+        }
+
+        // Para múltiples fechas, usar el rango original
+        const fechaDesde = moment(primeraFecha).format('DD/MM/YYYY');
+        const fechaHasta = moment(ultimaFecha).format('DD/MM/YYYY');
 
         return {
-            fechaDesde: fechaDesdeAmpliada,
-            fechaHasta: fechaHastaAmpliada
+            fechaDesde,
+            fechaHasta
         };
     }
-
-    // Para múltiples fechas, usar el rango original
-    const fechaDesde = moment(primeraFecha).format('DD/MM/YYYY');
-    const fechaHasta = moment(ultimaFecha).format('DD/MM/YYYY');
-
-    return {
-        fechaDesde,
-        fechaHasta
-    };
-}
 
 
 /**

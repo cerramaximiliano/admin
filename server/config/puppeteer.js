@@ -13,7 +13,7 @@ function getPuppeteerConfig(options = {}) {
     // Detectar sistema operativo
     const platform = os.platform();
     // Configuración predeterminada
-
+    console.log(process.env.CHROMIUM_PATH)
     const defaultConfig = {
         // Usar chromium-browser en sistemas Linux
         executablePath: getChromiumPath(),
@@ -42,7 +42,7 @@ function getChromiumPath() {
     switch (platform) {
         case 'linux':
             // Rutas comunes en Linux
-            return process.env.CHROMIUM_PATH || '/usr/bin/chromium' || '/usr/bin/chromium-browser';
+            return process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';
         case 'darwin': // macOS
             return '/Applications/Chromium.app/Contents/MacOS/Chromium';
         case 'win32': // Windows
