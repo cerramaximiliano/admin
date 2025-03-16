@@ -1403,13 +1403,72 @@ class CPACFScraper {
      */
     async close() {
         if (this.browser) {
-            logger.info('Cerrando navegador...');
-            await this.browser.close();
+          logger.info('Cerrando navegador...');
+          
+          try {
+            // 1. Cerrar todas las páginas primero
+            const pages = await this.browser.pages().catch(() => []);
+            if (pages.length > 0) {
+              logger.info(`Cerrando ${pages.length} páginas abiertas...`);
+              await Promise.all(pages.map(page => 
+                page.close().catch(e => logger.warn(`Error al cerrar página: ${e.message}`))
+              ));
+            }
+            
+            // 2. Intentar obtener el PID del proceso
+            let pid = null;
+            try {
+              const process = this.browser.process();
+              if (process && process.pid) {
+                pid = process.pid;
+                logger.info(`PID del navegador: ${pid}`);
+              }
+            } catch (e) {
+              logger.warn(`No se pudo obtener PID: ${e.message}`);
+            }
+            
+            // 3. Intentar desconectar normalmente
+            await this.browser.disconnect().catch(e => 
+              logger.warn(`Error al desconectar: ${e.message}`)
+            );
+            
+            // 4. Si tenemos el PID, usar exec para matarlo después
+            if (pid) {
+              setTimeout(() => {
+                const { exec } = require('child_process');
+                // Usar pkill para matar el proceso y sus hijos
+                exec(`pkill -P ${pid} || true && kill -9 ${pid} || true`, (error) => {
+                  if (error) {
+                    logger.warn(`No se pudo matar proceso ${pid}: ${error.message}`);
+                  } else {
+                    logger.info(`Proceso ${pid} terminado forzosamente`);
+                  }
+                });
+              }, 1000); // Esperar 1 segundo antes de matar forzosamente
+            } else {
+              // 5. Si no tenemos PID, intentar matarlos todos (ten cuidado con esto)
+              setTimeout(() => {
+                const { exec } = require('child_process');
+                // Matar cualquier proceso de chromium que quede
+                exec(`pkill -f 'chromium.*--remote-debugging-port' || true`, (error) => {
+                  if (error && error.code !== 1) { // pkill devuelve 1 si no encuentra procesos
+                    logger.warn(`Error al limpiar procesos: ${error.message}`);
+                  } else {
+                    logger.info('Limpieza de procesos completada');
+                  }
+                });
+              }, 1000);
+            }
+          } catch (error) {
+            logger.error(`Error general al cerrar navegador: ${error.message}`);
+          } finally {
+            // Limpiar referencias
             this.browser = null;
             this.page = null;
             this.loggedIn = false;
+          }
         }
-    }
+      }
 }
 
 
