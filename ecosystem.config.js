@@ -21,7 +21,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
-        CHROMIUM_PATH: '/usr/bin/chromium-browser'
+        CHROMIUM_PATH: '/snap/bin/chromium'
       },
       time: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
