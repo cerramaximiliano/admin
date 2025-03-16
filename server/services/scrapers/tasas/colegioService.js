@@ -1737,43 +1737,69 @@ async function procesarYGuardarTasas(detalles, options = {}) {
 }
 
 
-async function findMissingDataColegio(tipoTasa, tasaId) {
-    logger.info(`Verificacion fechas faltantes para ${tipoTasa}`)
-    const verificacion = await verificarFechasFaltantes(tipoTasa)
-    //console.log(verificacion)
-    if (verificacion.diasFaltantes > 0) {
-        const fechas = await generarRangoFechas(verificacion)
+/**
+ * Busca y actualiza datos faltantes para una tasa específica
+ * @param {string} tipoTasa - Tipo de tasa a actualizar
+ * @param {string} tasaId - ID de la tasa
+ * @param {Object} options - Opciones adicionales
+ * @param {string} [options.fechaDesde] - Fecha desde (formato DD/MM/YYYY)
+ * @param {string} [options.fechaHasta] - Fecha hasta (formato DD/MM/YYYY)
+ * @returns {Promise<void>}
+ */
+async function findMissingDataColegio(tipoTasa, tasaId, options = {}) {
+    logger.info(`Verificación de datos para ${tipoTasa}${options.fechaDesde ? ' con fechas específicas' : ''}`);
+    
+    let fechaDesde, fechaHasta;
+    
+    // Si se proporcionan fechas específicas, usarlas directamente
+    if (options.fechaDesde && options.fechaHasta) {
+        logger.info(`Usando fechas específicas: ${options.fechaDesde} - ${options.fechaHasta}`);
+        fechaDesde = options.fechaDesde;
+        fechaHasta = options.fechaHasta;
+    } 
+    // Sino, usar la lógica original de verificación de fechas faltantes
+    else {
+        const verificacion = await verificarFechasFaltantes(tipoTasa);
+        console.log(verificacion);
+        
+        if (verificacion.diasFaltantes > 0) {
+            const fechas = await generarRangoFechas(verificacion);
+            console.log(fechas);
+            fechaDesde = fechas.fechaDesde;
+            fechaHasta = fechas.fechaHasta;
+        } else {
+            logger.info(`No se encontraron fechas faltantes para ${tipoTasa} - Rango de fechas actual ${moment(verificacion.fechaInicio).format("DD/MM/YYYY")} - ${moment(verificacion.fechaUltima).format("DD/MM/YYYY")}`);
+            
+            const currentDate = obtenerFechaActualISO();
+            if (moment(currentDate).utc(0).startOf("day").isAfter(moment(verificacion.fechaUltima).utc(0))) {
+                logger.info(`Hay fechas posteriores que actualizar en rango: ${moment(verificacion.fechaUltima).format('DD/MM/YYYY')} - ${moment(currentDate).format('DD/MM/YYYY')}`);
+                fechaDesde = moment(verificacion.fechaUltima).format('DD/MM/YYYY');
+                fechaHasta = moment(currentDate).format('DD/MM/YYYY');
+            } else {
+                logger.info('No se requiere actualización - datos actualizados');
+                return; // No hay actualizaciones necesarias
+            }
+        }
+    }
+    
+    // Si llegamos aquí, tenemos fechas válidas para actualizar
+    if (fechaDesde && fechaHasta) {
+        logger.info(`Ejecutando scraping para rango: ${fechaDesde} - ${fechaHasta}`);
         const scrapingColegio = await main({
             dni: '30596920',
             tomo: '109',
             folio: '47',
             tasaId: tasaId,
-            fechaDesde: fechas.fechaDesde,
-            fechaHasta: fechas.fechaHasta,
+            fechaDesde: fechaDesde,
+            fechaHasta: fechaHasta,
             capital: 100000,
             screenshot: false,
             tipoTasa: tipoTasa,
         });
     } else {
-        logger.info(`No se encontraron fechas faltantes para ${"tasaActivaCNAT2658"}- Rango de fechas actual ${moment(verificacion.fechaInicio).format("DD/MM/YYYY")} - ${moment(verificacion.fechaUltima).format("DD/MM/YYYY")}`)
-        const currentDate = obtenerFechaActualISO();
-        if (moment(currentDate).utc(0).startOf("day").isAfter(moment(verificacion.fechaUltima).utc(0))) {
-
-            logger.info(`Hay fechas posteriores que actualizar en rango: ${moment(verificacion.fechaUltima).format('DD/MM/YYYY')} - ${moment(currentDate).format('DD/MM/YYYY')}`)
-            const scrapingColegio = await main({
-                dni: '30596920',
-                tomo: '109',
-                folio: '47',
-                tasaId: tasaId,
-                fechaDesde: moment(verificacion.fechaUltima).format('DD/MM/YYYY'),
-                fechaHasta: moment(currentDate).format('DD/MM/YYYY'),
-                capital: 100000,
-                screenshot: false,
-                tipoTasa: tipoTasa,
-            });
-        }
+        logger.warn(`No se pudieron determinar fechas válidas para la actualización de ${tipoTasa}`);
     }
-};
+}
 
 
 // Exportar clase y función principal

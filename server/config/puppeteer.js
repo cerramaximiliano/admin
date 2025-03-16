@@ -13,11 +13,11 @@ function getPuppeteerConfig(options = {}) {
     // Detectar sistema operativo
     const platform = os.platform();
     // Configuración predeterminada
-    console.log(getChromiumPath())
+
     const defaultConfig = {
         // Usar chromium-browser en sistemas Linux
         executablePath: getChromiumPath(),
-        headless: false, // Usar el nuevo modo headless
+        headless: process.env.NODE_ENV === 'development' ? "new" : false,
         args: [
             '--no-sandbox', '--disable-setuid-sandbox', '--window-size=1366,768'
         ],
