@@ -3,6 +3,8 @@ const moment = require('moment');
 const Tasas = require('../models/tasas');
 const logger = require('../utils/logger');
 const TasasConfig = require("../models/tasasConfig");
+const { main } = require('../services/scrapers/tasas/colegioService');
+const { verificarFechasFaltantes, actualizarFechasFaltantes } = require('./tasasConfigController');
 
 
 /**
@@ -377,124 +379,7 @@ exports.bulkUpsertTasas = async (tasasArray) => {
 };
 
 
-/**
- * Controlador para verificar fechas faltantes en un intervalo de fechas para un tipo de tasa
- * @param {string} tipoTasa - Tipo de tasa a verificar
- * @returns {Promise<Object>} - Resultado de la verificación con fechas faltantes
- */
-exports.verificarFechasFaltantes = async (tipoTasa) => {
-  try {
-    // Validar el tipo de tasa
-    const tiposValidos = [
-      'tasaPasivaBNA',
-      'tasaPasivaBCRA',
-      'tasaActivaBNA',
-      'cer',
-      'icl',
-      'tasaActivaCNAT2601',
-      'tasaActivaCNAT2658',
-      'tasaActivaCNAT2764',
-      'tasaActivaTnaBNA',
-    ];
 
-    if (!tiposValidos.includes(tipoTasa)) {
-      throw new Error(`Tipo de tasa inválido: ${tipoTasa}`);
-    }
-
-    // Paso 1: Obtener la configuración existente o crearla si no existe
-    let config = await TasasConfig.findOne({ tipoTasa });
-
-    if (!config) {
-      // Si no existe configuración, encontrar primera y última fecha disponible
-      const primeraFecha = await Tasas.findOne({ [tipoTasa]: { $ne: null } })
-        .sort({ fecha: 1 })
-        .select('fecha');
-
-      const ultimaFecha = await Tasas.findOne({ [tipoTasa]: { $ne: null } })
-        .sort({ fecha: -1 })
-        .select('fecha');
-
-      if (!primeraFecha || !ultimaFecha) {
-        throw new Error(`No hay datos disponibles para el tipo de tasa: ${tipoTasa}`);
-      }
-
-      // Crear configuración
-      // Normalizamos las fechas a las 00:00:00 UTC
-      config = new TasasConfig({
-        tipoTasa,
-        fechaInicio: moment.utc(primeraFecha.fecha).startOf('day').toDate(),
-        fechaUltima: moment.utc(ultimaFecha.fecha).startOf('day').toDate(),
-        fechasFaltantes: []
-      });
-
-      await config.save();
-    }
-
-    // Paso 2: Generar array de todas las fechas en el intervalo
-    // Asegurar que las fechas estén normalizadas a medianoche en UTC
-    const fechaInicio = moment.utc(config.fechaInicio).startOf('day');
-    let fechaUltima = moment.utc(config.fechaUltima).startOf('day');
-    const todasLasFechas = [];
-
-    // Generar array con todas las fechas en el intervalo
-    // Cada fecha será a las 00:00:00 UTC
-    let fechaActual = moment.utc(fechaInicio);
-    while (fechaActual.isSameOrBefore(fechaUltima)) {
-      // Usar hora 00:00:00 UTC para todas las fechas
-      todasLasFechas.push(fechaActual.clone().startOf('day').toDate());
-      fechaActual = fechaActual.clone().add(1, 'days');
-    }
-
-    // Paso 3: Buscar fechas existentes en la base de datos
-    const fechasExistentes = await Tasas.find({
-      fecha: {
-        $gte: fechaInicio.toDate(),
-        $lte: fechaUltima.toDate()
-      },
-      [tipoTasa]: { $ne: null }
-    }).select('fecha').lean();
-
-    // Crear un mapa de fechas existentes para búsqueda eficiente
-    // Usamos el formato YYYY-MM-DD para comparación
-    const fechasExistentesMap = new Map();
-
-    fechasExistentes.forEach(item => {
-      // Normalizar a UTC y luego tomar solo YYYY-MM-DD
-      const fechaKey = moment.utc(item.fecha).format('YYYY-MM-DD');
-      fechasExistentesMap.set(fechaKey, item.fecha);
-    });
-
-    // Paso 4: Identificar fechas faltantes
-    // Comparamos solo la parte de fecha (YYYY-MM-DD), ignorando la hora
-    const fechasFaltantes = todasLasFechas.filter(fecha => {
-      const fechaKey = moment.utc(fecha).format('YYYY-MM-DD');
-      return !fechasExistentesMap.has(fechaKey);
-    }).map(fecha => moment.utc(fecha).startOf('day').toDate());
-
-    // Paso 5: Actualizar el documento de configuración
-    config.fechasFaltantes = fechasFaltantes;
-    config.ultimaVerificacion = new Date();
-    await config.save();
-
-    // Preparar respuesta
-    return {
-      tipoTasa,
-      fechaInicio: config.fechaInicio,
-      fechaUltima: config.fechaUltima,
-      totalDias: todasLasFechas.length,
-      diasExistentes: fechasExistentes.length,
-      diasFaltantes: fechasFaltantes.length,
-      fechasFaltantes: fechasFaltantes.map(fecha => ({
-        fecha,
-        fechaFormateada: moment.utc(fecha).format('YYYY-MM-DD')
-      })),
-      ultimaVerificacion: config.ultimaVerificacion
-    };
-  } catch (error) {
-    logger.error(`Error al verificar fechas faltantes para ${tipoTasa}: ${error.message}`);
-    throw error;
-  }
-};
 
 /**
  * Obtiene el rango de fechas faltantes para una tasa específica
@@ -526,7 +411,6 @@ exports.obtenerRangoFechasFaltantes = async (tipoTasa, opciones = {}) => {
 
     // Si se solicita actualizar antes, importar y ejecutar el controlador de verificación
     if (opciones.actualizarAntes) {
-      const { verificarFechasFaltantes } = require('./tasasVerificacionController');
       await verificarFechasFaltantes(tipoTasa);
     }
 
@@ -637,152 +521,6 @@ exports.obtenerRangoFechasFaltantes = async (tipoTasa, opciones = {}) => {
   }
 };
 
-
-/**
- * Actualiza el modelo TasasConfig eliminando las fechas que ya han sido procesadas
- * de la propiedad fechasFaltantes.
- * 
- * @param {string} tipoTasa - El tipo de tasa a actualizar
- * @param {Array} fechasProcesadas - Array de objetos con las fechas procesadas ({ fecha: '2024-03-30', values: {...} })
- * @returns {Object} - Resultado de la operación
- */
-exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
-  try {
-    // Validar el tipo de tasa
-    const tiposValidos = [
-      'tasaPasivaBNA',
-      'tasaPasivaBCRA',
-      'tasaActivaBNA',
-      'cer',
-      'icl',
-      'tasaActivaCNAT2601',
-      'tasaActivaCNAT2658',
-      'tasaActivaCNAT2764',
-      'tasaActivaTnaBNA',
-    ];
-
-    if (!tiposValidos.includes(tipoTasa)) {
-      throw new Error(`Tipo de tasa inválido: ${tipoTasa}`);
-    }
-
-    // Validar que se recibió un array de fechas
-    if (!Array.isArray(fechasProcesadas)) {
-      throw new Error('Se esperaba un array de fechas procesadas');
-    }
-
-    // Si no hay fechas para procesar, continuar pero solo para buscar la última fecha en la colección Tasas
-    let hayFechasParaProcesar = fechasProcesadas.length > 0;
-
-    // Buscar la configuración para el tipo de tasa
-    const config = await TasasConfig.findOne({ tipoTasa });
-
-    if (!config) {
-      throw new Error(`No se encontró configuración para el tipo de tasa: ${tipoTasa}`);
-    }
-
-    let fechasEliminadas = 0;
-
-    // Procesar las fechas faltantes solo si hay fechas para procesar
-    if (hayFechasParaProcesar && config.fechasFaltantes && config.fechasFaltantes.length > 0) {
-      // Convertir las fechas procesadas de strings a objetos Date
-      // y crear un conjunto para búsqueda eficiente
-      const fechasProcesadasSet = new Set();
-
-      for (const item of fechasProcesadas) {
-        // Convertir la fecha de string a Date
-        if (typeof item.fecha === 'string') {
-          // Asegurar formato YYYY-MM-DD y crear fecha UTC a las 00:00:00
-          const [year, month, day] = item.fecha.split('-').map(Number);
-
-          // Crear fecha UTC (asegura que sea a las 00:00:00)
-          const fechaUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-
-          // Añadir al conjunto para búsqueda eficiente
-          // Usar ISOString truncado como clave para evitar problemas de comparación
-          fechasProcesadasSet.add(fechaUTC.toISOString().split('T')[0]);
-        }
-      }
-
-      // Filtrar las fechas faltantes para eliminar las procesadas
-      const fechasAnteriores = config.fechasFaltantes.length;
-
-      // Filtrar fechas que NO están en el conjunto de procesadas
-      config.fechasFaltantes = config.fechasFaltantes.filter(fecha => {
-        // Convertir la fecha a formato YYYY-MM-DD para comparación
-        const fechaStr = fecha.toISOString().split('T')[0];
-        // Mantener la fecha solo si NO está en el conjunto de procesadas
-        return !fechasProcesadasSet.has(fechaStr);
-      });
-
-      // Calcular cuántas fechas se eliminaron
-      fechasEliminadas = fechasAnteriores - config.fechasFaltantes.length;
-    }
-
-    // Actualizar la fecha de última verificación
-    config.ultimaVerificacion = new Date();
-
-    // Actualizar fechaUltima si se procesaron fechas
-    if (fechasEliminadas > 0) {
-      // Encontrar la fecha más reciente entre las procesadas
-      let fechaMasReciente = null;
-
-      for (const item of fechasProcesadas) {
-        if (typeof item.fecha === 'string') {
-          const [year, month, day] = item.fecha.split('-').map(Number);
-          const fechaActual = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-
-          if (!fechaMasReciente || fechaActual > fechaMasReciente) {
-            fechaMasReciente = fechaActual;
-          }
-        }
-      }
-
-      // Si encontramos una fecha más reciente que la actual, actualizarla
-      if (fechaMasReciente && (!config.fechaUltima || fechaMasReciente > config.fechaUltima)) {
-        config.fechaUltima = fechaMasReciente;
-      }
-    }
-
-    // NUEVA FUNCIONALIDAD: Buscar la última fecha en la colección Tasas que tenga un valor en la propiedad tipoTasa
-    // Crear el filtro para buscar documentos que tengan un valor en la propiedad tipoTasa
-    const filtro = { [tipoTasa]: { $exists: true, $ne: null } };
-
-    // Ordenar por fecha en orden descendente y tomar solo el primero
-    const ultimaTasa = await Tasas.findOne(filtro).sort({ fecha: -1 });
-
-    // Si encontramos una tasa, actualizar la fechaUltima en la configuración si es más reciente
-    if (ultimaTasa && ultimaTasa.fecha) {
-      const fechaUltimoRegistro = new Date(ultimaTasa.fecha);
-
-      // Asegurarnos de que sea a las 00:00:00 sin cambiar el día
-      fechaUltimoRegistro.setUTCHours(0, 0, 0, 0);
-
-      // Actualizar solo si es más reciente que la fecha actual o si no hay fecha actual
-      if (!config.fechaUltima || fechaUltimoRegistro > config.fechaUltima) {
-        config.fechaUltima = fechaUltimoRegistro;
-      }
-    }
-
-    // Guardar los cambios en la base de datos
-    await config.save();
-
-    // Retornar el resultado
-    return {
-      status: 'success',
-      message: hayFechasParaProcesar ?
-        `Se eliminaron ${fechasEliminadas} fechas de fechasFaltantes` :
-        'No se procesaron fechas faltantes',
-      tipoTasa,
-      fechasEliminadas,
-      fechasRestantes: config.fechasFaltantes ? config.fechasFaltantes.length : 0,
-      fechaUltima: config.fechaUltima,
-      fechaUltimaActualizada: ultimaTasa ? true : false
-    };
-  } catch (error) {
-    logger.error(`Error al actualizar fechas faltantes para ${tipoTasa}: ${error.message}`);
-    throw error;
-  }
-};
 /**
  * Actualiza las tasas en la base de datos
  * @param {Object} data - Datos obtenidos del scraping
@@ -791,7 +529,7 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
  * @returns {Promise<Object>} - Resultado de la operación
  */
 exports.actualizarTasa = async (data, tipoTasa, calcularValor, tasasAdicionales = []) => {
-  console.log(data, tipoTasa, calcularValor, tasasAdicionales);
+
   try {
     // Verificar si los datos son válidos
     if (!data || !data.data) {
@@ -833,7 +571,7 @@ exports.actualizarTasa = async (data, tipoTasa, calcularValor, tasasAdicionales 
     for (const tasa of tasasAdicionales) {
       valoresParaGuardar[tasa.tipo] = tasa.calcularValor(data.data);
     }
-    console.log(valoresParaGuardar)
+
     // Guardar/actualizar el registro para la fecha original con todas las tasas
     const resultadoOriginal = await guardarOActualizarTasasMultiples(fecha, valoresParaGuardar);
     resultados.push(resultadoOriginal);
@@ -871,7 +609,6 @@ exports.actualizarTasa = async (data, tipoTasa, calcularValor, tasasAdicionales 
 
 // Nueva función para guardar/actualizar múltiples tasas en un solo documento
 async function guardarOActualizarTasasMultiples(fecha, valoresTasas) {
-  console.log(valoresTasas)
   try {
     // Buscar si ya existe un registro para esta fecha
     let documento = await Tasas.findOne({ fecha });
@@ -1133,5 +870,94 @@ exports.consultarPorFechas = async (req, res) => {
       mensaje: 'Error al consultar datos por fechas',
       error: error.message
     });
+  }
+};
+
+
+/**
+ * Controlador para actualizar tasas utilizando el scraper
+ * @route POST /api/tasas/update
+ */
+exports.updateTasas = async (req, res) => {
+  try {
+    // Extraer parámetros obligatorios de la solicitud
+    const { tasaId, fechaDesde, fechaHasta, tipoTasa } = req.query;
+    
+    // Extraer parámetros opcionales con valores predeterminados
+    const dni = process.env.DEFAULT_DNI || '30596920';
+    const tomo = process.env.DEFAULT_TOMO || '109';
+    const folio = process.env.DEFAULT_FOLIO || '47';
+    const screenshot = false;
+    const capital = '1000';
+    
+    // Validar parámetros obligatorios
+    if (!tasaId || !fechaDesde || !fechaHasta || !tipoTasa) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan parámetros obligatorios: tasaId, fechaDesde, fechaHasta, tipoTasa'
+      });
+    }
+
+    // Validar formato de fechas (YYYY-MM-DD)
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!fechaRegex.test(fechaDesde) || !fechaRegex.test(fechaHasta)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Las fechas deben tener formato YYYY-MM-DD'
+      });
+    }
+
+    // Verificar que fechaDesde sea anterior a fechaHasta
+    const fechaDesdeObj = new Date(fechaDesde);
+    const fechaHastaObj = new Date(fechaHasta);
+    
+    if (fechaDesdeObj > fechaHastaObj) {
+      return res.status(400).json({
+        success: false,
+        message: 'La fecha de inicio debe ser anterior a la fecha final'
+      });
+    }
+
+    // Convertir fechas de formato ISO (YYYY-MM-DD) a formato DD/MM/YYYY para la función main
+    const fechaDesdeArr = fechaDesde.split('-');
+    const fechaHastaArr = fechaHasta.split('-');
+    
+    const fechaDesdeFormateada = `${fechaDesdeArr[2]}/${fechaDesdeArr[1]}/${fechaDesdeArr[0]}`;
+    const fechaHastaFormateada = `${fechaHastaArr[2]}/${fechaHastaArr[1]}/${fechaHastaArr[0]}`;
+
+    // Informar que se inició el proceso
+    res.status(202).json({
+      success: true,
+      message: 'Proceso de actualización de tasas iniciado',
+      params: {
+        tasaId,
+        fechaDesde,
+        fechaHasta,
+        tipoTasa,
+      }
+    });
+
+    // Ejecutar el proceso en segundo plano (después de enviar la respuesta)
+    await main({
+      tasaId,
+      dni,
+      tomo,
+      folio,
+      screenshot,
+      capital,
+      fechaDesde: fechaDesdeFormateada, // Convertida a formato DD/MM/YYYY
+      fechaHasta: fechaHastaFormateada, // Convertida a formato DD/MM/YYYY
+      tipoTasa
+    });
+
+    // Opcionalmente, puedes registrar la finalización en un log
+    logger.info(`Proceso de actualización completado para tasaId: ${tasaId}, tipoTasa: ${tipoTasa}`);
+  } catch (error) {
+
+    logger.error('Error en controlador updateTasas:', error);
+    
+    // No enviamos respuesta aquí porque ya enviamos una respuesta 202 previamente
+    // Si quieres manejar esta situación, deberías implementar un sistema de notificación
+    // o un endpoint para consultar el estado del proceso
   }
 };

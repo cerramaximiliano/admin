@@ -22,8 +22,11 @@ router.use('/tasks', tasksRoutes);
 
 if (process.env.NODE_ENV === 'development') {
   const tasksDevRoutes = require('./tasksDevRoutes');
+  const tasasDevRoutes = require('./tasasDevRoutes');
   router.use('/dev/tasks', tasksDevRoutes);
-  logger.warn('¡ATENCIÓN! Rutas de desarrollo sin autenticación habilitadas en /api/dev/tasks');
+  router.use('/dev/tasas', tasasDevRoutes);
+  logger.warn('¡ATENCIÓN! Rutas de desarrollo sin autenticación habilitadas en /api/dev/tasks y /api/dev/tasas');
+
 }
 
 // Aquí puedes agregar otras rutas cuando las necesites

@@ -2,13 +2,10 @@ const puppeteer = require('puppeteer');
 const moment = require("moment");
 const logger = require('../../../utils/logger');
 const Tasas = require('../../../models/tasas');
-const { actualizarFechasFaltantes, verificarFechasFaltantes } = require('../../../controllers/tasasController');
+const { actualizarFechasFaltantes, verificarFechasFaltantes } = require('../../../controllers/tasasConfigController');
 const { obtenerFechaActualISO } = require('../../../utils/format');
 const { getPuppeteerConfig } = require('../../../config/puppeteer');
-const { waitRandom, typeHuman,
-    initializeImproved,
-    loginImproved,
-    calcularImproved } = require('../colegioServiceFunctions');
+const { waitRandom, typeHuman } = require('../colegioServiceFunctions');
 require('dotenv').config();
 
 const configPuppeteer = getPuppeteerConfig();
@@ -229,6 +226,7 @@ class CPACFScraper {
 
             return true;
         } catch (error) {
+
             logger.error('Error durante el login:', error);
             throw error;
         }
@@ -1403,100 +1401,100 @@ class CPACFScraper {
      */
     async close() {
         if (this.browser) {
-          logger.info('Cerrando navegador...');
-          
-          try {
-            // 1. Cerrar todas las páginas primero
-            if (typeof this.browser.pages === 'function') {
-              try {
-                const pages = await this.browser.pages();
-                if (pages && pages.length > 0) {
-                  logger.info(`Cerrando ${pages.length} páginas abiertas...`);
-                  await Promise.all(pages.map(page => {
-                    if (page && typeof page.close === 'function') {
-                      return page.close().catch(e => logger.warn(`Error al cerrar página: ${e.message}`));
-                    }
-                    return Promise.resolve();
-                  }));
-                }
-              } catch (pagesError) {
-                logger.warn(`Error al obtener páginas: ${pagesError.message}`);
-              }
-            }
-            
-            // 2. Intentar obtener el PID del proceso
-            let pid = null;
+            logger.info('Cerrando navegador...');
+
             try {
-              if (typeof this.browser.process === 'function') {
-                const process = this.browser.process();
-                if (process && process.pid) {
-                  pid = process.pid;
-                  logger.info(`PID del navegador: ${pid}`);
-                }
-              }
-            } catch (e) {
-              logger.warn(`No se pudo obtener PID: ${e.message}`);
-            }
-            
-            // 3. Intentar desconectar o cerrar dependiendo de lo disponible
-            try {
-              if (typeof this.browser.disconnect === 'function') {
-                await this.browser.disconnect();
-                logger.info('Navegador desconectado correctamente');
-              } else if (typeof this.browser.close === 'function') {
-                await this.browser.close();
-                logger.info('Navegador cerrado correctamente');
-              } else {
-                logger.warn('No se encontraron métodos de cierre o desconexión');
-              }
-            } catch (disconnectError) {
-              logger.warn(`Error al cerrar/desconectar: ${disconnectError.message}`);
-            }
-            
-            // 4. Si tenemos el PID, usar exec para matarlo después
-            if (pid) {
-              setTimeout(() => {
-                try {
-                  const { exec } = require('child_process');
-                  // Usar pkill para matar el proceso y sus hijos
-                  exec(`pkill -P ${pid} || true && kill -9 ${pid} || true`, (error) => {
-                    if (error) {
-                      logger.warn(`No se pudo matar proceso ${pid}: ${error.message}`);
-                    } else {
-                      logger.info(`Proceso ${pid} terminado forzosamente`);
+                // 1. Cerrar todas las páginas primero
+                if (typeof this.browser.pages === 'function') {
+                    try {
+                        const pages = await this.browser.pages();
+                        if (pages && pages.length > 0) {
+                            logger.info(`Cerrando ${pages.length} páginas abiertas...`);
+                            await Promise.all(pages.map(page => {
+                                if (page && typeof page.close === 'function') {
+                                    return page.close().catch(e => logger.warn(`Error al cerrar página: ${e.message}`));
+                                }
+                                return Promise.resolve();
+                            }));
+                        }
+                    } catch (pagesError) {
+                        logger.warn(`Error al obtener páginas: ${pagesError.message}`);
                     }
-                  });
-                } catch (execError) {
-                  logger.warn(`Error al ejecutar comando kill: ${execError.message}`);
                 }
-              }, 1000);
-            } else {
-              // 5. Si no tenemos PID, intentar matarlos todos
-              setTimeout(() => {
+
+                // 2. Intentar obtener el PID del proceso
+                let pid = null;
                 try {
-                  const { exec } = require('child_process');
-                  exec(`pkill -f 'chromium.*--remote-debugging-port' || true`, (error) => {
-                    if (error && error.code !== 1) {
-                      logger.warn(`Error al limpiar procesos: ${error.message}`);
-                    } else {
-                      logger.info('Limpieza de procesos completada');
+                    if (typeof this.browser.process === 'function') {
+                        const process = this.browser.process();
+                        if (process && process.pid) {
+                            pid = process.pid;
+                            logger.info(`PID del navegador: ${pid}`);
+                        }
                     }
-                  });
-                } catch (pkillError) {
-                  logger.warn(`Error al ejecutar pkill: ${pkillError.message}`);
+                } catch (e) {
+                    logger.warn(`No se pudo obtener PID: ${e.message}`);
                 }
-              }, 1000);
+
+                // 3. Intentar desconectar o cerrar dependiendo de lo disponible
+                try {
+                    if (typeof this.browser.disconnect === 'function') {
+                        await this.browser.disconnect();
+                        logger.info('Navegador desconectado correctamente');
+                    } else if (typeof this.browser.close === 'function') {
+                        await this.browser.close();
+                        logger.info('Navegador cerrado correctamente');
+                    } else {
+                        logger.warn('No se encontraron métodos de cierre o desconexión');
+                    }
+                } catch (disconnectError) {
+                    logger.warn(`Error al cerrar/desconectar: ${disconnectError.message}`);
+                }
+
+                // 4. Si tenemos el PID, usar exec para matarlo después
+                if (pid) {
+                    setTimeout(() => {
+                        try {
+                            const { exec } = require('child_process');
+                            // Usar pkill para matar el proceso y sus hijos
+                            exec(`pkill -P ${pid} || true && kill -9 ${pid} || true`, (error) => {
+                                if (error) {
+                                    logger.warn(`No se pudo matar proceso ${pid}: ${error.message}`);
+                                } else {
+                                    logger.info(`Proceso ${pid} terminado forzosamente`);
+                                }
+                            });
+                        } catch (execError) {
+                            logger.warn(`Error al ejecutar comando kill: ${execError.message}`);
+                        }
+                    }, 1000);
+                } else {
+                    // 5. Si no tenemos PID, intentar matarlos todos
+                    setTimeout(() => {
+                        try {
+                            const { exec } = require('child_process');
+                            exec(`pkill -f 'chromium.*--remote-debugging-port' || true`, (error) => {
+                                if (error && error.code !== 1) {
+                                    logger.warn(`Error al limpiar procesos: ${error.message}`);
+                                } else {
+                                    logger.info('Limpieza de procesos completada');
+                                }
+                            });
+                        } catch (pkillError) {
+                            logger.warn(`Error al ejecutar pkill: ${pkillError.message}`);
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                logger.error(`Error general al cerrar navegador: ${error.message}`);
+            } finally {
+                // Limpiar referencias
+                this.browser = null;
+                this.page = null;
+                this.loggedIn = false;
             }
-          } catch (error) {
-            logger.error(`Error general al cerrar navegador: ${error.message}`);
-          } finally {
-            // Limpiar referencias
-            this.browser = null;
-            this.page = null;
-            this.loggedIn = false;
-          }
         }
-      }
+    }
 }
 
 
@@ -1554,11 +1552,29 @@ async function main({ tasaId, dni, tomo, folio, screenshot, capital, fechaDesde,
             const today = new Date();
             const fechaActual = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
+            // Validar la fecha máxima contra formInfo.maxDateTo
+            let fechaHastaValidada = fechaHasta;
+            if (formInfo && formInfo.maxDateTo) {
+                // Convertir formInfo.maxDateTo (YYYY-MM-DD) a objeto Date
+                const maxDateArr = formInfo.maxDateTo.split('-');
+                const maxDateObj = new Date(maxDateArr[0], maxDateArr[1] - 1, maxDateArr[2]);
+
+                // Convertir fechaHasta (DD/MM/YYYY) a objeto Date
+                const fechaHastaArr = fechaHasta.split('/');
+                const fechaHastaObj = new Date(fechaHastaArr[2], fechaHastaArr[1] - 1, fechaHastaArr[0]);
+
+                // Si fechaHasta es mayor que la fecha máxima permitida, usar la fecha máxima
+                if (fechaHastaObj > maxDateObj) {
+                    fechaHastaValidada = `${maxDateArr[2]}/${maxDateArr[1]}/${maxDateArr[0]}`;
+                    logger.info(`Fecha hasta ajustada a fecha máxima permitida: ${fechaHastaValidada}`);
+                }
+            }
+
             // Configurar los parámetros según los NOMBRES DE CAMPO reales del formulario
             const paramsCalculo = {
                 capital: capital,
                 date_from_0: fechaDesde, // Usar nombre de campo real
-                date_to: fechaHasta,    // Usar nombre de campo real
+                date_to: fechaHastaValidada,    // Usar la fecha validada
             };
 
             // Establecer la capitalización solo si hay opciones disponibles
@@ -1596,21 +1612,15 @@ async function main({ tasaId, dni, tomo, folio, screenshot, capital, fechaDesde,
                 // Mostrar un ejemplo de los datos extraídos
 
                 logger.info(`Ejemplo del primer período:\n- Desde: ${resultado.detalles[0].fecha_desde}\n- Hasta: ${resultado.detalles[0].fecha_hasta}\n- % Int. Anual: ${resultado.detalles[0].porcentaje_interes_anual}\n- % Int. Diario: ${resultado.detalles[0].porcentaje_interes_diario}`);
-                /*                 console.log(`- Desde: ${resultado.detalles[0].fecha_desde}`);
-                                console.log(`- Hasta: ${resultado.detalles[0].fecha_hasta}`);
-                                console.log(`- % Int. Anual: ${resultado.detalles[0].porcentaje_interes_anual}`);
-                                console.log(`- % Int. Diario: ${resultado.detalles[0].porcentaje_interes_diario}`);
-                 */
+
                 // Guardar los resultados en un archivo JSON
-                const jsonFilePath = './server/files/resultados_detallados.json';
+                const jsonFilePath = `./server/files/resultados_detallados${Date.now()}.json`;
                 await scraper.saveResultsToJSON(resultado, jsonFilePath);
                 logger.info(`Los detalles del cálculo se han guardado en ${jsonFilePath}`);
                 const procesar = await procesarYGuardarTasas(resultado.detalles, { tipoTasa: tipoTasa });
-/*                 console.log(procesar.fechasProcesadas) */
                 if (procesar.fechasProcesadas.length > 0) {
                     const actualizacionResult = await actualizarFechasFaltantes(tipoTasa, procesar.fechasProcesadas)
-                    //console.log(actualizacionResult)
-                    logger.info('Resultado de actualización de fechas faltantes:', actualizacionResult);
+                    logger.info('Resultado de actualización de fechas faltantes:', actualizacionResult.message);
                 }
                 // Más información de diagnóstico
                 logger.info(`Procesamiento completado:\n- Total registros: ${procesar.total}\n- Nuevos creados: ${procesar.creados}\n- Actualizados: ${procesar.actualizados}\n- Errores: ${procesar.errores}
@@ -1643,46 +1653,46 @@ async function main({ tasaId, dni, tomo, folio, screenshot, capital, fechaDesde,
  * @param {Object} tasaData - Objeto con información de la tasa y fechasFaltantes
  * @returns {Object} - Objeto con fechaDesde y fechaHasta en formato DD/MM/YYYY
  */
-    function generarRangoFechas(tasaData) {
-        // Verificar que existan fechas faltantes
-        if (!tasaData.fechasFaltantes || !tasaData.fechasFaltantes.length) {
-            logger.error('No hay fechas faltantes en el objeto proporcionado');
-            return null;
-        }
+function generarRangoFechas(tasaData) {
+    // Verificar que existan fechas faltantes
+    if (!tasaData.fechasFaltantes || !tasaData.fechasFaltantes.length) {
+        logger.error('No hay fechas faltantes en el objeto proporcionado');
+        return null;
+    }
 
-        // Ordenar las fechas faltantes (por si acaso no están en orden)
-        const fechasOrdenadas = [...tasaData.fechasFaltantes].sort((a, b) => {
-            return new Date(a.fecha) - new Date(b.fecha);
-        });
+    // Ordenar las fechas faltantes (por si acaso no están en orden)
+    const fechasOrdenadas = [...tasaData.fechasFaltantes].sort((a, b) => {
+        return new Date(a.fecha) - new Date(b.fecha);
+    });
 
-        // Obtener la primera y última fecha
-        const primeraFecha = fechasOrdenadas[0].fecha;
-        const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1].fecha;
+    // Obtener la primera y última fecha
+    const primeraFecha = fechasOrdenadas[0].fecha;
+    const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1].fecha;
 
-        // Si solo hay una fecha o las fechas son iguales, generar un rango más amplio
-        if (primeraFecha === ultimaFecha || fechasOrdenadas.length === 1) {
-            // Convertir la fecha a objeto moment
-            const fechaBase = moment(primeraFecha);
+    // Si solo hay una fecha o las fechas son iguales, generar un rango más amplio
+    if (primeraFecha === ultimaFecha || fechasOrdenadas.length === 1) {
+        // Convertir la fecha a objeto moment
+        const fechaBase = moment(primeraFecha);
 
-            // Generar un rango que incluya el mes anterior y el siguiente
-            const fechaDesdeAmpliada = fechaBase.clone().subtract(1, 'month').format('DD/MM/YYYY');
-            const fechaHastaAmpliada = fechaBase.clone().add(1, 'month').format('DD/MM/YYYY');
-
-            return {
-                fechaDesde: fechaDesdeAmpliada,
-                fechaHasta: fechaHastaAmpliada
-            };
-        }
-
-        // Para múltiples fechas, usar el rango original
-        const fechaDesde = moment(primeraFecha).format('DD/MM/YYYY');
-        const fechaHasta = moment(ultimaFecha).format('DD/MM/YYYY');
+        // Generar un rango que incluya el mes anterior y el siguiente
+        const fechaDesdeAmpliada = fechaBase.clone().subtract(1, 'month').format('DD/MM/YYYY');
+        const fechaHastaAmpliada = fechaBase.clone().add(1, 'month').format('DD/MM/YYYY');
 
         return {
-            fechaDesde,
-            fechaHasta
+            fechaDesde: fechaDesdeAmpliada,
+            fechaHasta: fechaHastaAmpliada
         };
     }
+
+    // Para múltiples fechas, usar el rango original
+    const fechaDesde = moment(primeraFecha).format('DD/MM/YYYY');
+    const fechaHasta = moment(ultimaFecha).format('DD/MM/YYYY');
+
+    return {
+        fechaDesde,
+        fechaHasta
+    };
+}
 
 
 /**
@@ -1707,7 +1717,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
     };
 
     if (!Array.isArray(detalles) || detalles.length === 0) {
-        console.warn("No hay detalles para procesar");
+        logger.warn("No hay detalles para procesar");
         return result;
     }
 
@@ -1716,7 +1726,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
         try {
             // Verificar que tengamos los datos necesarios
             if (!detalle.fecha_desde || !detalle.fecha_hasta || detalle.porcentaje_interes_diario === undefined) {
-                console.warn("Detalle incompleto:", detalle);
+                logger.warn("Detalle incompleto:", detalle);
                 result.errores++;
                 result.detalle_errores.push({
                     tipo: "Datos incompletos",
@@ -1731,7 +1741,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
 
             // Verificar que las fechas sean válidas
             if (!fechaDesde.isValid() || !fechaHasta.isValid()) {
-                console.warn("Fechas inválidas:", detalle.fecha_desde, detalle.fecha_hasta);
+                logger.warn("Fechas inválidas:", detalle.fecha_desde, detalle.fecha_hasta);
                 result.errores++;
                 result.detalle_errores.push({
                     tipo: "Fechas inválidas",
@@ -1797,7 +1807,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
                             fecha: fecha.format('YYYY-MM-DD')
                         });
                     } else {
-                        console.error(`Error al guardar fecha ${fecha.format('DD/MM/YYYY')}:`, dbError);
+                        logger.error(`Error al guardar fecha ${fecha.format('DD/MM/YYYY')}:`, dbError);
                         result.errores++;
                         result.detalle_errores.push({
                             tipo: "Error DB",
@@ -1808,7 +1818,7 @@ async function procesarYGuardarTasas(detalles, options = {}) {
                 }
             }
         } catch (error) {
-            console.error("Error procesando detalle:", error);
+            logger.error("Error procesando detalle:", error);
             result.errores++;
             result.detalle_errores.push({
                 tipo: "Error general",
@@ -1833,28 +1843,28 @@ async function procesarYGuardarTasas(detalles, options = {}) {
  */
 async function findMissingDataColegio(tipoTasa, tasaId, options = {}) {
     logger.info(`Verificación de datos para ${tipoTasa}${options.fechaDesde ? ' con fechas específicas' : ''}`);
-    
+
     let fechaDesde, fechaHasta;
-    
+
     // Si se proporcionan fechas específicas, usarlas directamente
     if (options.fechaDesde && options.fechaHasta) {
         logger.info(`Usando fechas específicas: ${options.fechaDesde} - ${options.fechaHasta}`);
         fechaDesde = options.fechaDesde;
         fechaHasta = options.fechaHasta;
-    } 
+    }
     // Sino, usar la lógica original de verificación de fechas faltantes
     else {
         const verificacion = await verificarFechasFaltantes(tipoTasa);
-        console.log(verificacion);
-        
+
+
         if (verificacion.diasFaltantes > 0) {
             const fechas = await generarRangoFechas(verificacion);
-            console.log(fechas);
+
             fechaDesde = fechas.fechaDesde;
             fechaHasta = fechas.fechaHasta;
         } else {
             logger.info(`No se encontraron fechas faltantes para ${tipoTasa} - Rango de fechas actual ${moment(verificacion.fechaInicio).format("DD/MM/YYYY")} - ${moment(verificacion.fechaUltima).format("DD/MM/YYYY")}`);
-            
+
             const currentDate = obtenerFechaActualISO();
             if (moment(currentDate).utc(0).startOf("day").isAfter(moment(verificacion.fechaUltima).utc(0))) {
                 logger.info(`Hay fechas posteriores que actualizar en rango: ${moment(verificacion.fechaUltima).format('DD/MM/YYYY')} - ${moment(currentDate).format('DD/MM/YYYY')}`);
@@ -1866,7 +1876,7 @@ async function findMissingDataColegio(tipoTasa, tasaId, options = {}) {
             }
         }
     }
-    
+
     // Si llegamos aquí, tenemos fechas válidas para actualizar
     if (fechaDesde && fechaHasta) {
         logger.info(`Ejecutando scraping para rango: ${fechaDesde} - ${fechaHasta}`);
