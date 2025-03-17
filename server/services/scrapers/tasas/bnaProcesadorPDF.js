@@ -581,7 +581,7 @@ async function extraerDatosTasasPasivasTxt(textPath) {
 async function mainBnaPasivaService() {
     try {
         const resultado = await descargarPdfTasasPasivasConReintentos();
-        const resultadoPDF = await extraerDatosTasasPasivas(`./server/services/scrapers/tasas/pdfs/${resultado.data.nombreArchivoGuardado}`);
+        const resultadoPDF = await extraerDatosTasasPasivas(`./server/files/${resultado.data.nombreArchivoGuardado}`);
         const resultTxt = await extraerDatosTasasPasivasTxt(`${resultadoPDF.data.metadatos.textoCompleto}`)
         const guardarTasas = await guardarTasasPasivas(resultTxt)
         return guardarTasas
