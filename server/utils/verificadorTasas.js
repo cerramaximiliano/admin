@@ -36,7 +36,7 @@ async function verificarTasasActualizadas(options = {}) {
         // Consultar todas las configuraciones de tasas según el filtro
         const filtro = soloTasasActivas ? { activa: true } : {};
         const tasasConfig = await TasasConfig.find(filtro);
-        console.log(tasasConfig)
+        //console.log(tasasConfig)
         if (!tasasConfig || tasasConfig.length === 0) {
             logger.warn('No se encontraron configuraciones de tasas para verificar');
             return {

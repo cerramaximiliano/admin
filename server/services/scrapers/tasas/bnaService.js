@@ -346,7 +346,7 @@ async function actualizarTasaActivaBNAConReintentos() {
             message: 'Tasa Activa BNA actualizada correctamente',
             data: datosTasaActiva
         };
-        console.log("Result", resultadoScraping)
+
         // Guardar en la base de datos
         const resultadoGuardado = await guardarTasaActivaBNA(resultadoScraping);
 

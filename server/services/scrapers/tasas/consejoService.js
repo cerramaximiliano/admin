@@ -1190,7 +1190,7 @@ async function consejoService(opciones = {}) {
 
 
 async function mainConsejoService(opciones = {}) {
-    console.log(opciones)
+    //console.log(opciones)
     try {
 
         let fechaDesde, fechaHasta;
@@ -1248,8 +1248,8 @@ async function mainConsejoService(opciones = {}) {
         }
 
         // Validar que la fecha de inicio no sea posterior a la fecha final
-        console.log("Fechas", fechaDesde, fechaHasta)
-        console.log(moment(fechaDesde).isSameOrAfter(moment(fechaHasta)))
+        //console.log("Fechas", fechaDesde, fechaHasta)
+        //console.log(moment(fechaDesde).isSameOrAfter(moment(fechaHasta)))
         if (moment(fechaDesde).isSameOrAfter(moment(fechaHasta))) {
             logger.info(`Tasa actualizada. La fecha de inicio (${fechaDesde}) es posterior o igual a la fecha final (${fechaHasta})`);
             return "Tasa actualizada";
@@ -1272,7 +1272,7 @@ async function mainConsejoService(opciones = {}) {
         });
 
         const results = tasaActivaBna.tasasDiariasParaMongo;
-        console.log(results)
+        //console.log(results)
         const resultsBulkOps = await bulkUpsertTasas(results);
 
         return resultsBulkOps;
@@ -1288,7 +1288,7 @@ async function findMissingDataService(tasa, database) {
     try {
 
         const resultFechasFaltantes = await verificarFechasFaltantes(database)
-        console.log(tasa, database, resultFechasFaltantes)
+        //console.log(tasa, database, resultFechasFaltantes)
         logger.info(`Resultado de búsqueda de fechas faltantes: ${resultFechasFaltantes.diasFaltantes}`);
         if (resultFechasFaltantes.diasFaltantes > 0) {
             const resultRango = await obtenerRangoFechasFaltantes(database);
