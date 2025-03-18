@@ -17,11 +17,11 @@ const configPuppeteer = getPuppeteerConfig();
  */
 class CPACFScraper {
     constructor(options = {}) {
-        this.baseUrl = 'https://tasas.cpacf.org.ar/newLogin';
+        this.baseUrl = process.env.URL_CPA;
         this.credentials = {
-            dni: process.env.CPACF_DNI || options.dni,
-            tomo: process.env.CPACF_TOMO || options.tomo,
-            folio: process.env.CPACF_FOLIO || options.folio
+            dni: process.env.DU_01,
+            tomo: process.env.TREG_01,
+            folio: process.env.FREG_01,
         };
         this.browser = null;
         this.page = null;
@@ -1881,9 +1881,9 @@ async function findMissingDataColegio(tipoTasa, tasaId, options = {}) {
     if (fechaDesde && fechaHasta) {
         logger.info(`Ejecutando scraping para rango: ${fechaDesde} - ${fechaHasta}`);
         const scrapingColegio = await main({
-            dni: '30596920',
-            tomo: '109',
-            folio: '47',
+            dni: process.env.DU_01,
+            tomo: process.env.TREG_01,
+            folio: process.env.FREG_01,
             tasaId: tasaId,
             fechaDesde: fechaDesde,
             fechaHasta: fechaHasta,

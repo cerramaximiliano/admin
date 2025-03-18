@@ -884,9 +884,9 @@ exports.updateTasas = async (req, res) => {
     const { tasaId, fechaDesde, fechaHasta, tipoTasa } = req.query;
     
     // Extraer parámetros opcionales con valores predeterminados
-    const dni = process.env.DEFAULT_DNI || '30596920';
-    const tomo = process.env.DEFAULT_TOMO || '109';
-    const folio = process.env.DEFAULT_FOLIO || '47';
+    const dni = process.env.DU_01;
+    const tomo = process.env.TREG_01;
+    const folio = process.env.FREG_01;
     const screenshot = false;
     const capital = '1000';
     
