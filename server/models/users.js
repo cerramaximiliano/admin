@@ -1,43 +1,59 @@
-const mongoose = require('mongoose');
-const uniqueValidator = require('mongoose-unique-validator');
-let Schema = mongoose.Schema;
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 
-let rolesValidos = {
-    values: ['ADMIN_ROLE', 'USER_ROLE'],
-    message: '{VALUE} no es un rol válido'
-};
-
-let planes = {
-    values: ['FREE', 'STANDARD', 'PREMIUM']
-}
-
-let usuarioSchema = new Schema(
+const UserSchema = new mongoose.Schema(
   {
-    nombre: {type: String, require: [true, 'El nombre es necesario']},
-    email: {type: String, unique: true, require: [true, 'El email es necesario'], lowercase: true},
-    password: {type: String, require: [true, 'El password es obligatorio']},
-    role: {type: String, default: 'USER_ROLE', enum: rolesValidos},
-    estado: {type: Boolean, default: true},
-    datosProfesionales: [{colegio: String, matricula: String}],
-    createtime : { type : Date, default: Date.now},
-    updatetime: {type: Date, default: undefined},
-    suscripcion : {type: String, default: 'FREE', enum: planes},
-    expiredSuscriptionTime: {type: Date, default: undefined},
-    ingresosAbonados: {type: Number, default: undefined},
-    resetlink: {type: String, default: undefined},
-    calculos: [{tipo: String, fecha: Date, plan: Number}],
-    documentos:[{tipo: String, fecha: Date, nombre: String, estado: Boolean}],
-  }
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    name: { type: String },
+    firstName: { type: String },
+    lastName: { type: String },
+    verificationCode: { type: String },
+    isVerified: { type: Boolean },
+    picture: { type: String },
+
+    // Nuevas propiedades basadas en el tipo UserProfile
+    address: { type: String },
+    address1: { type: String },
+    avatar: { type: String },
+    contact: { type: String },
+    country: { type: String },
+    designation: { type: String },
+    dob: { type: Date },
+    note: { type: String },
+    role: { type: String },
+    skill: { type: [String] }, // Array de habilidades
+    state: { type: String },
+    subscription: { type: String },
+    tier: { type: String },
+    url: { type: String },
+    zipCode: { type: String },
+
+    // Subdocumento de usuarios según la definición de User
+    users: [
+      {
+        userId: { type: String },
+        name: { type: String },
+        email: { type: String },
+        role: { type: String },
+        status: { type: String },
+        avatar: { type: String },
+      },
+    ],
+  },
+  { timestamps: true }
 );
 
+// Middleware para encriptar la contraseña antes de guardar
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
-usuarioSchema.methods.toJSON = function() {
-    let user = this;
-    let userObject = user.toObject();
-    delete userObject.password;
-    return userObject;
-}
+// Método para comparar contraseñas
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
-usuarioSchema.plugin(uniqueValidator, {message: '{PATH} debe ser unico'})
-
-module.exports = mongoose.model('Usuario', usuarioSchema);
+module.exports = mongoose.model("Usuarios", UserSchema);

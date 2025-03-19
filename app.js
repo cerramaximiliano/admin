@@ -19,12 +19,22 @@ dotenv.config()
 // Servicios
 const taskService = require('./server/services/tasks/taskService');
 
+
+
 // Configurar Express
 const app = express();
 
 
+app.use(
+    cors({
+      origin: "http://localhost:3000",
+      credentials: true,
+      methods: ["GET", "DELETE", "POST", "PUT", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+
 // Middleware
-app.use(cors());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());

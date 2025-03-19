@@ -94,7 +94,7 @@ const TASAS_CONFIG = {
 
 // Configuración del servidor
 const SERVER_CONFIG = {
-  port: process.env.PORT || 3000,
+  port: process.env.PORT_ADMIN || 3000,
   timezone: 'America/Argentina/Buenos_Aires',
   loggerOptions: {
     transport: {

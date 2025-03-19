@@ -790,7 +790,6 @@ exports.procesarActualizacionTasas = async (tipoTasa, resultado) => {
 exports.consultarPorFechas = async (req, res) => {
   try {
     const { fechaDesde, fechaHasta, campo, completo } = req.query;
-
     // Validar que se proporcionen los parámetros necesarios
     if (!fechaDesde || !fechaHasta || !campo) {
       return res.status(400).json({
@@ -812,9 +811,69 @@ exports.consultarPorFechas = async (req, res) => {
       });
     }
 
-    // Normalizar fechas a UTC y principio del día
-    const fechaDesdeNormalizada = moment.utc(fechaDesde).startOf('day').toDate();
-    const fechaHastaNormalizada = moment.utc(fechaHasta).startOf('day').toDate();
+    // Validar y transformar fechas en múltiples formatos
+    let fechaDesdeNormalizada, fechaHastaNormalizada;
+
+    try {
+      // Definir expresiones regulares para validar los diferentes formatos
+      const patronesFecha = [
+        /^(0[1-9]|[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2]|[1-9])\/\d{4}$/, // DD/MM/YYYY
+        /^(0[1-9]|[1-9]|[12]\d|3[01])-(0[1-9]|1[0-2]|[1-9])-\d{4}$/,   // DD-MM-YYYY
+        /^\d{4}-(0[1-9]|1[0-2]|[1-9])-(0[1-9]|[1-9]|[12]\d|3[01])$/,   // YYYY-MM-DD
+        /^\d{4}\/(0[1-9]|1[0-2]|[1-9])\/(0[1-9]|[1-9]|[12]\d|3[01])$/  // YYYY/MM/DD
+      ];
+
+      // Verificar si las fechas coinciden con alguno de los formatos aceptados
+      const esDesdeValido = patronesFecha.some(patron => patron.test(fechaDesde));
+      const esHastaValido = patronesFecha.some(patron => patron.test(fechaHasta));
+
+      if (!esDesdeValido || !esHastaValido) {
+        return res.status(400).json({
+          success: false,
+          mensaje: 'Las fechas deben tener uno de estos formatos: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD o YYYY/MM/DD'
+        });
+      }
+
+      // Determinar el formato de la fecha para usar el parser correcto
+      let formatoDesde, formatoHasta;
+
+      // Detectar formato para fechaDesde
+      if (/^\d{4}/.test(fechaDesde)) {
+        // Si empieza con 4 dígitos, es formato YYYY-MM-DD o YYYY/MM/DD
+        formatoDesde = fechaDesde.includes('-') ? 'YYYY-MM-DD' : 'YYYY/MM/DD';
+      } else {
+        // Si no, es formato DD/MM/YYYY o DD-MM-YYYY
+        formatoDesde = fechaDesde.includes('/') ? 'DD/MM/YYYY' : 'DD-MM-YYYY';
+      }
+
+      // Detectar formato para fechaHasta
+      if (/^\d{4}/.test(fechaHasta)) {
+        formatoHasta = fechaHasta.includes('-') ? 'YYYY-MM-DD' : 'YYYY/MM/DD';
+      } else {
+        formatoHasta = fechaHasta.includes('/') ? 'DD/MM/YYYY' : 'DD-MM-YYYY';
+      }
+
+      // SOLUCIÓN: Usar el método utc explícitamente y establecer hora, minuto, segundo a 0
+      // Esto garantiza que la fecha sea exactamente a medianoche UTC
+      fechaDesdeNormalizada = moment.utc(fechaDesde, formatoDesde)
+        .set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+        .toDate();
+
+      fechaHastaNormalizada = moment.utc(fechaHasta, formatoHasta)
+        .set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+        .toDate();
+
+      // Verificar si las fechas son válidas después de la conversión
+      if (!fechaDesdeNormalizada.getTime() || !fechaHastaNormalizada.getTime()) {
+        throw new Error('Fechas inválidas después de la conversión');
+      }
+
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        mensaje: 'Error al procesar las fechas. Asegúrese de que sean fechas válidas en uno de los formatos aceptados.'
+      });
+    }
 
     // Seleccionar campos a devolver
     let proyeccion = { fecha: 1, _id: 0 };
@@ -825,27 +884,54 @@ exports.consultarPorFechas = async (req, res) => {
     const isCompleto = completo === 'true';
 
     if (isCompleto) {
-      // Consulta para el rango completo
+      // SOLUCIÓN: Ajustar la consulta para buscar exactamente por YYYY-MM-DD
+      // Construimos las fechas de inicio/fin del día para la consulta
+      const fechaDesdeString = moment.utc(fechaDesdeNormalizada).format('YYYY-MM-DD');
+      const fechaHastaString = moment.utc(fechaHastaNormalizada).format('YYYY-MM-DD');
+
+      // Consulta por fechas como strings o usando conversión adecuada según tu schema
       const consulta = {
-        fecha: {
-          $gte: fechaDesdeNormalizada,
-          $lte: fechaHastaNormalizada
-        }
+        $or: [
+          // Si la fecha en la base de datos está almacenada como Date
+          {
+            fecha: {
+              $gte: fechaDesdeNormalizada,
+              $lte: fechaHastaNormalizada
+            }
+          },
+          // Si la base de datos almacena fechas como strings YYYY-MM-DD
+          // (elimina esta parte si no aplica)
+          {
+            fechaString: {
+              $gte: fechaDesdeString,
+              $lte: fechaHastaString
+            }
+          }
+        ]
       };
 
       // Devolver todos los registros dentro del rango
       datos = await Tasas.find(consulta, proyeccion).sort({ fecha: 1 });
     } else {
-      // Consulta solo para los extremos
-      const registroInicial = await Tasas.findOne(
-        { fecha: fechaDesdeNormalizada },
-        proyeccion
-      );
+      // Para búsqueda exacta de un día, usamos una estrategia diferente
+      // Creamos consultas que buscan específicamente el día, sin importar la hora
 
-      const registroFinal = await Tasas.findOne(
-        { fecha: fechaHastaNormalizada },
+      const fechaDesdeInicio = moment.utc(fechaDesdeNormalizada).startOf('day').toDate();
+      const fechaDesdeFin = moment.utc(fechaDesdeNormalizada).endOf('day').toDate();
+      const fechaHastaInicio = moment.utc(fechaHastaNormalizada).startOf('day').toDate();
+      const fechaHastaFin = moment.utc(fechaHastaNormalizada).endOf('day').toDate();
+
+      // Buscar para fechaDesde
+      const registroInicial = await Tasas.findOne(
+        { fecha: { $gte: fechaDesdeInicio, $lte: fechaDesdeFin } },
         proyeccion
-      );
+      ).sort({ fecha: 1 });
+
+      // Buscar para fechaHasta
+      const registroFinal = await Tasas.findOne(
+        { fecha: { $gte: fechaHastaInicio, $lte: fechaHastaFin } },
+        proyeccion
+      ).sort({ fecha: 1 });
 
       datos = {
         inicio: registroInicial,
@@ -863,8 +949,8 @@ exports.consultarPorFechas = async (req, res) => {
         completo: isCompleto
       }
     });
-
   } catch (error) {
+    logger.error(error);
     return res.status(500).json({
       success: false,
       mensaje: 'Error al consultar datos por fechas',
@@ -872,8 +958,6 @@ exports.consultarPorFechas = async (req, res) => {
     });
   }
 };
-
-
 /**
  * Controlador para actualizar tasas utilizando el scraper
  * @route POST /api/tasas/update
@@ -882,14 +966,14 @@ exports.updateTasas = async (req, res) => {
   try {
     // Extraer parámetros obligatorios de la solicitud
     const { tasaId, fechaDesde, fechaHasta, tipoTasa } = req.query;
-    
+
     // Extraer parámetros opcionales con valores predeterminados
     const dni = process.env.DU_01;
     const tomo = process.env.TREG_01;
     const folio = process.env.FREG_01;
     const screenshot = false;
     const capital = '1000';
-    
+
     // Validar parámetros obligatorios
     if (!tasaId || !fechaDesde || !fechaHasta || !tipoTasa) {
       return res.status(400).json({
@@ -910,7 +994,7 @@ exports.updateTasas = async (req, res) => {
     // Verificar que fechaDesde sea anterior a fechaHasta
     const fechaDesdeObj = new Date(fechaDesde);
     const fechaHastaObj = new Date(fechaHasta);
-    
+
     if (fechaDesdeObj > fechaHastaObj) {
       return res.status(400).json({
         success: false,
@@ -921,7 +1005,7 @@ exports.updateTasas = async (req, res) => {
     // Convertir fechas de formato ISO (YYYY-MM-DD) a formato DD/MM/YYYY para la función main
     const fechaDesdeArr = fechaDesde.split('-');
     const fechaHastaArr = fechaHasta.split('-');
-    
+
     const fechaDesdeFormateada = `${fechaDesdeArr[2]}/${fechaDesdeArr[1]}/${fechaDesdeArr[0]}`;
     const fechaHastaFormateada = `${fechaHastaArr[2]}/${fechaHastaArr[1]}/${fechaHastaArr[0]}`;
 
@@ -955,7 +1039,7 @@ exports.updateTasas = async (req, res) => {
   } catch (error) {
 
     logger.error('Error en controlador updateTasas:', error);
-    
+
     // No enviamos respuesta aquí porque ya enviamos una respuesta 202 previamente
     // Si quieres manejar esta situación, deberías implementar un sistema de notificación
     // o un endpoint para consultar el estado del proceso

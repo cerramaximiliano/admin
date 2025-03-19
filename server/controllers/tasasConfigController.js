@@ -175,7 +175,7 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
             // Convertir las fechas procesadas de strings a objetos Date
             // y crear un conjunto para búsqueda eficiente
             const fechasProcesadasSet = new Set();
-            
+
             // Primero identificamos la fecha más antigua y la más reciente en el array de fechasProcesadas
             for (const item of fechasProcesadas) {
                 // Convertir la fecha de string a Date
@@ -189,12 +189,12 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
                     // Añadir al conjunto para búsqueda eficiente
                     // Usar ISOString truncado como clave para evitar problemas de comparación
                     fechasProcesadasSet.add(fechaUTC.toISOString().split('T')[0]);
-                    
+
                     // Actualizar la fecha más reciente
                     if (!fechaMasReciente || fechaUTC > fechaMasReciente) {
                         fechaMasReciente = fechaUTC;
                     }
-                    
+
                     // Actualizar la fecha más antigua
                     if (!fechaMasAntigua || fechaUTC < fechaMasAntigua) {
                         fechaMasAntigua = fechaUTC;
@@ -229,7 +229,7 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
             if (fechaMasAntigua && (!config.fechaInicio || fechaMasAntigua < config.fechaInicio)) {
                 config.fechaInicio = fechaMasAntigua;
             }
-            
+
             // Si tenemos una fecha más reciente que la fechaUltima actual (o no hay fechaUltima), actualizarla
             if (fechaMasReciente && (!config.fechaUltima || fechaMasReciente > config.fechaUltima)) {
                 config.fechaUltima = fechaMasReciente;
@@ -291,3 +291,42 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
         throw error;
     }
 };
+
+
+exports.obtenerTasasConfig = async (req, res) => {
+    try {
+        // Obtener solo las tasas activas
+        const tasas = await TasasConfig.find({ activa: true })
+            .select('tipoTasa descripcion fechaInicio fechaUltima')
+            .sort('descripcion');
+
+        // Transformar los datos para el SelectField
+        const tasasFormateadas = tasas.map(tasa => ({
+            value: tasa.tipoTasa,
+            label: formatearNombreTasa(tasa.tipoTasa) || tasa.descripcion,
+            fechaInicio: tasa.fechaInicio,
+            fechaUltima: tasa.fechaUltima
+        }));
+
+        return res.status(200).json(tasasFormateadas);
+    } catch (error) {
+        console.error('Error al obtener tasas:', error);
+        return res.status(500).json({ mensaje: 'Error al obtener las tasas' });
+    }
+};
+
+function formatearNombreTasa(tipoTasa) {
+    const formateo = {
+        'tasaPasivaBNA': 'Tasa Pasiva Banco Nación',
+        'tasaPasivaBCRA': 'Tasa Pasiva BCRA',
+        'tasaActivaBNA': 'Tasa Activa Banco Nación',
+        'tasaActivaTnaBNA': 'Tasa Activa TNA Banco Nación',
+        'cer': 'CER',
+        'icl': 'ICL BCRA',
+        'tasaActivaCNAT2601': 'Tasa Activa Banco Nación - Acta 2601',
+        'tasaActivaCNAT2658': 'Tasa Activa Banco Nación - Acta 2658',
+        'tasaActivaCNAT2764': 'Tasa Activa Banco Nación - Acta 2764'
+    };
+
+    return formateo[tipoTasa] || tipoTasa;
+}
