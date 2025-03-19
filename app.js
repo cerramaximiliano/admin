@@ -19,51 +19,93 @@ dotenv.config()
 // Servicios
 const taskService = require('./server/services/tasks/taskService');
 
-
-
 // Configurar Express
 const app = express();
 
-const allowedOrigins = [
-    'http://localhost:3000',    // Tu frontend local
-    'http://localhost:3001',    // Otro posible entorno local
-    'https://lawanalytics.app'    // Tu entorno de producción
-];
+// MIDDLEWARE DE DEPURACIÓN - DEBE ESTAR PRIMERO
+app.use((req, res, next) => {
+    console.log('\n----- NUEVA SOLICITUD -----');
+    console.log('Origen:', req.headers.origin);
+    console.log('Método:', req.method);
+    console.log('Ruta:', req.url);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    next();
+});
 
-app.use(cors({
-    origin: function (origin, callback) {
-        // Permitir solicitudes sin origen (como aplicaciones móviles o curl)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Bloqueado por política CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Especifica métodos permitidos
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'], // Especifica headers permitidos
-    exposedHeaders: ['set-cookie'] // Expone el header de cookies
-}));
-
-
-
-
-
-// Middleware
+// Middleware básicos
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+// CONFIGURACIÓN CORS MEJORADA
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://lawanalytics.app'
+];
+
+// Manejo de preflight OPTIONS explícito
+app.options('*', (req, res) => {
+    const origin = req.headers.origin;
+
+    if (!origin || allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        res.status(204).end();
+    } else {
+        console.log(`CORS Preflight bloqueado para origen: ${origin}`);
+        res.status(403).end();
+    }
+});
+
+// Configuración CORS para solicitudes regulares
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    if (!origin || allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        next();
+    } else {
+        console.log(`CORS bloqueado para origen: ${origin}`);
+        res.status(403).json({ error: 'Origen no permitido por CORS' });
+    }
+});
+
+// Middleware para archivos estáticos
 app.use(express.static(path.join(__dirname, '../public')));
+
+// ENDPOINT DE PRUEBA CORS
+app.get('/api/cors-test', (req, res) => {
+    console.log('Prueba CORS exitosa');
+    console.log('Cookies recibidas:', req.cookies);
+    res.json({
+        success: true,
+        message: 'CORS configurado correctamente',
+        cookies: req.cookies
+    });
+});
 
 // Registrar rutas
 const routes = require('./server/routes/index');
+app.use('/api', routes);
 
-// Manejador de errores
+// Manejador de errores - DEBE ESTAR AL FINAL
 app.use((err, req, res, next) => {
-    logger.error(`Error no controlado: ${err.message}`);
-    logger.error(err.stack);
+    console.error(`Error no controlado: ${err.message}`);
+    console.error(err.stack);
+
+    if (err.message.includes('CORS')) {
+        return res.status(403).json({
+            ok: false,
+            status: 403,
+            error: 'Error de CORS: Origen no permitido'
+        });
+    }
 
     res.status(500).json({
         ok: false,
@@ -72,19 +114,16 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.use((req, res, next) => {
-    console.log('Solicitud recibida:');
-    console.log('  Origen:', req.headers.origin);
-    console.log('  Método:', req.method);
-    console.log('  Ruta:', req.url);
-    console.log('  Cookies:', req.headers.cookie);
-    next();
+// Ruta para errores 404
+app.use((req, res) => {
+    res.status(404).json({
+        ok: false,
+        status: 404,
+        error: 'Recurso no encontrado'
+    });
 });
 
-
-// Configurar rutas principales con prefijo /api
-app.use('/api', routes);
-
+// Resto del código igual...
 /**
  * Inicialización de la aplicación
  */
