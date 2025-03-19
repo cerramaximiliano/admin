@@ -27,7 +27,7 @@ const app = express();
 const allowedOrigins = [
     'http://localhost:3000',    // Tu frontend local
     'http://localhost:3001',    // Otro posible entorno local
-    'https://tuapp-prod.com'    // Tu entorno de producción
+    'https://lawanalytics.app'    // Tu entorno de producción
 ];
 
 app.use(cors({
@@ -41,7 +41,10 @@ app.use(cors({
             callback(new Error('Bloqueado por política CORS'));
         }
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Especifica métodos permitidos
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'], // Especifica headers permitidos
+    exposedHeaders: ['set-cookie'] // Expone el header de cookies
 }));
 
 // Middleware
