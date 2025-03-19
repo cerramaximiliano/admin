@@ -24,15 +24,25 @@ const taskService = require('./server/services/tasks/taskService');
 // Configurar Express
 const app = express();
 
+const allowedOrigins = [
+    'http://localhost:3000',    // Tu frontend local
+    'http://localhost:3001',    // Otro posible entorno local
+    'https://tuapp-prod.com'    // Tu entorno de producción
+];
 
-app.use(
-    cors({
-      origin: "http://localhost:3000",
-      credentials: true,
-      methods: ["GET", "DELETE", "POST", "PUT", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-    })
-  );
+app.use(cors({
+    origin: function (origin, callback) {
+        // Permitir solicitudes sin origen (como aplicaciones móviles o curl)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Bloqueado por política CORS'));
+        }
+    },
+    credentials: true
+}));
 
 // Middleware
 app.use(cookieParser());
