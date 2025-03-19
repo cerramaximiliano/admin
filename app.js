@@ -48,14 +48,6 @@ app.use(cors({
 }));
 
 
-app.use((req, res, next) => {
-    console.log('Solicitud recibida:');
-    console.log('  Origen:', req.headers.origin);
-    console.log('  Método:', req.method);
-    console.log('  Ruta:', req.url);
-    console.log('  Cookies:', req.headers.cookie);
-    next();
-});
 
 
 
@@ -79,6 +71,16 @@ app.use((err, req, res, next) => {
         error: 'Error interno del servidor'
     });
 });
+
+app.use((req, res, next) => {
+    console.log('Solicitud recibida:');
+    console.log('  Origen:', req.headers.origin);
+    console.log('  Método:', req.method);
+    console.log('  Ruta:', req.url);
+    console.log('  Cookies:', req.headers.cookie);
+    next();
+});
+
 
 // Configurar rutas principales con prefijo /api
 app.use('/api', routes);
