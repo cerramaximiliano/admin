@@ -40,7 +40,7 @@ const cronConfig = {
     colegio: {
         tasaActivaCNAT2658: {
             busquedaFechas: '47 7,18,21 * * *'
-        }, 
+        },
         tasaActivaCNAT2764: {
             busquedaFechas: '49 7,18,21 * * *'
         },
@@ -56,17 +56,21 @@ const cronConfig = {
     manager_files: {
         cleanup: '0 0 * * *'
     },
-// Configuración para verificación de actualizaciones
+    // Configuración para verificación de actualizaciones
     verificacion: {
         // Verificación después del ciclo matutino
         matutina: '0 9 * * *',     // A las 9:00 AM, después de todas las tareas de la mañana
-        
+
         // Verificación después de cada ciclo de actualización
         ciclica: '55 7,9,11,13,15,21 * * *',  // 5 minutos después del último scraping del ciclo
-        
+
         // Verificación diaria completa
         diaria: '0 23 * * *'      // A las 11:00 PM, reporte diario completo
-      }
+    },
+
+      syncStats: {
+        daily: '0 4 * * *'
+    }
 };
 
 module.exports = cronConfig;
