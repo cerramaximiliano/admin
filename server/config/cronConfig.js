@@ -68,8 +68,13 @@ const cronConfig = {
         diaria: '0 23 * * *'      // A las 11:00 PM, reporte diario completo
     },
 
-      syncStats: {
-        daily: '0 4 * * *'
+    syncStats: {
+        diaria: '0 4 * * *'
+    },
+
+    generateAnalysis: {
+        generateAllUsersAnalysis:
+            { diaria: '0 5 * * *' }
     }
 };
 

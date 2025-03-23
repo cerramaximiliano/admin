@@ -5,6 +5,7 @@ const logger = require('../utils/logger');
 // Importar todas las rutas específicas
 const tasasRoutes = require('./tasasRoutes');
 const tasksRoutes = require('./tasksRoutes');
+const analysisRoutes = require('./statsAnalysisRoutes');
 
 // Configurar una ruta base para verificar que la API está funcionando
 router.get('/', (req, res) => {
@@ -19,13 +20,16 @@ router.get('/', (req, res) => {
 // Registrar todas las rutas
 router.use('/tasas', tasasRoutes);
 router.use('/tasks', tasksRoutes);
+router.use('/stats', analysisRoutes);
 
 if (process.env.NODE_ENV === 'development') {
   const tasksDevRoutes = require('./tasksDevRoutes');
   const tasasDevRoutes = require('./tasasDevRoutes');
+  const analysisDevRoutes = require('./statAnalysisDevRoutes')
   router.use('/dev/tasks', tasksDevRoutes);
   router.use('/dev/tasas', tasasDevRoutes);
-  logger.warn('¡ATENCIÓN! Rutas de desarrollo sin autenticación habilitadas en /api/dev/tasks y /api/dev/tasas');
+  router.use('/dev/stats', analysisDevRoutes);
+  logger.warn('¡ATENCIÓN! Rutas de desarrollo sin autenticación habilitadas en /api/dev/tasks - /api/dev/tasas - /api/dev/stats');
 
 }
 

@@ -14,6 +14,7 @@ const { findMissingDataColegio } = require('../scrapers/tasas/colegioService');
 const { programarVerificacionTasas } = require('../../utils/verificadorTasas');
 const { cleanServerFiles } = require('../file_manager/file_manager');
 const { updateAllUserStats } = require('../stats/statsSyncService');
+const { generateAllUsersAnalytics } = require('../stats/statsAnalysisService');
 
 // Colección de tareas programadas
 const tasks = new Map();
@@ -362,14 +363,22 @@ function initializeTasks() {
     cleanServerFiles,
     'Elimina todos los archivos de la carpeta files',
   )
-  
+
 
   scheduleTask(
     'sync-stats',
-    cronConfig.syncStats.daily,
+    cronConfig.syncStats.diaria,
     updateAllUserStats,
     'Sincroniza estadísticas de usuarios'
   )
+
+  scheduleTask(
+    'analysis-stats',
+    cronConfig.generateAnalysis.generateAllUsersAnalysis.diaria,
+    generateAllUsersAnalytics,
+    'Genera analisis de todos los usuarios'
+  )
+
 
   programarVerificacionTasas(module.exports, {
     cronExpression: cronConfig.verificacion.matutina,
