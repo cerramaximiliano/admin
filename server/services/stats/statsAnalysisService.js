@@ -505,21 +505,83 @@ async function generateTaskAnalytics(userId) {
             completionRate: 0,
             pendingTasks: 0,
             completedTasks: 0,
-            overdueTasks: 0
+            overdueTasks: 0,
+            priorityDistribution: {
+                alta: 0,
+                media: 0,
+                baja: 0
+            },
+            statusDistribution: {
+                pendiente: 0,
+                en_progreso: 0,
+                revision: 0,
+                completada: 0,
+                cancelada: 0
+            },
+            tasksWithSubtasks: 0,
+            tasksWithAttachments: 0,
+            tasksWithComments: 0,
+            averageSubtasksPerTask: 0,
+            totalSubtasks: 0,
+            completedSubtasks: 0,
+            subtaskCompletionRate: 0
         };
 
         if (tasks.length > 0) {
+            let totalSubtasks = 0;
+            let completedSubtasks = 0;
+
             // Contar tareas completadas y pendientes
             tasks.forEach(task => {
-                if (task.checked) {
+                // Estado de completitud basado en checked o status
+                if (task.checked || task.status === 'completada' || task.status === 'cancelada') {
                     taskStats.completedTasks++;
                 } else {
                     taskStats.pendingTasks++;
 
-                    // Verificar si está vencida
-                    if (task.date && new Date(task.date) < new Date()) {
+                    // Verificar si está vencida usando dueDate en lugar de date
+                    if (task.dueDate && new Date(task.dueDate) < new Date()) {
                         taskStats.overdueTasks++;
                     }
+                }
+
+                // Estadísticas de prioridad
+                if (task.priority) {
+                    taskStats.priorityDistribution[task.priority]++;
+                } else {
+                    // Si no tiene prioridad asignada, asumimos que es media (valor por defecto)
+                    taskStats.priorityDistribution.media++;
+                }
+
+                // Estadísticas de estado
+                if (task.status) {
+                    taskStats.statusDistribution[task.status]++;
+                } else {
+                    // Si no tiene estado asignado, asumimos que es pendiente (valor por defecto)
+                    taskStats.statusDistribution.pendiente++;
+                }
+
+                // Estadísticas de subtareas
+                if (task.subtasks && task.subtasks.length > 0) {
+                    taskStats.tasksWithSubtasks++;
+                    totalSubtasks += task.subtasks.length;
+
+                    // Contar subtareas completadas
+                    task.subtasks.forEach(subtask => {
+                        if (subtask.completed) {
+                            completedSubtasks++;
+                        }
+                    });
+                }
+
+                // Estadísticas de archivos adjuntos
+                if (task.attachments && task.attachments.length > 0) {
+                    taskStats.tasksWithAttachments++;
+                }
+
+                // Estadísticas de comentarios
+                if (task.comments && task.comments.length > 0) {
+                    taskStats.tasksWithComments++;
                 }
             });
 
@@ -527,6 +589,14 @@ async function generateTaskAnalytics(userId) {
             taskStats.completionRate = Math.round(
                 (taskStats.completedTasks / tasks.length) * 100
             );
+
+            // Calcular estadísticas de subtareas
+            taskStats.totalSubtasks = totalSubtasks;
+            taskStats.completedSubtasks = completedSubtasks;
+            taskStats.averageSubtasksPerTask = totalSubtasks > 0 ?
+                parseFloat((totalSubtasks / tasks.length).toFixed(1)) : 0;
+            taskStats.subtaskCompletionRate = totalSubtasks > 0 ?
+                Math.round((completedSubtasks / totalSubtasks) * 100) : 0;
         }
 
         return taskStats;
@@ -536,7 +606,26 @@ async function generateTaskAnalytics(userId) {
             completionRate: 0,
             pendingTasks: 0,
             completedTasks: 0,
-            overdueTasks: 0
+            overdueTasks: 0,
+            priorityDistribution: {
+                alta: 0,
+                media: 0,
+                baja: 0
+            },
+            statusDistribution: {
+                pendiente: 0,
+                en_progreso: 0,
+                revision: 0,
+                completada: 0,
+                cancelada: 0
+            },
+            tasksWithSubtasks: 0,
+            tasksWithAttachments: 0,
+            tasksWithComments: 0,
+            averageSubtasksPerTask: 0,
+            totalSubtasks: 0,
+            completedSubtasks: 0,
+            subtaskCompletionRate: 0
         };
     }
 }
