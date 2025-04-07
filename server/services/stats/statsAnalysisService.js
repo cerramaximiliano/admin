@@ -497,7 +497,7 @@ async function generateTaskAnalytics(userId) {
 
         // Buscar todas las tareas del usuario
         const tasks = await tasksCollection.find({
-            userId: userId.toString() // Nota: puede ser que se guarde como string
+            userId: userId // Nota: puede ser que se guarde como string
         }).toArray();
 
         // Inicializar estadísticas de tareas
