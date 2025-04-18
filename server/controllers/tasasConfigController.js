@@ -1,6 +1,7 @@
 const Tasas = require("../models/tasas");
 const TasasConfig = require("../models/tasasConfig");
 const moment = require('moment');
+const logger = require('../utils/logger');
 
 
 /**
@@ -92,13 +93,13 @@ exports.verificarFechasFaltantes = async (tipoTasa) => {
 
         // Paso 4: Identificar fechas faltantes
         // Comparamos solo la parte de fecha (YYYY-MM-DD), ignorando la hora
-        const fechasFaltantes = todasLasFechas.filter(fecha => {
+        const fechasFaltantesCalculadas = todasLasFechas.filter(fecha => {
             const fechaKey = moment.utc(fecha).format('YYYY-MM-DD');
             return !fechasExistentesMap.has(fechaKey);
         }).map(fecha => moment.utc(fecha).startOf('day').toDate());
-
+        
         // Paso 5: Actualizar el documento de configuración
-        config.fechasFaltantes = fechasFaltantes;
+        config.fechasFaltantes = fechasFaltantesCalculadas;
         config.ultimaVerificacion = new Date();
         await config.save();
 
@@ -109,8 +110,8 @@ exports.verificarFechasFaltantes = async (tipoTasa) => {
             fechaUltima: config.fechaUltima,
             totalDias: todasLasFechas.length,
             diasExistentes: fechasExistentes.length,
-            diasFaltantes: fechasFaltantes.length,
-            fechasFaltantes: fechasFaltantes.map(fecha => ({
+            diasFaltantes: fechasFaltantesCalculadas.length,
+            fechasFaltantes: fechasFaltantesCalculadas.map(fecha => ({
                 fecha,
                 fechaFormateada: moment.utc(fecha).format('YYYY-MM-DD')
             })),

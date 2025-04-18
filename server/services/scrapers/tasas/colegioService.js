@@ -1877,40 +1877,170 @@ async function findMissingDataColegio(tipoTasa, tasaId, options = {}) {
     logger.info(`Verificación de datos para ${tipoTasa}${options.fechaDesde ? ' con fechas específicas' : ''}`);
 
     let fechaDesde, fechaHasta;
+    // Usar UTC para todas las operaciones de fecha
+    const hoy = moment().utc().startOf('day');
+    logger.info(`Fecha actual (UTC): ${hoy.format('YYYY-MM-DD')}`);
 
     // Si se proporcionan fechas específicas, usarlas directamente
     if (options.fechaDesde && options.fechaHasta) {
         logger.info(`Usando fechas específicas: ${options.fechaDesde} - ${options.fechaHasta}`);
         fechaDesde = options.fechaDesde;
         fechaHasta = options.fechaHasta;
+        
+        // Verificar si las fechas son futuras (convertir a UTC)
+        const fechaHastaObj = moment.utc(fechaHasta, 'DD/MM/YYYY');
+        if (fechaHastaObj.isAfter(hoy)) {
+            logger.info(`No se ejecuta el scraping porque la fecha ${fechaHasta} es una fecha futura (UTC)`);
+            return; // No ejecutar para fechas futuras
+        }
     }
-    // Sino, usar la lógica original de verificación de fechas faltantes
+    // Sino, usar la lógica de verificación de fechas faltantes
     else {
-        const verificacion = await verificarFechasFaltantes(tipoTasa);
-
-
-        if (verificacion.diasFaltantes > 0) {
-            const fechas = await generarRangoFechas(verificacion);
-
-            fechaDesde = fechas.fechaDesde;
-            fechaHasta = fechas.fechaHasta;
-        } else {
-            logger.info(`No se encontraron fechas faltantes para ${tipoTasa} - Rango de fechas actual ${moment(verificacion.fechaInicio).format("DD/MM/YYYY")} - ${moment(verificacion.fechaUltima).format("DD/MM/YYYY")}`);
-
-            const currentDate = obtenerFechaActualISO();
-            if (moment(currentDate).utc(0).startOf("day").isAfter(moment(verificacion.fechaUltima).utc(0))) {
-                logger.info(`Hay fechas posteriores que actualizar en rango: ${moment(verificacion.fechaUltima).format('DD/MM/YYYY')} - ${moment(currentDate).format('DD/MM/YYYY')}`);
-                fechaDesde = moment(verificacion.fechaUltima).format('DD/MM/YYYY');
-                fechaHasta = moment(currentDate).format('DD/MM/YYYY');
+        // Obtener primero la configuración de TasasConfig para verificar si ya hay fechas faltantes
+        const config = await TasasConfig.findOne({ tipoTasa });
+        
+        let hayFechasFaltantesPasadas = false;
+        
+        // Si hay fechas faltantes en el config, filtrar solo las fechas pasadas
+        if (config && config.fechasFaltantes && config.fechasFaltantes.length > 0) {
+            logger.info(`Total fechas faltantes en TasasConfig: ${config.fechasFaltantes.length}`);
+            
+            // Filtrar solo fechas pasadas o de hoy (usando UTC)
+            const fechasFaltantesPasadas = config.fechasFaltantes.filter(fecha => {
+                // Asegurar que tratamos la fecha como UTC
+                const fechaUTC = moment.utc(fecha).startOf('day');
+                const esPasadaOHoy = fechaUTC.isSameOrBefore(hoy);
+                
+                if (!esPasadaOHoy) {
+                    logger.info(`Fecha futura encontrada: ${fechaUTC.format('YYYY-MM-DD')} > ${hoy.format('YYYY-MM-DD')}`);
+                }
+                
+                return esPasadaOHoy;
+            });
+            
+            if (fechasFaltantesPasadas.length === 0) {
+                logger.info(`Todas las fechas faltantes para ${tipoTasa} son fechas futuras (UTC).`);
+                // No salimos, ahora verificaremos si hay que actualizar la fecha actual
             } else {
-                logger.info('No se requiere actualización - datos actualizados');
-                return; // No hay actualizaciones necesarias
+                hayFechasFaltantesPasadas = true;
+                logger.info(`Se encontraron ${fechasFaltantesPasadas.length} fechas faltantes pasadas en TasasConfig para ${tipoTasa}`);
+                
+                // Usar generarRangoFechas con las fechas faltantes pasadas
+                const fechas = generarRangoFechas({
+                    fechasFaltantes: fechasFaltantesPasadas.map(fecha => ({
+                        fecha,
+                        fechaFormateada: moment.utc(fecha).format('YYYY-MM-DD')
+                    }))
+                });
+                
+                if (fechas) {
+                    fechaDesde = fechas.fechaDesde;
+                    fechaHasta = fechas.fechaHasta;
+                    
+                    // Verificar que fechaHasta no sea posterior a hoy (usando UTC)
+                    const fechaHastaObj = moment.utc(fechaHasta, 'DD/MM/YYYY');
+                    if (fechaHastaObj.isAfter(hoy)) {
+                        // Si la fecha es futura, limitar hasta hoy
+                        fechaHasta = hoy.format('DD/MM/YYYY');
+                        logger.info(`Fecha hasta ajustada a la fecha actual (UTC): ${fechaHasta}`);
+                    }
+                } else {
+                    logger.warn(`No se pudieron generar fechas desde las fechas faltantes para ${tipoTasa}`);
+                    hayFechasFaltantesPasadas = false;
+                }
+            }
+        }
+        
+        // Si no hay fechas faltantes pasadas en el config, verificar otras condiciones
+        if (!hayFechasFaltantesPasadas) {
+            // Verificar si necesitamos actualizar hasta la fecha actual
+            if (!config) {
+                // Si no hay configuración, ejecutar verificarFechasFaltantes
+                const verificacion = await verificarFechasFaltantes(tipoTasa);
+                
+                if (verificacion.diasFaltantes > 0) {
+                    // Filtrar solo fechas pasadas (usando UTC)
+                    const fechasFaltantesPasadas = verificacion.fechasFaltantes.filter(item => {
+                        const fechaUTC = moment.utc(item.fecha).startOf('day');
+                        return fechaUTC.isSameOrBefore(hoy);
+                    });
+                    
+                    if (fechasFaltantesPasadas.length === 0) {
+                        logger.info(`Todas las fechas faltantes para ${tipoTasa} son fechas futuras (UTC).`);
+                        // Continuar para verificar fecha actual
+                    } else {
+                        // Crear un nuevo objeto de verificación con solo las fechas pasadas
+                        const verificacionFiltrada = {
+                            ...verificacion,
+                            fechasFaltantes: fechasFaltantesPasadas,
+                            diasFaltantes: fechasFaltantesPasadas.length
+                        };
+                        
+                        const fechas = generarRangoFechas(verificacionFiltrada);
+                        if (fechas) {
+                            fechaDesde = fechas.fechaDesde;
+                            fechaHasta = fechas.fechaHasta;
+                            
+                            // Verificar que fechaHasta no sea posterior a hoy (usando UTC)
+                            const fechaHastaObj = moment.utc(fechaHasta, 'DD/MM/YYYY');
+                            if (fechaHastaObj.isAfter(hoy)) {
+                                // Si la fecha es futura, limitar hasta hoy
+                                fechaHasta = hoy.format('DD/MM/YYYY');
+                                logger.info(`Fecha hasta ajustada a la fecha actual (UTC): ${fechaHasta}`);
+                            }
+                            hayFechasFaltantesPasadas = true;
+                        } else {
+                            logger.warn(`No se pudieron generar fechas desde la verificación para ${tipoTasa}`);
+                            // Continuar para verificar fecha actual
+                        }
+                    }
+                }
+            }
+            
+            // Si aún no tenemos fechas para procesar, verificar si necesitamos actualizar fecha actual
+            if (!hayFechasFaltantesPasadas) {
+                // Usar el config que ya obtuvimos o la verificación
+                const configFinal = config || await TasasConfig.findOne({ tipoTasa });
+                
+                if (configFinal) {
+                    logger.info(`Verificando si hay fechas posteriores a la última fecha registrada para ${tipoTasa}`);
+                    logger.info(`Fecha última en DB (UTC): ${moment.utc(configFinal.fechaUltima).format("YYYY-MM-DD")}`);
+                    
+                    const currentDate = obtenerFechaActualISO();
+                    const fechaActualUTC = moment(currentDate).utc().startOf("day");
+                    
+                    // Verificar si la fecha última en la DB es futura
+                    if (moment.utc(configFinal.fechaUltima).isAfter(hoy)) {
+                        logger.info(`La fecha última en la DB (${moment.utc(configFinal.fechaUltima).format("YYYY-MM-DD")}) es futura. No se requiere actualización.`);
+                        return; // No actualizar si la fecha última es futura
+                    }
+                    
+                    // Verificar si necesitamos actualizar hasta la fecha actual
+                    if (fechaActualUTC.isAfter(moment.utc(configFinal.fechaUltima))) {
+                        logger.info(`Hay fechas posteriores que actualizar en rango: ${moment.utc(configFinal.fechaUltima).format('DD/MM/YYYY')} - ${fechaActualUTC.format('DD/MM/YYYY')}`);
+                        fechaDesde = moment.utc(configFinal.fechaUltima).format('DD/MM/YYYY');
+                        fechaHasta = fechaActualUTC.format('DD/MM/YYYY');
+                    } else {
+                        logger.info('No se requiere actualización - datos actualizados hasta la fecha actual');
+                        return; // No hay actualizaciones necesarias
+                    }
+                } else {
+                    logger.warn(`No se pudo obtener configuración para ${tipoTasa}`);
+                    return;
+                }
             }
         }
     }
 
     // Si llegamos aquí, tenemos fechas válidas para actualizar
     if (fechaDesde && fechaHasta) {
+        // Una verificación adicional para asegurarnos de no procesar fechas futuras (usando UTC)
+        const fechaHastaObj = moment.utc(fechaHasta, 'DD/MM/YYYY');
+        if (fechaHastaObj.isAfter(hoy)) {
+            logger.info(`No se ejecuta el scraping porque la fecha ${fechaHasta} es una fecha futura (UTC)`);
+            return;
+        }
+        
         logger.info(`Ejecutando scraping para rango: ${fechaDesde} - ${fechaHasta}`);
         const scrapingColegio = await main({
             dni: process.env.DU_01,
