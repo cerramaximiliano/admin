@@ -5,8 +5,40 @@ const moment = require('moment');
 const logger = require('../../../utils/logger');
 const { guardarTasaActivaBNA } = require('../../../controllers/tasasController');
 const { getPuppeteerConfig } = require('../../../config/puppeteer');
+const TasasConfig = require('../../../models/tasasConfig');
 
 const configPuppeteer = getPuppeteerConfig();
+
+/**
+ * Registra un error en el modelo TasasConfig
+ * 
+ * @param {String} tipoTasa - Tipo de tasa afectada
+ * @param {String} taskId - Identificador de la tarea
+ * @param {String} mensaje - Mensaje de error
+ * @param {String|Object} detalleError - Detalles adicionales del error
+ * @param {String} codigo - Código de error opcional
+ * @returns {Promise<boolean>} - Resultado del registro
+ */
+async function registrarErrorTasa(tipoTasa, taskId, mensaje, detalleError = '', codigo = '') {
+    try {
+        if (!tipoTasa) {
+            logger.warn(`No se puede registrar error: tipoTasa no proporcionado`);
+            return false;
+        }
+        
+        const config = await TasasConfig.findOne({ tipoTasa });
+        if (!config) {
+            logger.warn(`No se puede registrar error: configuración no encontrada para ${tipoTasa}`);
+            return false;
+        }
+        
+        await config.registrarError(taskId, mensaje, detalleError, codigo);
+        return true;
+    } catch (error) {
+        logger.error(`Error al registrar error en TasasConfig: ${error.message}`);
+        return false;
+    }
+}
 
 /**
  * Implementa una estrategia de reintentos con backoff exponencial
@@ -325,6 +357,9 @@ async function guardarHTML(page, filename) {
  * Función principal mejorada con reintentos
  */
 async function actualizarTasaActivaBNAConReintentos() {
+    const tipoTasa = 'tasaActivaBNA';
+    const taskId = 'bna-tasa-activa-bna';
+    
     try {
         logger.info('Iniciando actualización de tasa activa BNA con reintentos');
 
@@ -332,14 +367,31 @@ async function actualizarTasaActivaBNAConReintentos() {
         const datosTasaActiva = await extraerTasaActivaBNAConReintentos();
 
         if (datosTasaActiva.error) {
-            throw new Error(`Error en la extracción: ${datosTasaActiva.error}`);
+            const errorMsg = `Error en la extracción: ${datosTasaActiva.error}`;
+            // Registrar error en TasasConfig
+            await registrarErrorTasa(
+                tipoTasa,
+                taskId,
+                errorMsg,
+                JSON.stringify(datosTasaActiva),
+                'EXTRACTION_ERROR'
+            );
+            throw new Error(errorMsg);
         }
 
         if (!datosTasaActiva.tna || !datosTasaActiva.fechaVigenciaISO) {
-            throw new Error('No se pudo extraer la tasa o la fecha de vigencia');
+            const errorMsg = 'No se pudo extraer la tasa o la fecha de vigencia';
+            // Registrar error en TasasConfig
+            await registrarErrorTasa(
+                tipoTasa,
+                taskId,
+                errorMsg,
+                JSON.stringify(datosTasaActiva),
+                'MISSING_DATA'
+            );
+            throw new Error(errorMsg);
         }
 
-        // Resto del código igual que en la función original
         // Preparar objeto de respuesta
         const resultadoScraping = {
             status: 'success',
@@ -354,8 +406,26 @@ async function actualizarTasaActivaBNAConReintentos() {
 
         if (resultadoGuardado.actualizado) {
             logger.info(`Tasa Activa BNA guardada en BD correctamente con valor: ${resultadoGuardado.valor}`);
+            
+            // Resolver cualquier error previo para este tipo de tasa y tarea
+            const config = await TasasConfig.findOne({ tipoTasa });
+            if (config) {
+                await config.resolverErrores(taskId);
+            }
         } else {
             logger.warn(`No se guardó la tasa en la BD: ${resultadoGuardado.mensaje}`);
+            
+            // No registramos como error cuando no hay cambios en la tasa,
+            // solo si hay un error de persistencia real
+            if (resultadoGuardado.status === 'error') {
+                await registrarErrorTasa(
+                    tipoTasa,
+                    taskId,
+                    `Error al guardar tasa: ${resultadoGuardado.mensaje}`,
+                    JSON.stringify(resultadoGuardado),
+                    'SAVE_ERROR'
+                );
+            }
         }
 
         return {
@@ -367,6 +437,19 @@ async function actualizarTasaActivaBNAConReintentos() {
 
     } catch (error) {
         logger.error(`Error en actualizarTasaActivaBNAConReintentos: ${error.message}`);
+        
+        // Registrar error general si no se ha registrado un error específico previamente
+        if (!error.message.includes('Error en la extracción') && 
+            !error.message.includes('No se pudo extraer la tasa')) {
+            await registrarErrorTasa(
+                tipoTasa,
+                taskId,
+                `Error general en actualización de tasa activa BNA: ${error.message}`,
+                error.stack || '',
+                'GENERAL_ERROR'
+            );
+        }
+        
         return {
             status: 'error',
             message: error.message

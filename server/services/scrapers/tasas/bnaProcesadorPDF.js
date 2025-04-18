@@ -7,6 +7,37 @@ const Tasas = require('../../../models/tasas');
 const TasasConfig = require('../../../models/tasasConfig');
 const { descargarPdfTasasPasivasConReintentos } = require('./bnaDescargadorPDF');
 
+/**
+ * Registra un error en el modelo TasasConfig
+ * 
+ * @param {String} tipoTasa - Tipo de tasa afectada
+ * @param {String} taskId - Identificador de la tarea
+ * @param {String} mensaje - Mensaje de error
+ * @param {String|Object} detalleError - Detalles adicionales del error
+ * @param {String} codigo - Código de error opcional
+ * @returns {Promise<boolean>} - Resultado del registro
+ */
+async function registrarErrorTasa(tipoTasa, taskId, mensaje, detalleError = '', codigo = '') {
+    try {
+        if (!tipoTasa) {
+            logger.warn(`No se puede registrar error: tipoTasa no proporcionado`);
+            return false;
+        }
+        
+        const config = await TasasConfig.findOne({ tipoTasa });
+        if (!config) {
+            logger.warn(`No se puede registrar error: configuración no encontrada para ${tipoTasa}`);
+            return false;
+        }
+        
+        await config.registrarError(taskId, mensaje, detalleError, codigo);
+        return true;
+    } catch (error) {
+        logger.error(`Error al registrar error en TasasConfig: ${error.message}`);
+        return false;
+    }
+}
+
 
 /**
  * Extrae datos de un PDF de tasas pasivas del BNA

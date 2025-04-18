@@ -6,6 +6,37 @@ const logger = require('../../../utils/logger');
 const moment = require("moment")
 
 /**
+ * Registra un error en el modelo TasasConfig
+ * 
+ * @param {String} tipoTasa - Tipo de tasa afectada
+ * @param {String} taskId - Identificador de la tarea
+ * @param {String} mensaje - Mensaje de error
+ * @param {String|Object} detalleError - Detalles adicionales del error
+ * @param {String} codigo - Código de error opcional
+ * @returns {Promise<boolean>} - Resultado del registro
+ */
+async function registrarErrorTasa(tipoTasa, taskId, mensaje, detalleError = '', codigo = '') {
+    try {
+        if (!tipoTasa) {
+            logger.warn(`No se puede registrar error: tipoTasa no proporcionado`);
+            return false;
+        }
+        
+        const config = await TasasConfig.findOne({ tipoTasa });
+        if (!config) {
+            logger.warn(`No se puede registrar error: configuración no encontrada para ${tipoTasa}`);
+            return false;
+        }
+        
+        await config.registrarError(taskId, mensaje, detalleError, codigo);
+        return true;
+    } catch (error) {
+        logger.error(`Error al registrar error en TasasConfig: ${error.message}`);
+        return false;
+    }
+}
+
+/**
  * Actualiza la configuración de fechas para un tipo de tasa
  * 
  * @param {String} tipoTasa - Tipo de tasa
@@ -218,9 +249,10 @@ async function procesarDatosBCRA(tipoTasa, datos) {
  * @param {String} idVariable - ID de la variable a consultar en la API del BCRA
  * @param {Date} fechaDesde - Fecha de inicio en formato Date
  * @param {Date} fechaHasta - Fecha de fin en formato Date
+ * @param {String} tipoTasa - Tipo de tasa para registro de errores (opcional)
  * @returns {Promise<Object>} - Resultado de la consulta
  */
-async function consultarBCRA(idVariable, fechaDesde, fechaHasta) {
+async function consultarBCRA(idVariable, fechaDesde, fechaHasta, tipoTasa = null) {
     try {
         // Formatear fecha desde a YYYY-MM-DD para la API
         const desde = moment.utc(fechaDesde).format('YYYY-MM-DD');
@@ -254,10 +286,31 @@ async function consultarBCRA(idVariable, fechaDesde, fechaHasta) {
         
         // Verificar respuesta exitosa
         if (response.status !== 200) {
-            throw new Error(`Error en la API del BCRA: ${response.status} - ${response.statusText}`);
+            const errorMsg = `Error en la API del BCRA: ${response.status} - ${response.statusText}`;
+            
+            // Registrar error si se especificó tipoTasa
+            if (tipoTasa) {
+                await registrarErrorTasa(
+                    tipoTasa,
+                    `bcra-api-${idVariable}`,
+                    errorMsg,
+                    JSON.stringify(response.data || {}),
+                    `HTTP_${response.status}`
+                );
+            }
+            
+            throw new Error(errorMsg);
         }
         
         logger.info(`Respuesta exitosa de API BCRA: ${response.data.results ? response.data.results.length : 0} registros obtenidos`);
+        
+        // Si había errores previos para este tipo de tasa y API, resolverlos
+        if (tipoTasa) {
+            const config = await TasasConfig.findOne({ tipoTasa });
+            if (config) {
+                await config.resolverErrores(`bcra-api-${idVariable}`);
+            }
+        }
         
         return {
             status: 'success',
@@ -266,6 +319,17 @@ async function consultarBCRA(idVariable, fechaDesde, fechaHasta) {
         };
     } catch (error) {
         logger.error(`Error al consultar API del BCRA: ${error.message}`);
+        
+        // Registrar error si se especificó tipoTasa
+        if (tipoTasa) {
+            await registrarErrorTasa(
+                tipoTasa,
+                `bcra-api-${idVariable}`,
+                `Error al consultar API del BCRA: ${error.message}`,
+                error.stack || JSON.stringify(error),
+                error.code || 'API_ERROR'
+            );
+        }
         
         // Determinar tipo de error
         let errorMessage = error.message;

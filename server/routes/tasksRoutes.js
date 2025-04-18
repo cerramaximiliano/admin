@@ -3,6 +3,7 @@ const router = express.Router();
 const taskManager = require('../services/tasks/taskService'); // Ajusta la ruta según corresponda
 const logger = require('../utils/logger');
 const { verificaAutenticacion, verificaAdmin } = require('../middlewares/auth');
+const { verificarTasasActualizadas } = require('../utils/verificadorTasas');
 
 // Aplicar middleware de autenticación a todas las rutas
 router.use(verificaAutenticacion);
@@ -159,6 +160,50 @@ router.post('/stop-all', verificaAdmin, (req, res) => {
         return res.status(500).json({
             success: false,
             error: `Error al detener todas las tareas: ${error.message}`
+        });
+    }
+});
+
+/**
+ * @route   POST /api/tasks/verificar-tasas
+ * @desc    Verifica el estado de las tasas y envía un informe por correo
+ * @access  Private (Admin)
+ */
+router.post('/verificar-tasas', verificaAdmin, async (req, res) => {
+    try {
+        const { 
+            emailDestinatario = req.usuario.email,
+            soloTasasActivas = true,
+            notificarExito = true,
+            notificarErrores = true
+        } = req.body;
+
+        logger.info(`Usuario ${req.usuario.email} está verificando tasas con envío de informe a ${emailDestinatario}`);
+        
+        const resultado = await verificarTasasActualizadas({
+            soloTasasActivas,
+            enviarEmail: true,
+            notificarExito,
+            notificarErrores,
+            emailDestinatario
+        });
+
+        return res.json({
+            success: true,
+            message: 'Verificación de tasas completada y correo enviado',
+            resultado: {
+                status: resultado.status,
+                todasActualizadas: resultado.todasActualizadas,
+                tasasDesactualizadas: resultado.tasasDesactualizadas,
+                hayErroresScraping: resultado.hayErroresScraping,
+                tasasConErrores: resultado.tasasConErrores
+            }
+        });
+    } catch (error) {
+        logger.error(`Error al verificar tasas: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            error: `Error al verificar tasas: ${error.message}`
         });
     }
 });

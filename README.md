@@ -71,19 +71,40 @@ server/
 
 La aplicación incluye varias tareas programadas que se ejecutan automáticamente:
 
-| Tarea | Descripción | Programación |
-|-------|-------------|--------------|
-| `bcra-tasa-pasiva` | Descarga y procesa tasa pasiva BCRA | Diario 9:00 AM |
-| `bcra-cer` | Descarga y procesa CER | Diario 9:05 AM |
-| `bcra-icl` | Descarga y procesa ICL | Diario 9:10 AM |
-| `bna-tasa-pasiva` | Descarga y procesa tasa pasiva BNA | Diario 9:20 AM |
-| `bna-tasa-activa` | Actualiza tasa activa BNA | Diario 9:18 AM |
-| `cpacf-tasa-activa-bna` | Scraping de tasa activa BNA desde CPACF | Diario 11:58 AM |
-| `cpacf-tasa-pasiva-bna` | Scraping de tasa pasiva BNA desde CPACF | Diario 11:59 AM |
-| `cpacf-tasa-acta-2658` | Scraping de tasa acta 2658 desde CPACF | Diario 12:00 PM |
-| `cpacf-tasa-acta-2764` | Scraping de tasa acta 2764 desde CPACF | Diario 12:01 PM |
-| `infoleg-normativas` | Actualiza normativas desde Infoleg | Diario 9:25 AM |
-| `actualizar-categorias` | Actualiza categorías según movilidad | Diario 9:30 AM |
+| Tarea                        | TaskID                             | Descripción                                             | Programación    |
+|-----------------------------|-------------------------------------|---------------------------------------------------------|-----------------|
+| `bcra-tasa-pasiva`          | `bcra-pasiva-bcra`                 | Descarga y procesa tasa pasiva BCRA                     | Diario 9:00 AM  |
+| `bcra-cer`                  | `bcra-cer-bcra`                    | Descarga y procesa CER                                  | Diario 9:05 AM  |
+| `bcra-icl`                  | `bcra-icl-bcra`                    | Descarga y procesa ICL                                  | Diario 9:10 AM  |
+| `bna-tasa-activa`           | `bna-tasa-activa-bna`              | Actualiza tasa activa BNA                               | Diario 9:18 AM  |
+| `bna-tasa-pasiva`           | `bna-tasa-pasiva-bna`              | Descarga y procesa tasa pasiva BNA                      | Diario 9:20 AM  |
+| `infoleg-normativas`        | N/A                                 | Actualiza normativas desde Infoleg                      | Diario 9:25 AM  |
+| `actualizar-categorias`     | N/A                                 | Actualiza categorías según movilidad                    | Diario 9:30 AM  |
+| `cpacf-tasa-activa-bna`     | `consejo-tasa-activa-bna`          | Scraping de tasa activa BNA desde CPACF                 | Diario 11:58 AM |
+| `cpacf-tasa-pasiva-bna`     | `consejo-tasa-pasiva-bna`          | Scraping de tasa pasiva BNA desde CPACF                 | Diario 11:59 AM |
+| `cpacf-tasa-acta-2658`      | `busqueda-fechas-tasaActivaCNAT2658` | Scraping de tasa acta 2658 desde CPACF               | Diario 12:00 PM |
+| `cpacf-tasa-acta-2764`      | `busqueda-fechas-tasaActivaCNAT2764` | Scraping de tasa acta 2764 desde CPACF               | Diario 12:01 PM |
+
+### Tareas adicionales
+
+El sistema también incluye las siguientes tareas programadas:
+
+| TaskID                             | Descripción                                  |
+|-----------------------------------|----------------------------------------------|
+| `analysis-stats`                  | Análisis de estadísticas                     |
+| `busqueda-fechas-tasaActivaBNA`   | Búsqueda específica de tasa activa BNA       |
+| `busqueda-fechas-tasaActivaTnaBNA`| Búsqueda de tasa activa TNA BNA              |
+| `búsqueda-fechas-activa-bna`      | Búsqueda de tasas activas BNA por fechas     |
+| `búsqueda-fechas-cer-bcra`        | Búsqueda de CER por fechas                   |
+| `búsqueda-fechas-icl-bcra`        | Búsqueda de ICL por fechas                   |
+| `búsqueda-fechas-pasiva-bcra`     | Búsqueda de tasas pasivas BCRA por fechas    |
+| `búsqueda-fechas-pasiva-bna`      | Búsqueda de tasas pasivas BNA por fechas     |
+| `eliminar-files`                  | Limpieza de archivos temporales              |
+| `sync-stats`                      | Sincronización de estadísticas               |
+| `verificacion-tasas-ciclica`      | Verificación cíclica de tasas                |
+| `verificacion-tasas-diaria`       | Verificación diaria de tasas                 |
+| `verificacion-tasas-matutina`     | Verificación matutina de tasas               |
+
 
 ## API REST
 

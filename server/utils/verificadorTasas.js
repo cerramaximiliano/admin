@@ -3,12 +3,13 @@ const { sendEmail } = require('../services/aws_ses/aws_sesService');
 const logger = require('./logger');
 const TasasConfig = require('../models/tasasConfig');
 /**
- * Verifica que todas las tasas estén actualizadas para la fecha actual
+ * Verifica que todas las tasas estén actualizadas para la fecha actual y reporta errores de scraping
  * 
  * @param {Object} options - Opciones de configuración
  * @param {Boolean} options.soloTasasActivas - Si es true, solo verifica tasas con activa=true
  * @param {Boolean} options.enviarEmail - Si es true, envía email con resultados
  * @param {Boolean} options.notificarExito - Si es true, envía email incluso cuando todo está actualizado
+ * @param {Boolean} options.notificarErrores - Si es true, incluye errores de scraping en el reporte
  * @param {String} options.emailDestinatario - Email del destinatario para las alertas
  * @returns {Object} - Resultados de la verificación
  */
@@ -18,6 +19,7 @@ async function verificarTasasActualizadas(options = {}) {
             soloTasasActivas = true,
             enviarEmail = false,
             notificarExito = false,
+            notificarErrores = true,
             emailDestinatario = null
         } = options;
 
@@ -104,13 +106,29 @@ async function verificarTasasActualizadas(options = {}) {
             ? 'Todas las tasas están actualizadas'
             : `Hay ${tasasDesactualizadas.length} tasas desactualizadas`;
 
+        // Obtener errores de scraping si se solicita
+        let tasasConErrores = [];
+        if (notificarErrores) {
+            tasasConErrores = await TasasConfig.obtenerTasasConErrores();
+            logger.info(`Se encontraron ${tasasConErrores.length} tasas con errores de scraping no resueltos`);
+        }
+
         // Enviar email según la configuración
         if (enviarEmail && emailDestinatario) {
-            if (!todasActualizadas || (todasActualizadas && notificarExito)) {
-                if (todasActualizadas) {
+            const hayErroresScraping = tasasConErrores.length > 0;
+            
+            // Determinar si se debe enviar email basado en configuración y estado
+            const debeEnviarEmail = !todasActualizadas || 
+                                  (todasActualizadas && notificarExito) || 
+                                  (hayErroresScraping && notificarErrores);
+            
+            if (debeEnviarEmail) {
+                if (todasActualizadas && !hayErroresScraping) {
+                    // Todo está bien - enviar email de éxito
                     await enviarEmailExito(emailDestinatario, resultado, fechaActual);
-                } else {
-                    await enviarEmailAlerta(emailDestinatario, tasasDesactualizadas, resultado, fechaActual);
+                } else if (!todasActualizadas || hayErroresScraping) {
+                    // Hay tasas desactualizadas o errores de scraping - enviar alerta
+                    await enviarEmailAlerta(emailDestinatario, tasasDesactualizadas, resultado, fechaActual, tasasConErrores);
                 }
             }
         }
@@ -127,6 +145,8 @@ async function verificarTasasActualizadas(options = {}) {
             todasActualizadas,
             totalTasas: resultado.length,
             tasasDesactualizadas: tasasDesactualizadas.length,
+            tasasConErrores: tasasConErrores.length,
+            hayErroresScraping: tasasConErrores.length > 0,
             resultado
         };
     } catch (error) {
@@ -143,8 +163,9 @@ async function verificarTasasActualizadas(options = {}) {
  * @param {Array} tasasDesactualizadas - Lista de tasas desactualizadas
  * @param {Array} todasLasTasas - Lista completa de tasas
  * @param {Date} fechaActual - Fecha actual de la verificación
+ * @param {Array} tasasConErrores - Lista de tasas con errores de scraping
  */
-async function enviarEmailAlerta(destinatario, tasasDesactualizadas, todasLasTasas, fechaActual) {
+async function enviarEmailAlerta(destinatario, tasasDesactualizadas, todasLasTasas, fechaActual, tasasConErrores = []) {
     try {
         // Crear tabla HTML con las tasas desactualizadas
         let tablaTasasDesactualizadas = `
@@ -204,8 +225,100 @@ async function enviarEmailAlerta(destinatario, tasasDesactualizadas, todasLasTas
 
         resumenTasas += '</table>';
 
+        // Obtener las fechas faltantes para cada tasa
+        const tasasConfigPromises = todasLasTasas.map(tasa => 
+            TasasConfig.findOne({ tipoTasa: tasa.tipoTasa })
+        );
+        const tasasConfig = await Promise.all(tasasConfigPromises);
+        
+        // Crear tabla de fechas faltantes
+        let tablaFechasFaltantes = `
+        <h3>Fechas Faltantes por Tasa</h3>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+          <tr style="background-color: #f2f2f2;">
+            <th style="text-align: left; padding: 8px;">Tipo de Tasa</th>
+            <th style="text-align: left; padding: 8px;">Fechas Faltantes</th>
+          </tr>
+        `;
+
+        for (let i = 0; i < todasLasTasas.length; i++) {
+            const tasa = todasLasTasas[i];
+            const config = tasasConfig[i];
+            
+            // Formatear las fechas faltantes
+            let fechasFaltantesHtml = 'Ninguna';
+            if (config && config.fechasFaltantes && config.fechasFaltantes.length > 0) {
+                const fechasFormateadas = config.fechasFaltantes
+                    .sort((a, b) => new Date(a) - new Date(b))
+                    .map(fecha => moment(fecha).format('YYYY-MM-DD'))
+                    .join(', ');
+                fechasFaltantesHtml = fechasFormateadas;
+            }
+            
+            tablaFechasFaltantes += `
+            <tr>
+              <td style="padding: 8px;">${tasa.tipoTasa}</td>
+              <td style="padding: 8px; ${(config && config.fechasFaltantes && config.fechasFaltantes.length > 0) ? 'color: #d9534f;' : ''}">${fechasFaltantesHtml}</td>
+            </tr>
+            `;
+        }
+        
+        tablaFechasFaltantes += '</table>';
+
+        // Crear tabla de errores de scraping
+        let tablaErroresScraping = '';
+        if (tasasConErrores && tasasConErrores.length > 0) {
+            tablaErroresScraping = `
+            <h3>Errores de Scraping Detectados</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+              <tr style="background-color: #f2f2f2;">
+                <th style="text-align: left; padding: 8px;">Tipo de Tasa</th>
+                <th style="text-align: left; padding: 8px;">Tarea</th>
+                <th style="text-align: left; padding: 8px;">Error</th>
+                <th style="text-align: center; padding: 8px;">Fecha</th>
+                <th style="text-align: center; padding: 8px;">Intentos</th>
+              </tr>
+            `;
+
+            for (const tasaConfig of tasasConErrores) {
+                // Obtener solo errores no resueltos
+                const erroresNoResueltos = tasaConfig.erroresScraping.filter(err => !err.resuelto);
+                
+                for (const error of erroresNoResueltos) {
+                    tablaErroresScraping += `
+                    <tr>
+                      <td style="padding: 8px; vertical-align: top;">${tasaConfig.tipoTasa}</td>
+                      <td style="padding: 8px; vertical-align: top;">${error.taskId}</td>
+                      <td style="padding: 8px; vertical-align: top;">
+                        <strong>${error.mensaje}</strong>
+                        ${error.detalleError ? `<br><small>${error.detalleError}</small>` : ''}
+                      </td>
+                      <td style="text-align: center; padding: 8px; vertical-align: top;">${moment(error.fecha).format('YYYY-MM-DD HH:mm')}</td>
+                      <td style="text-align: center; padding: 8px; vertical-align: top;">${error.intentos}</td>
+                    </tr>
+                    `;
+                }
+            }
+            
+            tablaErroresScraping += '</table>';
+        }
+
+        // Agregar alerta de errores de scraping
+        const alertaErroresScraping = tasasConErrores && tasasConErrores.length > 0 ? 
+            `<div style="background-color: #f8d7da; padding: 10px; border-left: 4px solid #dc3545; margin: 20px 0;">
+               <p><strong>⚠️ ATENCIÓN:</strong> Se han detectado <strong>${tasasConErrores.length}</strong> ${tasasConErrores.length === 1 ? 'tasa' : 'tasas'} con errores de scraping. 
+               Estos errores pueden estar impidiendo la actualización correcta de los datos.</p>
+             </div>` : '';
+
         // Contenido del email
-        const asunto = `[ALERTA] Tasas Desactualizadas - ${moment(fechaActual).format('YYYY-MM-DD')}`;
+        const tituloEmail = tasasDesactualizadas.length > 0 ? 
+            'Alerta de Tasas Desactualizadas' : 
+            'Alerta de Errores de Scraping';
+            
+        const asunto = tasasDesactualizadas.length > 0 ? 
+            `[ALERTA] Tasas Desactualizadas - ${moment(fechaActual).format('YYYY-MM-DD')}` : 
+            `[ALERTA] Errores de Scraping - ${moment(fechaActual).format('YYYY-MM-DD')}`;
+            
         const htmlBody = `
         <html>
         <head>
@@ -220,13 +333,21 @@ async function enviarEmailAlerta(destinatario, tasasDesactualizadas, todasLasTas
           </style>
         </head>
         <body>
-          <h2>Alerta de Tasas Desactualizadas</h2>
-          <p>Se han detectado <strong>${tasasDesactualizadas.length}</strong> tasas que no están actualizadas a la fecha actual (${moment(fechaActual).format('YYYY-MM-DD')}).</p>
+          <h2>${tituloEmail}</h2>
           
-          <h3>Tasas Desactualizadas</h3>
-          ${tablaTasasDesactualizadas}
+          ${tasasDesactualizadas.length > 0 ? 
+            `<p>Se han detectado <strong>${tasasDesactualizadas.length}</strong> tasas que no están actualizadas a la fecha actual (${moment(fechaActual).format('YYYY-MM-DD')}).</p>
+            
+            <h3>Tasas Desactualizadas</h3>
+            ${tablaTasasDesactualizadas}` : ''}
+          
+          ${alertaErroresScraping}
           
           ${resumenTasas}
+          
+          ${tablaFechasFaltantes}
+          
+          ${tablaErroresScraping}
           
           <div class="note">
             <p><strong>Nota:</strong> Solo se consideran actualizadas las tasas con fecha de hoy (${moment(fechaActual).format('YYYY-MM-DD')}) o fechas futuras. Las tasas con fechas futuras se muestran con los días en positivo (+).</p>
@@ -238,11 +359,42 @@ async function enviarEmailAlerta(destinatario, tasasDesactualizadas, todasLasTas
       `;
 
         // Versión texto plano del email para clientes que no soportan HTML
-        const textBody = `
+        let textBody = '';
+        
+        if (tasasDesactualizadas.length > 0) {
+            textBody = `
         ALERTA DE TASAS DESACTUALIZADAS
         
         Se han detectado ${tasasDesactualizadas.length} tasas que no están actualizadas a la fecha actual (${moment(fechaActual).format('YYYY-MM-DD')}).
+        `;
+        } else {
+            textBody = `
+        ALERTA DE ERRORES DE SCRAPING
+        `;
+        }
         
+        if (tasasConErrores && tasasConErrores.length > 0) {
+            textBody += `
+        ⚠️ ATENCIÓN: Se han detectado ${tasasConErrores.length} ${tasasConErrores.length === 1 ? 'tasa' : 'tasas'} con errores de scraping.
+        Estos errores pueden estar impidiendo la actualización correcta de los datos.
+        
+        Resumen de errores:
+        `;
+            
+            for (const tasaConfig of tasasConErrores) {
+                const erroresNoResueltos = tasaConfig.erroresScraping.filter(err => !err.resuelto);
+                
+                for (const error of erroresNoResueltos) {
+                    textBody += `
+        - Tasa: ${tasaConfig.tipoTasa}, Tarea: ${error.taskId}
+          Error: ${error.mensaje}
+          Fecha: ${moment(error.fecha).format('YYYY-MM-DD HH:mm')}
+        `;
+                }
+            }
+        }
+        
+        textBody += `
         Nota: Solo se consideran actualizadas las tasas con fecha de hoy o fechas futuras.
         
         Este es un mensaje automático del sistema de verificación de tasas.
@@ -310,6 +462,48 @@ async function enviarEmailExito(destinatario, tasas, fechaActual) {
 
         tablaTasas += '</table>';
 
+        // Obtener las fechas faltantes para cada tasa
+        const tasasConfigPromises = tasas.map(tasa => 
+            TasasConfig.findOne({ tipoTasa: tasa.tipoTasa })
+        );
+        const tasasConfig = await Promise.all(tasasConfigPromises);
+        
+        // Crear tabla de fechas faltantes
+        let tablaFechasFaltantes = `
+        <h3>Fechas Faltantes por Tasa</h3>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+          <tr style="background-color: #f2f2f2;">
+            <th style="text-align: left; padding: 8px;">Tipo de Tasa</th>
+            <th style="text-align: left; padding: 8px;">Fechas Faltantes</th>
+          </tr>
+        `;
+
+        let hayFechasFaltantes = false;
+        for (let i = 0; i < tasas.length; i++) {
+            const tasa = tasas[i];
+            const config = tasasConfig[i];
+            
+            // Formatear las fechas faltantes
+            let fechasFaltantesHtml = 'Ninguna';
+            if (config && config.fechasFaltantes && config.fechasFaltantes.length > 0) {
+                hayFechasFaltantes = true;
+                const fechasFormateadas = config.fechasFaltantes
+                    .sort((a, b) => new Date(a) - new Date(b))
+                    .map(fecha => moment(fecha).format('YYYY-MM-DD'))
+                    .join(', ');
+                fechasFaltantesHtml = fechasFormateadas;
+            }
+            
+            tablaFechasFaltantes += `
+            <tr>
+              <td style="padding: 8px;">${tasa.tipoTasa}</td>
+              <td style="padding: 8px; ${(config && config.fechasFaltantes && config.fechasFaltantes.length > 0) ? 'color: #d9534f;' : ''}">${fechasFaltantesHtml}</td>
+            </tr>
+            `;
+        }
+        
+        tablaFechasFaltantes += '</table>';
+
         // Contenido del email
         const asunto = `[ÉXITO] Todas las Tasas Actualizadas - ${moment(fechaActual).format('YYYY-MM-DD')}`;
         const htmlBody = `
@@ -323,6 +517,7 @@ async function enviarEmailExito(destinatario, tasas, fechaActual) {
             th { background-color: #f2f2f2; text-align: left; padding: 8px; }
             td { padding: 8px; border: 1px solid #ddd; }
             .note { background-color: #f8f9fa; padding: 10px; border-left: 4px solid #5bc0de; margin: 20px 0; }
+            .warning { background-color: #fff8e1; padding: 10px; border-left: 4px solid #ffc107; margin: 20px 0; }
           </style>
         </head>
         <body>
@@ -331,6 +526,15 @@ async function enviarEmailExito(destinatario, tasas, fechaActual) {
           
           <h3>Resumen de Tasas</h3>
           ${tablaTasas}
+          
+          ${tablaFechasFaltantes}
+          
+          ${hayFechasFaltantes ? `
+          <div class="warning">
+            <p><strong>Advertencia:</strong> A pesar de que todas las tasas están actualizadas para la fecha actual, 
+            existen fechas faltantes en el historial. Estas fechas deberían ser verificadas y completadas cuando sea posible.</p>
+          </div>
+          ` : ''}
           
           <div class="note">
             <p><strong>Nota:</strong> Solo se consideran actualizadas las tasas con fecha de hoy (${moment(fechaActual).format('YYYY-MM-DD')}) o fechas futuras. Las tasas con fechas futuras se muestran con los días en positivo (+).</p>
@@ -346,6 +550,8 @@ async function enviarEmailExito(destinatario, tasas, fechaActual) {
         ÉXITO: TODAS LAS TASAS ACTUALIZADAS
         
         Verificación completada: Todas las tasas están actualizadas a la fecha actual (${moment(fechaActual).format('YYYY-MM-DD')}).
+        
+        ${hayFechasFaltantes ? 'ADVERTENCIA: A pesar de que todas las tasas están actualizadas para la fecha actual, existen fechas faltantes en el historial.\n' : ''}
         
         Este es un mensaje automático del sistema de verificación de tasas.
       `;
@@ -379,6 +585,7 @@ function programarVerificacionTasas(cronManager, options = {}) {
         soloTasasActivas = true,
         enviarEmail = true,
         notificarExito = false,
+        notificarErrores = true,
         emailDestinatario = 'soporte@lawanalytics.app'
     } = options;
 
@@ -389,9 +596,10 @@ function programarVerificacionTasas(cronManager, options = {}) {
             soloTasasActivas,
             enviarEmail,
             notificarExito,
+            notificarErrores,
             emailDestinatario
         }),
-        'Verificación de tasas actualizadas'
+        'Verificación de tasas actualizadas y errores de scraping'
     );
 
     logger.info(`Verificación de tasas programada con expresión cron: ${cronExpression}`);

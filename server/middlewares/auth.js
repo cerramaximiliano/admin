@@ -117,7 +117,7 @@ exports.verificaAdmin = (req, res, next) => {
     }
 
     // Verificar rol
-    if (req.usuario.role !== '  ') {
+    if (req.usuario.role !== 'ADMIN') {
       logger.warn(`Intento de acceso a recurso administrativo por usuario sin permisos: ${req.usuario.email}`);
 
       return res.status(403).json({

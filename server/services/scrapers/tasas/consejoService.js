@@ -3,10 +3,42 @@ const fs = require('fs').promises;
 const path = require('path');
 const moment = require('moment');
 const logger = require('../../../utils/logger');
+const TasasConfig = require('../../../models/tasasConfig');
 const { parseFechaISO, obtenerDiaSiguiente, obtenerFechaActualISO } = require('../../../utils/format');
 const { getUltimaTasaHastaFecha, bulkUpsertTasas, obtenerRangoFechasFaltantes, procesarActualizacionTasas, verificarFechasFaltantes } = require('../../../controllers/tasasController');
 const { getPuppeteerConfig } = require('../../../config/puppeteer');
 const configPuppeteer = getPuppeteerConfig();
+
+/**
+ * Registra un error en el modelo TasasConfig
+ * 
+ * @param {String} tipoTasa - Tipo de tasa afectada
+ * @param {String} taskId - Identificador de la tarea
+ * @param {String} mensaje - Mensaje de error
+ * @param {String|Object} detalleError - Detalles adicionales del error
+ * @param {String} codigo - Código de error opcional
+ * @returns {Promise<boolean>} - Resultado del registro
+ */
+async function registrarErrorTasa(tipoTasa, taskId, mensaje, detalleError = '', codigo = '') {
+    try {
+        if (!tipoTasa) {
+            logger.warn(`No se puede registrar error: tipoTasa no proporcionado`);
+            return false;
+        }
+        
+        const config = await TasasConfig.findOne({ tipoTasa });
+        if (!config) {
+            logger.warn(`No se puede registrar error: configuración no encontrada para ${tipoTasa}`);
+            return false;
+        }
+        
+        await config.registrarError(taskId, mensaje, detalleError, codigo);
+        return true;
+    } catch (error) {
+        logger.error(`Error al registrar error en TasasConfig: ${error.message}`);
+        return false;
+    }
+}
 
 /**
  * Convierte una fecha en formato DD/MM/YYYY a un objeto Date
