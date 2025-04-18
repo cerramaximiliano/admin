@@ -355,7 +355,7 @@ function initializeTasks() {
     () => findMissingDataColegio("tasaActivaTnaBNA", "25"),
     'Búsqueda de fechas sin datos y scraping de tasa Activa Cartera general (préstamos) nominal anual vencida a 30 días del Banco Nacion.'
   );
-//// NEW
+
   scheduleTask(
     'busqueda-fechas-tasaPasivaBNA',
     cronConfig.colegio.tasaPasivaBNA.busquedaFechas,

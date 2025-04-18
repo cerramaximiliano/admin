@@ -379,6 +379,311 @@ Ejecútalo con:
 node test-puppeteer.js
 ```
 
+## Servicio de Scraping de Tasas Financieras
+
+El sistema incorpora servicios avanzados de scraping para extraer, procesar y almacenar tasas financieras de diversas fuentes. En particular, el servicio de scraping del Banco Nación Argentina (BNA) incluye funcionalidades sofisticadas para manejar diversas situaciones que pueden surgir en la publicación de tasas de interés.
+
+### Arquitectura del Servicio de Scraping
+
+El servicio de scraping está organizado en módulos independientes para cada fuente de datos:
+
+```
+server/services/scrapers/
+├── tasas/
+│   ├── bcraService.js         # Scraping de tasas del BCRA
+│   ├── bnaService.js          # Scraping de tasa activa del BNA
+│   ├── bnaDescargadorPDF.js   # Descarga de PDFs del BNA
+│   ├── bnaProcesadorPDF.js    # Procesamiento de PDFs del BNA
+│   ├── colegioService.js      # Scraping desde CPACF
+│   └── consejoService.js      # APIs del Consejo
+```
+
+### BNA Service - Características Principales
+
+El servicio de scraping del BNA (`bnaService.js`) implementa las siguientes funcionalidades avanzadas:
+
+#### 1. Extracción con Reintentos (Resilient Scraping)
+
+- Implementa una estrategia de reintentos con backoff exponencial
+- Manejo inteligente de errores con detección de errores recuperables vs. no recuperables
+- Captura de evidencias (screenshots y HTML) automáticas en caso de fallos
+
+```javascript
+async function extraerTasaActivaBNAConReintentos(screenshot = false, html = false) {
+    // Implementa withRetry para ejecutar la función con reintentos controlados
+    return withRetry(
+        async (attempt) => {
+            // Función principal de extracción con captura de evidencias
+        },
+        {
+            maxRetries: 5,
+            initialDelay: 2000,
+            maxDelay: 60000,
+            factor: 2,
+            shouldRetry: (error) => {
+                // Lógica para determinar si el error es recuperable
+            }
+        }
+    );
+}
+```
+
+#### 2. Manejo Avanzado de Fechas de Vigencia
+
+El sistema implementa lógica sofisticada para manejar tres escenarios principales relacionados con las fechas de publicación de tasas:
+
+##### a) Fecha de Vigencia Actual
+Cuando la fecha de publicación coincide con la fecha actual, el sistema simplemente registra el nuevo valor.
+
+##### b) Fecha de Vigencia Futura
+Cuando se publica una tasa con fecha de vigencia futura (ej. el 18/04 se publica una tasa con vigencia 21/04):
+
+- El sistema detecta automáticamente que es una fecha futura
+- Identifica los días intermedios entre la fecha actual y la fecha de vigencia
+- Completa los días intermedios utilizando el último valor conocido en la base de datos
+- Registra el nuevo valor para la fecha de vigencia futura
+
+```javascript
+// Escenario 1: Fecha de vigencia es futura
+if (resultadoProcesado.metaVigencia.esFechaFutura && configTasa) {
+    const diasHastaVigencia = [];
+    let ultimaFecha = new Date(configTasa.fechaUltima);
+
+    // Si la última fecha registrada es posterior a hoy, usar la fecha de hoy
+    if (ultimaFecha > fechaHoy) {
+        ultimaFecha = new Date(fechaHoy);
+    }
+    
+    // Generar array de fechas intermedias hasta la fecha de vigencia
+    const fechaSiguiente = new Date(ultimaFecha);
+    fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+    
+    while (fechaSiguiente < fechaVigencia) {
+        const fechaIntermedia = new Date(fechaSiguiente);
+        diasHastaVigencia.push(fechaIntermedia);
+        fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+    }
+    
+    // Si hay días intermedios, marcarlos para completar
+    if (diasHastaVigencia.length > 0) {
+        resultadoProcesado.metaVigencia.diasHastaVigencia = diasHastaVigencia;
+        resultadoProcesado.metaVigencia.requiereCompletarIntermedio = true;
+    }
+}
+```
+
+##### c) Fecha de Vigencia Pasada
+Cuando se publica una tasa con fecha de vigencia pasada (ej. el 18/04 se publica una tasa con vigencia 13/04):
+
+- El sistema detecta que es una fecha pasada
+- Identifica los días entre la fecha de vigencia y la fecha actual
+- Completa todos los días desde la fecha de vigencia hasta hoy con el valor de la nueva publicación
+- Esto garantiza consistencia histórica cuando se publican actualizaciones retroactivas
+
+```javascript
+// Escenario 2: Fecha de vigencia es pasada
+else if (resultadoProcesado.metaVigencia.esFechaPasada) {
+    const diasHastaHoy = [];
+    
+    // Generar array de fechas desde el día siguiente a la fecha de vigencia hasta hoy
+    const fechaSiguiente = new Date(fechaVigencia);
+    fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+    
+    while (fechaSiguiente <= fechaHoy) {
+        const fechaIntermedia = new Date(fechaSiguiente);
+        diasHastaHoy.push(fechaIntermedia);
+        fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+    }
+    
+    // Si hay días para completar, marcarlos
+    if (diasHastaHoy.length > 0) {
+        resultadoProcesado.metaVigencia.diasDesdeVigencia = diasHastaHoy;
+        resultadoProcesado.metaVigencia.requiereCompletarDesdeVigencia = true;
+        resultadoProcesado.metaVigencia.fechaReferenciaPublicacion = fechaVigencia;
+    }
+}
+```
+
+#### 3. Completado Automático de Fechas Faltantes
+
+El sistema mantiene un registro de fechas faltantes en la colección `TasasConfig` y proporciona mecanismos para completar automáticamente estos huecos:
+
+```javascript
+async function completarDiasIntermedios(tipoTasa, diasIntermedios, datosUltimoRegistro) {
+    // Completa los días intermedios usando una fuente de datos de referencia
+    // Actualiza la lista de fechasFaltantes en TasasConfig
+    // Genera metadatos detallados para cada fecha completada
+}
+```
+
+#### 4. Manejo de Continuidad de Verificaciones
+
+El sistema detecta y maneja interrupciones en la continuidad de las verificaciones:
+
+- Detecta gaps en las verificaciones diarias
+- Registra las fechas faltantes para su posterior procesamiento
+- Proporciona información detallada sobre la continuidad de las verificaciones
+
+```javascript
+const informacionContinuidad = {
+    ultimaVerificacion: configTasa.fechaUltima,
+    diasDesdeUltimaVerificacion,
+    hayContinuidad: diasDesdeUltimaVerificacion <= 1,
+    fechasFaltantes: configTasa.fechasFaltantes || []
+};
+
+// Si hay un gap de más de 1 día, registrar los días faltantes
+if (diasDesdeUltimaVerificacion > 1) {
+    const diasFaltantes = [];
+    const fechaTmp = new Date(ultimaVerificacionDate);
+    fechaTmp.setDate(fechaTmp.getDate() + 1);
+
+    // Iterar hasta el día anterior a hoy
+    while (fechaTmp < fechaHoy) {
+        const fechaFaltante = new Date(fechaTmp);
+        diasFaltantes.push(fechaFaltante);
+        fechaTmp.setDate(fechaTmp.getDate() + 1);
+    }
+
+    informacionContinuidad.nuevosDiasFaltantes = diasFaltantes;
+}
+```
+
+#### 5. Registro Detallado de Metadatos
+
+Cada registro de tasa incluye metadatos enriquecidos para facilitar la auditoría y trazabilidad:
+
+- Origen de los datos (scraping directo, completado automático, etc.)
+- Timestamp de procesamiento y publicación
+- Referencias a la fuente original
+- Información sobre modificaciones y actualizaciones
+
+```javascript
+// Añadir registro de esta publicación para llevar el control
+resultadoProcesado.metaPublicacion = {
+    fechaPublicacion: new Date().toISOString(),
+    fechaVigencia: fechaVigencia.toISOString(),
+    origen: 'bnaService',
+    valores: {
+        tna: datosTasaActiva.tna,
+        tem: datosTasaActiva.tem,
+        tea: datosTasaActiva.tea
+    }
+};
+```
+
+#### 6. Gestión de Errores y Registro
+
+El sistema incorpora un registro detallado de errores en la colección `TasasConfig`:
+
+```javascript
+async function registrarErrorTasa(tipoTasa, taskId, mensaje, detalleError = '', codigo = '') {
+    try {
+        // Obtener configuración de la tasa
+        const config = await TasasConfig.findOne({ tipoTasa });
+        
+        // Registrar el error en la configuración
+        await config.registrarError(taskId, mensaje, detalleError, codigo);
+        return true;
+    } catch (error) {
+        logger.error(`Error al registrar error en TasasConfig: ${error.message}`);
+        return false;
+    }
+}
+```
+
+#### 7. Optimización para Múltiples Tasas Derivadas
+
+El sistema procesa y guarda múltiples tasas derivadas en una sola operación:
+
+```javascript
+// Actualiza la tasa activa BNA y tasas relacionadas
+exports.guardarTasaActivaBNA = async (data) => {
+  return await exports.actualizarTasa(
+    data,
+    'tasaActivaBNA',
+    (datos) => {
+      // Calcular el valor como TEM / 30
+      return datos.tem / 30;
+    },
+    [
+      {
+        tipo: 'tasaActivaCNAT2658',
+        calcularValor: (datos) => {
+          // Calcular el valor como TEA / 365
+          return datos.tea / 365;
+        }
+      },
+      {
+        tipo: 'tasaActivaTnaBNA',
+        calcularValor: (datos) => {
+          return datos.tna / 365
+        }
+      },
+      {
+        tipo: 'tasaActivaCNAT2764',
+        calcularValor: (datos) => {
+          return datos.tea / 365;
+        }
+      }
+    ],
+  );
+};
+```
+
+### Colegio Service - Funcionalidades
+
+El servicio de scraping del Colegio Público de Abogados (`colegioService.js`) incluye:
+
+- Soporte para autenticación y mantenimiento de sesión
+- Navegación y extracción de datos de la interfaz web del CPACF
+- Procesamiento de fechas faltantes específicas desde `TasasConfig`
+- Optimización de manejo de fechas con timezone UTC para evitar problemas de día
+
+```javascript
+async function findMissingDataColegio(options) {
+    try {
+        // Obtener config específica para este tipo de tasa
+        const config = await TasasConfig.findOne({ tipoTasa: options.tipoTasa });
+        
+        // Verificar si hay fechas faltantes específicas
+        if (config && config.fechasFaltantes && config.fechasFaltantes.length > 0) {
+            // Convertir fechas a formato UTC para comparación correcta
+            const fechasFormateadas = config.fechasFaltantes.map(fecha => {
+                // Asegurar que estamos trabajando con fechas UTC
+                const fechaUTC = new Date(Date.UTC(
+                    fecha.getUTCFullYear(),
+                    fecha.getUTCMonth(),
+                    fecha.getUTCDate()
+                ));
+                return {
+                    fecha: fechaUTC,
+                    fechaFormateada: moment(fechaUTC).format('DD/MM/YYYY')
+                };
+            });
+            
+            // Ordenar fechas cronológicamente
+            fechasFormateadas.sort((a, b) => a.fecha - b.fecha);
+            
+            // Filtrar fechas futuras
+            const fechaHoy = new Date();
+            fechaHoy.setUTCHours(0, 0, 0, 0);
+            
+            const fechasFiltradas = fechasFormateadas.filter(item => item.fecha <= fechaHoy);
+            
+            return fechasFiltradas;
+        }
+        
+        // Si no hay fechas faltantes específicas, usar el rango proporcionado
+        return generarRangoFechas(options.fechaDesde, options.fechaHasta);
+    } catch (error) {
+        logger.error(`Error al buscar fechas faltantes para ${options.tipoTasa}: ${error.message}`);
+        // Si hay error, caer en el comportamiento por defecto
+        return generarRangoFechas(options.fechaDesde, options.fechaHasta);
+    }
+}
+```
+
 ## Configuración
 
 La configuración se maneja a través de variables de entorno y el archivo `config/index.js`. Las variables críticas se pueden almacenar en AWS SecretsManager.
