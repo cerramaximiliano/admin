@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error de Procesamiento</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #d32f2f;
+            margin-top: 0;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .info {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .error-details {
+            margin-top: 20px;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Error de Procesamiento</h1>
+        
+        <div class="info">
+            <div class="timestamp">{{timestamp}}</div>
+            <p><strong>Tarea:</strong> {{taskId}}</p>
+            <p><strong>Tipo de Tasa:</strong> {{tipoTasa}}</p>
+        </div>
+        
+        <div class="error-details">
+            <h2>Detalles del Error</h2>
+            <p>{{mensaje}}</p>
+            
+            <h3>Información Técnica</h3>
+            <pre>{{detalleError}}</pre>
+            
+            {{#if codigo}}
+            <p><strong>Código de Error:</strong> {{codigo}}</p>
+            {{/if}}
+        </div>
+    </div>
+</body>
+</html>

@@ -704,6 +704,27 @@ exports.actualizarConfigTasa = async (tipoTasa, fecha) => {
       // Actualizar fecha última
       config.fechaUltima = fecha;
       config.ultimaVerificacion = new Date();
+      
+      // Verificar si hay fechas faltantes para actualizar fechaUltimaCompleta
+      if (config.fechasFaltantes && config.fechasFaltantes.length > 0) {
+        // Ordenamos las fechas faltantes de forma ascendente
+        const fechasFaltantesOrdenadas = [...config.fechasFaltantes].sort((a, b) => a - b);
+        
+        // Si la primera fecha faltante es posterior a la fecha de inicio,
+        // entonces todos los datos están completos hasta la fecha faltante - 1 día
+        if (fechasFaltantesOrdenadas[0] > config.fechaInicio) {
+          const primerFechaFaltante = moment.utc(fechasFaltantesOrdenadas[0]);
+          config.fechaUltimaCompleta = primerFechaFaltante.clone().subtract(1, 'days').toDate();
+        } else {
+          // Si la primera fecha faltante es la fecha de inicio o anterior,
+          // no hay período completo, así que fechaUltimaCompleta es null
+          config.fechaUltimaCompleta = null;
+        }
+      } else {
+        // Si no hay fechas faltantes, la fecha última completa es la misma que la fecha última
+        config.fechaUltimaCompleta = config.fechaUltima;
+      }
+      
       return await config.save();
     } else {
       // Crear nueva configuración
@@ -711,6 +732,7 @@ exports.actualizarConfigTasa = async (tipoTasa, fecha) => {
         tipoTasa: tipoTasa,
         fechaInicio: fecha,
         fechaUltima: fecha,
+        fechaUltimaCompleta: fecha, // Si es nueva, asumimos que está completa
         fechasFaltantes: [],
         ultimaVerificacion: new Date()
       });

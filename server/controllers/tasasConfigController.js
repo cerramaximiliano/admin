@@ -98,8 +98,33 @@ exports.verificarFechasFaltantes = async (tipoTasa) => {
             return !fechasExistentesMap.has(fechaKey);
         }).map(fecha => moment.utc(fecha).startOf('day').toDate());
         
-        // Paso 5: Actualizar el documento de configuración
+        // Paso 5: Calcular la fecha más reciente con datos completos
+        // Implementamos el algoritmo para encontrar la fechaUltimaCompleta
+        // (la última fecha a partir de la cual todos los días tienen datos)
+        let fechaUltimaCompleta = null;
+        
+        if (fechasFaltantesCalculadas.length === 0) {
+            // Si no hay fechas faltantes, la fecha última completa es la misma que la fecha última
+            fechaUltimaCompleta = config.fechaUltima;
+        } else {
+            // Ordenamos las fechas faltantes de forma ascendente
+            const fechasFaltantesOrdenadas = [...fechasFaltantesCalculadas].sort((a, b) => a - b);
+            
+            // Si la primera fecha faltante es posterior a la fecha de inicio,
+            // entonces todos los datos están completos hasta la fecha faltante - 1 día
+            if (fechasFaltantesOrdenadas[0] > config.fechaInicio) {
+                const primerFechaFaltante = moment.utc(fechasFaltantesOrdenadas[0]);
+                fechaUltimaCompleta = primerFechaFaltante.clone().subtract(1, 'days').toDate();
+            } else {
+                // Si la primera fecha faltante es la fecha de inicio o anterior,
+                // no hay período completo, así que fechaUltimaCompleta es null
+                fechaUltimaCompleta = null;
+            }
+        }
+        
+        // Paso 6: Actualizar el documento de configuración
         config.fechasFaltantes = fechasFaltantesCalculadas;
+        config.fechaUltimaCompleta = fechaUltimaCompleta;
         config.ultimaVerificacion = new Date();
         await config.save();
 
@@ -108,6 +133,7 @@ exports.verificarFechasFaltantes = async (tipoTasa) => {
             tipoTasa,
             fechaInicio: config.fechaInicio,
             fechaUltima: config.fechaUltima,
+            fechaUltimaCompleta: config.fechaUltimaCompleta,
             totalDias: todasLasFechas.length,
             diasExistentes: fechasExistentes.length,
             diasFaltantes: fechasFaltantesCalculadas.length,
@@ -269,6 +295,26 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
             }
         }
 
+        // Calcular la fechaUltimaCompleta
+        if (config.fechasFaltantes && config.fechasFaltantes.length > 0) {
+            // Ordenamos las fechas faltantes de forma ascendente
+            const fechasFaltantesOrdenadas = [...config.fechasFaltantes].sort((a, b) => a - b);
+            
+            // Si la primera fecha faltante es posterior a la fecha de inicio,
+            // entonces todos los datos están completos hasta la fecha faltante - 1 día
+            if (fechasFaltantesOrdenadas[0] > config.fechaInicio) {
+                const primerFechaFaltante = moment.utc(fechasFaltantesOrdenadas[0]);
+                config.fechaUltimaCompleta = primerFechaFaltante.clone().subtract(1, 'days').toDate();
+            } else {
+                // Si la primera fecha faltante es la fecha de inicio o anterior,
+                // no hay período completo, así que fechaUltimaCompleta es null
+                config.fechaUltimaCompleta = null;
+            }
+        } else {
+            // Si no hay fechas faltantes, la fecha última completa es la misma que la fecha última
+            config.fechaUltimaCompleta = config.fechaUltima;
+        }
+
         // Guardar los cambios en la base de datos
         await config.save();
 
@@ -283,6 +329,7 @@ exports.actualizarFechasFaltantes = async (tipoTasa, fechasProcesadas = []) => {
             fechasRestantes: config.fechasFaltantes ? config.fechasFaltantes.length : 0,
             fechaInicio: config.fechaInicio,
             fechaUltima: config.fechaUltima,
+            fechaUltimaCompleta: config.fechaUltimaCompleta,
             fechaInicioActualizada: fechaMasAntigua && config.fechaInicio === fechaMasAntigua,
             fechaUltimaActualizada: ultimaTasa ? true : false,
             fechaUltimaActualizadaDesdeArray: fechaMasReciente && config.fechaUltima === fechaMasReciente
@@ -298,7 +345,7 @@ exports.obtenerTasasConfig = async (req, res) => {
     try {
         // Obtener solo las tasas activas
         const tasas = await TasasConfig.find({ activa: true })
-            .select('tipoTasa descripcion fechaInicio fechaUltima')
+            .select('tipoTasa descripcion fechaInicio fechaUltima fechaUltimaCompleta')
             .sort('descripcion');
 
         // Transformar los datos para el SelectField
@@ -306,7 +353,8 @@ exports.obtenerTasasConfig = async (req, res) => {
             value: tasa.tipoTasa,
             label: formatearNombreTasa(tasa.tipoTasa) || tasa.descripcion,
             fechaInicio: tasa.fechaInicio,
-            fechaUltima: tasa.fechaUltima
+            fechaUltima: tasa.fechaUltima,
+            fechaUltimaCompleta: tasa.fechaUltimaCompleta
         }));
 
         return res.status(200).json(tasasFormateadas);

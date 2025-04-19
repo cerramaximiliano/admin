@@ -46,6 +46,10 @@ let tasasConfigSchema = new Schema({
     type: Date,
     required: true
   },
+  // Última fecha con datos completos desde fechaInicio
+  fechaUltimaCompleta: {
+    type: Date
+  },
   fechasFaltantes: [{
     type: Date
   }],
