@@ -152,9 +152,9 @@ async function extraerResultadosParaMongo(page, screenshot = true) {
 async function guardarCaptura(page, prefix) {
     try {
         const timestamp = new Date().toISOString().replace(/:/g, '-');
-        const screenshotPath = path.join(__dirname, `${prefix}-${timestamp}.png`);
+        const screenshotPath = path.join(process.cwd(), 'server', 'files', `${prefix}-${timestamp}.png`);
         await page.screenshot({ path: screenshotPath, fullPage: true });
-        logger.info(`Captura guardada: ${prefix}-${timestamp}.png`);
+        logger.info(`Captura guardada en server/files: ${prefix}-${timestamp}.png`);
     } catch (error) {
         logger.error(`Error al guardar captura: ${error.message}`);
     }
@@ -166,9 +166,9 @@ async function guardarCaptura(page, prefix) {
 async function guardarHTML(page, filename) {
     try {
         const html = await page.content();
-        const htmlPath = path.join(__dirname, `${filename}.html`);
+        const htmlPath = path.join(process.cwd(), 'server', 'files', `${filename}.html`);
         await fs.writeFile(htmlPath, html);
-        logger.info(`HTML guardado en ${filename}.html`);
+        logger.info(`HTML guardado en server/files: ${filename}.html`);
     } catch (error) {
         logger.error(`Error al guardar HTML: ${error.message}`);
     }
