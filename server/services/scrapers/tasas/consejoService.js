@@ -128,9 +128,9 @@ async function extraerResultadosParaMongo(page, screenshot = true) {
 
         // Guardar los resultados formateados para MongoDB en un archivo JSON
         try {
-            const jsonPath = path.join(__dirname, 'tasas-para-mongo.json');
+            const jsonPath = path.join(process.cwd(), 'server', 'files', 'tasas-para-mongo.json');
             await fs.writeFile(jsonPath, JSON.stringify(tasasFormateadas, null, 2));
-            logger.info('Resultados adaptados guardados en tasas-para-mongo.json');
+            logger.info('Resultados adaptados guardados en server/files/tasas-para-mongo.json');
         } catch (writeError) {
             logger.error(`Error al guardar JSON adaptado: ${writeError.message}`);
         }
@@ -893,9 +893,9 @@ async function extraerResultados(page, screenshot) {
 
         // Guardar los resultados extraídos en un archivo JSON
         try {
-            const jsonPath = path.join(__dirname, 'resultados-interes.json');
+            const jsonPath = path.join(process.cwd(), 'server', 'files', 'resultados-interes.json');
             await fs.writeFile(jsonPath, JSON.stringify(resultados, null, 2));
-            logger.info('Resultados guardados en resultados-interes.json');
+            logger.info('Resultados guardados en server/files/resultados-interes.json');
         } catch (writeError) {
             logger.error(`Error al guardar JSON: ${writeError.message}`);
         }
@@ -986,13 +986,13 @@ async function extraerResultadosExpandidosParaMongo(page, screenshot = true, tas
 
         // Guardar los resultados formateados para MongoDB en archivos JSON
         try {
-            const jsonPath = path.join(__dirname, 'tasas-para-mongo.json');
+            const jsonPath = path.join(process.cwd(), 'server', 'files', 'tasas-para-mongo.json');
             await fs.writeFile(jsonPath, JSON.stringify(tasasFormateadas, null, 2));
-            logger.info('Resultados adaptados guardados en tasas-para-mongo.json');
+            logger.info('Resultados adaptados guardados en server/files/tasas-para-mongo.json');
 
-            const jsonPathExpandido = path.join(__dirname, 'tasas-diarias-para-mongo.json');
+            const jsonPathExpandido = path.join(process.cwd(), 'server', 'files', 'tasas-diarias-para-mongo.json');
             await fs.writeFile(jsonPathExpandido, JSON.stringify(tasasExpandidas, null, 2));
-            logger.info('Resultados expandidos guardados en tasas-diarias-para-mongo.json');
+            logger.info('Resultados expandidos guardados en server/files/tasas-diarias-para-mongo.json');
         } catch (writeError) {
             logger.error(`Error al guardar JSON adaptado: ${writeError.message}`);
         }
