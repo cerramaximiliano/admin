@@ -19,6 +19,9 @@ const { generateAllUsersAnalytics } = require('../stats/statsAnalysisService');
 // Colección de tareas programadas
 const tasks = new Map();
 
+// Mapa para asignar números a los IDs de las tareas
+const taskNumbers = {};
+
 /**
  * Programa una tarea para ejecutarse periódicamente
  * 
@@ -103,12 +106,14 @@ function scheduleTask(taskId, cronExpression, taskFunction, description) {
 /**
  * Detiene una tarea programada
  * 
- * @param {String} taskId - Identificador de la tarea
+ * @param {String|Number} taskIdentifier - Número o ID de la tarea
  * @returns {Boolean} - true si la tarea se detuvo correctamente
  */
-function stopTask(taskId) {
-  if (!tasks.has(taskId)) {
-    logger.warn(`La tarea ${taskId} no existe`);
+function stopTask(taskIdentifier) {
+  const taskId = getTaskIdByIdentifier(taskIdentifier);
+  
+  if (!taskId) {
+    logger.warn(`La tarea con identificador ${taskIdentifier} no existe`);
     return false;
   }
 
@@ -129,12 +134,14 @@ function stopTask(taskId) {
 /**
  * Inicia una tarea que estaba detenida
  * 
- * @param {String} taskId - Identificador de la tarea
+ * @param {String|Number} taskIdentifier - Número o ID de la tarea
  * @returns {Boolean} - true si la tarea se inició correctamente
  */
-function startTask(taskId) {
-  if (!tasks.has(taskId)) {
-    logger.warn(`La tarea ${taskId} no existe`);
+function startTask(taskIdentifier) {
+  const taskId = getTaskIdByIdentifier(taskIdentifier);
+  
+  if (!taskId) {
+    logger.warn(`La tarea con identificador ${taskIdentifier} no existe`);
     return false;
   }
 
@@ -159,14 +166,39 @@ function startTask(taskId) {
 }
 
 /**
+ * Obtiene el ID de una tarea a partir de su número o ID
+ * 
+ * @param {String|Number} taskIdentifier - Número o ID de la tarea
+ * @returns {String|null} - ID de la tarea o null si no se encuentra
+ */
+function getTaskIdByIdentifier(taskIdentifier) {
+  // Si es un número, buscar por número de tarea
+  if (!isNaN(taskIdentifier) && parseInt(taskIdentifier) > 0) {
+    const taskNumber = parseInt(taskIdentifier);
+    // Buscar el ID de la tarea con ese número
+    for (const [taskId, number] of Object.entries(taskNumbers)) {
+      if (number === taskNumber) {
+        return taskId;
+      }
+    }
+    return null;
+  }
+  
+  // Si no es un número o no se encontró, verificar si existe directamente como ID
+  return tasks.has(taskIdentifier) ? taskIdentifier : null;
+}
+
+/**
  * Ejecuta una tarea inmediatamente
  * 
- * @param {String} taskId - Identificador de la tarea
+ * @param {String|Number} taskIdentifier - Número o ID de la tarea
  * @returns {Promise} - Resultado de la ejecución
  */
-async function executeTaskNow(taskId) {
-  if (!tasks.has(taskId)) {
-    logger.warn(`La tarea ${taskId} no existe`);
+async function executeTaskNow(taskIdentifier) {
+  const taskId = getTaskIdByIdentifier(taskIdentifier);
+  
+  if (!taskId) {
+    logger.warn(`La tarea con identificador ${taskIdentifier} no existe`);
     return { success: false, error: 'Tarea no encontrada' };
   }
 
@@ -200,14 +232,25 @@ function getTasksList() {
   const tasksList = [];
 
   tasks.forEach((taskInfo, taskId) => {
+    // Asignar un número si no lo tiene
+    if (!taskNumbers[taskId]) {
+      // Obtener el siguiente número disponible
+      const nextNumber = Object.keys(taskNumbers).length + 1;
+      taskNumbers[taskId] = nextNumber;
+    }
+
     tasksList.push({
       id: taskId,
+      taskNumber: taskNumbers[taskId],
       description: taskInfo.description,
       status: taskInfo.status,
       expression: taskInfo.expression,
       lastRun: taskInfo.lastRun ? moment(taskInfo.lastRun).format('YYYY-MM-DD HH:mm:ss') : null
     });
   });
+
+  // Ordenar por número de tarea
+  tasksList.sort((a, b) => a.taskNumber - b.taskNumber);
 
   return tasksList;
 }
@@ -239,6 +282,11 @@ function initializeTasks() {
 
   // Detener todas las tareas existentes
   stopAllTasks();
+  
+  // Reiniciar la numeración de tareas
+  Object.keys(taskNumbers).forEach(key => {
+    delete taskNumbers[key];
+  });
 
   // Tareas de BNA - Tasa Activa
   scheduleTask(

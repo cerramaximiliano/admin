@@ -69,41 +69,44 @@ server/
 
 ## Tareas programadas
 
-La aplicación incluye varias tareas programadas que se ejecutan automáticamente:
+La aplicación incluye varias tareas programadas que se ejecutan automáticamente. Cada tarea tiene asignado un identificador numérico (TaskNumber) para facilitar su gestión. Puedes usar este número en la API para ejecutar, detener o iniciar tareas, lo que simplifica la administración:
 
-| Tarea                        | TaskID                             | Descripción                                             | Programación    |
-|-----------------------------|-------------------------------------|---------------------------------------------------------|-----------------|
-| `bcra-tasa-pasiva`          | `bcra-pasiva-bcra`                 | Descarga y procesa tasa pasiva BCRA                     | Diario 9:00 AM  |
-| `bcra-cer`                  | `bcra-cer-bcra`                    | Descarga y procesa CER                                  | Diario 9:05 AM  |
-| `bcra-icl`                  | `bcra-icl-bcra`                    | Descarga y procesa ICL                                  | Diario 9:10 AM  |
-| `bna-tasa-activa`           | `bna-tasa-activa-bna`              | Actualiza tasa activa BNA                               | Diario 9:18 AM  |
-| `bna-tasa-pasiva`           | `bna-tasa-pasiva-bna`              | Descarga y procesa tasa pasiva BNA                      | Diario 9:20 AM  |
-| `infoleg-normativas`        | N/A                                 | Actualiza normativas desde Infoleg                      | Diario 9:25 AM  |
-| `actualizar-categorias`     | N/A                                 | Actualiza categorías según movilidad                    | Diario 9:30 AM  |
-| `cpacf-tasa-activa-bna`     | `consejo-tasa-activa-bna`          | Scraping de tasa activa BNA desde CPACF                 | Diario 11:58 AM |
-| `cpacf-tasa-pasiva-bna`     | `consejo-tasa-pasiva-bna`          | Scraping de tasa pasiva BNA desde CPACF                 | Diario 11:59 AM |
-| `cpacf-tasa-acta-2658`      | `busqueda-fechas-tasaActivaCNAT2658` | Scraping de tasa acta 2658 desde CPACF               | Diario 12:00 PM |
-| `cpacf-tasa-acta-2764`      | `busqueda-fechas-tasaActivaCNAT2764` | Scraping de tasa acta 2764 desde CPACF               | Diario 12:01 PM |
+| N° | TaskID                          | Descripción                                          | Programación    |
+|----|--------------------------------|------------------------------------------------------|-----------------|
+| 1  | `bna-tasa-activa-bna`          | Actualiza tasa activa BNA                            | Diario 9:18 AM  |
+| 2  | `búsqueda-fechas-activa-bna`   | Búsqueda de tasas activas BNA por fechas             | Diario 10:00 AM |
+| 3  | `consejo-tasa-activa-bna`      | Scraping de tasa activa BNA desde CPACF              | Diario 11:58 AM |
+| 4  | `bna-tasa-pasiva-bna`          | Descarga y procesa tasa pasiva BNA                   | Diario 9:20 AM  |
+| 5  | `consejo-tasa-pasiva-bna`      | Scraping de tasa pasiva BNA desde CPACF              | Diario 11:59 AM |
+| 6  | `búsqueda-fechas-pasiva-bna`   | Búsqueda de tasas pasivas BNA por fechas             | Diario 10:30 AM |
+| 7  | `bcra-pasiva-bcra`             | Descarga y procesa tasa pasiva BCRA                  | Diario 9:00 AM  |
+| 8  | `búsqueda-fechas-pasiva-bcra`  | Búsqueda de tasas pasivas BCRA por fechas            | Diario 10:15 AM |
+| 9  | `bcra-cer-bcra`                | Descarga y procesa CER                               | Diario 9:05 AM  |
+| 10 | `búsqueda-fechas-cer-bcra`     | Búsqueda de CER por fechas                           | Diario 10:20 AM |
+| 11 | `bcra-icl-bcra`                | Descarga y procesa ICL                               | Diario 9:10 AM  |
+| 12 | `búsqueda-fechas-icl-bcra`     | Búsqueda de ICL por fechas                           | Diario 10:25 AM |
+| 13 | `busqueda-fechas-tasaActivaCNAT2658` | Scraping de tasa acta 2658 desde CPACF         | Diario 12:00 PM |
+| 14 | `busqueda-fechas-tasaActivaCNAT2764` | Scraping de tasa acta 2764 desde CPACF         | Diario 12:01 PM |
+| 15 | `busqueda-fechas-tasaActivaBNA`      | Búsqueda específica de tasa activa BNA         | Diario 12:05 PM |
+| 16 | `busqueda-fechas-tasaActivaTnaBNA`   | Búsqueda de tasa activa TNA BNA                | Diario 12:10 PM |
+| 17 | `busqueda-fechas-tasaPasivaBNA`      | Búsqueda de tasa pasiva BNA                    | Diario 12:15 PM |
+| 18 | `eliminar-files`                     | Limpieza de archivos en server/files           | Diario 2:00 AM  |
+| 19 | `sync-stats`                         | Sincronización de estadísticas                  | Diario 3:00 AM  |
+| 20 | `analysis-stats`                     | Análisis de estadísticas                        | Diario 4:00 AM  |
+| 21 | `verificacion-tasas-matutina`        | Verificación matutina de tasas                  | Diario 8:00 AM  |
+| 22 | `verificacion-tasas-ciclica`         | Verificación cíclica de tasas                   | Cada 6 horas    |
+| 23 | `verificacion-tasas-diaria`          | Verificación diaria completa de tasas           | Diario 11:00 PM |
 
-### Tareas adicionales
+### Gestión de archivos
 
-El sistema también incluye las siguientes tareas programadas:
+Los archivos generados durante los procesos de scraping (capturas de pantalla, PDFs, HTMLs, etc.) se guardan automáticamente en la carpeta `server/files`. Esto incluye:
 
-| TaskID                             | Descripción                                  |
-|-----------------------------------|----------------------------------------------|
-| `analysis-stats`                  | Análisis de estadísticas                     |
-| `busqueda-fechas-tasaActivaBNA`   | Búsqueda específica de tasa activa BNA       |
-| `busqueda-fechas-tasaActivaTnaBNA`| Búsqueda de tasa activa TNA BNA              |
-| `búsqueda-fechas-activa-bna`      | Búsqueda de tasas activas BNA por fechas     |
-| `búsqueda-fechas-cer-bcra`        | Búsqueda de CER por fechas                   |
-| `búsqueda-fechas-icl-bcra`        | Búsqueda de ICL por fechas                   |
-| `búsqueda-fechas-pasiva-bcra`     | Búsqueda de tasas pasivas BCRA por fechas    |
-| `búsqueda-fechas-pasiva-bna`      | Búsqueda de tasas pasivas BNA por fechas     |
-| `eliminar-files`                  | Limpieza de archivos temporales              |
-| `sync-stats`                      | Sincronización de estadísticas               |
-| `verificacion-tasas-ciclica`      | Verificación cíclica de tasas                |
-| `verificacion-tasas-diaria`       | Verificación diaria de tasas                 |
-| `verificacion-tasas-matutina`     | Verificación matutina de tasas               |
+- Capturas de pantalla (`{prefix}-{timestamp}.png`)
+- Archivos HTML (`{filename}.html`)
+- Archivos de texto extraídos de PDFs (`{filename}_text.txt`)
+- Archivos JSON de resultados (`tasas-para-mongo.json`, `tasas-diarias-para-mongo.json`, `resultados-interes.json`)
+
+La tarea programada `eliminar-files` (N° 18) se encarga de limpiar periódicamente estos archivos para evitar la acumulación de datos innecesarios.
 
 
 ## API REST
@@ -139,18 +142,21 @@ La API incluye los siguientes endpoints:
 
 - `POST /api/tasks/:taskId/execute` - Ejecuta una tarea inmediatamente
   - Path params:
-    - `taskId` (obligatorio): ID de la tarea a ejecutar
+    - `taskId` (obligatorio): ID de la tarea a ejecutar o su número (1-23)
   - Requiere autenticación de administrador
+  - Ejemplo: `POST /api/tasks/4/execute` ejecuta la tarea número 4 (bna-tasa-pasiva-bna)
 
 - `POST /api/tasks/:taskId/stop` - Detiene una tarea
   - Path params:
-    - `taskId` (obligatorio): ID de la tarea a detener
+    - `taskId` (obligatorio): ID de la tarea a detener o su número (1-23)
   - Requiere autenticación de administrador
+  - Ejemplo: `POST /api/tasks/7/stop` detiene la tarea número 7 (bcra-pasiva-bcra)
 
 - `POST /api/tasks/:taskId/start` - Inicia una tarea detenida
   - Path params:
-    - `taskId` (obligatorio): ID de la tarea a iniciar
+    - `taskId` (obligatorio): ID de la tarea a iniciar o su número (1-23)
   - Requiere autenticación de administrador
+  - Ejemplo: `POST /api/tasks/18/start` inicia la tarea número 18 (eliminar-files)
 
 - `POST /api/tasks/initialize` - Inicializa todas las tareas
   - No requiere parámetros
@@ -398,6 +404,8 @@ server/services/scrapers/
 │   └── consejoService.js      # APIs del Consejo
 ```
 
+Todos los archivos generados por estos servicios (capturas de pantalla, PDFs, HTMLs y archivos de texto extraídos) se guardan en la carpeta `server/files`. Esto facilita la gestión y limpieza de archivos temporales.
+
 ### BNA Service - Características Principales
 
 El servicio de scraping del BNA (`bnaService.js`) implementa las siguientes funcionalidades avanzadas:
@@ -430,7 +438,7 @@ async function extraerTasaActivaBNAConReintentos(screenshot = false, html = fals
 
 #### 2. Manejo Avanzado de Fechas de Vigencia
 
-El sistema implementa lógica sofisticada para manejar tres escenarios principales relacionados con las fechas de publicación de tasas:
+El sistema implementa lógica sofisticada para manejar tres escenarios principales relacionados con las fechas de publicación de tasas. Esto es particularmente importante en el procesamiento de PDFs (`bnaProcesadorPDF.js`), donde los archivos descargados y su texto extraído se guardan en la carpeta `server/files` para análisis y depuración:
 
 ##### a) Fecha de Vigencia Actual
 Cuando la fecha de publicación coincide con la fecha actual, el sistema simplemente registra el nuevo valor.
