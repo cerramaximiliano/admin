@@ -271,7 +271,7 @@ notificationMetrics: {
 ### 11. **trendData**
 Tendencias temporales de los últimos 6 meses.
 
-**Fuente de datos:** Colecciones `folders`, `movements`, `calculators`
+**Fuente de datos:** Colecciones `folders`, `movements`, `calculators`, `tasks`
 
 **Cálculo:**
 - Filtra registros de los últimos 6 meses
@@ -297,6 +297,11 @@ trendData: {
     calculators: [
         { month: "2024-07", count: 5 },
         // ... calculadoras creadas por mes
+    ],
+    tasks: [
+        { month: "2024-07", count: 20 },
+        { month: "2024-08", count: 25 },
+        // ... tareas creadas por mes
     ]
 }
 ```

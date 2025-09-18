@@ -712,9 +712,10 @@ async function generateTrendAnalytics(userId) {
         const foldersCollection = mongoose.connection.collection(COLLECTIONS.folders);
         const movementsCollection = mongoose.connection.collection(COLLECTIONS.movements);
         const calculatorsCollection = mongoose.connection.collection(COLLECTIONS.calculators);
+        const tasksCollection = mongoose.connection.collection(COLLECTIONS.tasks);
 
-        // Obtener todas las carpetas, movimientos y calculadoras de los últimos 6 meses
-        const [folders, movements, calculators] = await Promise.all([
+        // Obtener todas las carpetas, movimientos, calculadoras y tareas de los últimos 6 meses
+        const [folders, movements, calculators, tasks] = await Promise.all([
             foldersCollection.find({
                 userId: userId,
                 createdAt: { $gte: sixMonthsAgo.toDate() }
@@ -726,6 +727,10 @@ async function generateTrendAnalytics(userId) {
             calculatorsCollection.find({
                 userId: userId,
                 createdAt: { $gte: sixMonthsAgo.toDate() }
+            }).toArray(),
+            tasksCollection.find({
+                userId: userId,
+                createdAt: { $gte: sixMonthsAgo.toDate() }
             }).toArray()
         ]);
 
@@ -734,7 +739,8 @@ async function generateTrendAnalytics(userId) {
             newFolders: [],
             closedFolders: [],
             movements: [],
-            calculators: []
+            calculators: [],
+            tasks: []
         };
 
         // Preparar meses para tendencias
@@ -745,6 +751,7 @@ async function generateTrendAnalytics(userId) {
             trendData.closedFolders.push({ month: monthStr, count: 0 });
             trendData.movements.push({ month: monthStr, count: 0 });
             trendData.calculators.push({ month: monthStr, count: 0 });
+            trendData.tasks.push({ month: monthStr, count: 0 });
         }
 
         // Función para incrementar el contador del mes adecuado
@@ -779,11 +786,18 @@ async function generateTrendAnalytics(userId) {
             }
         });
 
+        tasks.forEach(task => {
+            if (task.createdAt) {
+                incrementMonthCount(trendData.tasks, task.createdAt);
+            }
+        });
+
         // Invertir los arrays para que el mes más reciente esté primero
         trendData.newFolders.reverse();
         trendData.closedFolders.reverse();
         trendData.movements.reverse();
         trendData.calculators.reverse();
+        trendData.tasks.reverse();
 
         return trendData;
     } catch (error) {
@@ -792,7 +806,8 @@ async function generateTrendAnalytics(userId) {
             newFolders: [],
             closedFolders: [],
             movements: [],
-            calculators: []
+            calculators: [],
+            tasks: []
         };
     }
 }
