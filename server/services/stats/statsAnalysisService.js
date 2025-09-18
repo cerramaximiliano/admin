@@ -642,24 +642,30 @@ async function generateNotificationAnalytics(userId) {
 
         // Inicializar estadísticas de notificaciones
         const notificationStats = {
+            totalCount: 0,
             unreadCount: 0,
             averageReadTime: 0,
             responseRate: 0
         };
 
         if (alerts.length > 0) {
-            // Contar alertas no leídas
+            // Total de alertas
+            notificationStats.totalCount = alerts.length;
+
+            // Contar alertas no leídas y calcular tiempos
             let totalReadTime = 0;
             let readAlerts = 0;
 
             alerts.forEach(alert => {
-                if (!alert.isRead) {
+                // Usar 'read' en lugar de 'isRead' según el modelo
+                if (!alert.read) {
                     notificationStats.unreadCount++;
-                } else if (alert.viewedAt && alert.createdAt) {
+                } else if (alert.updatedAt && alert.createdAt) {
                     // Calcular tiempo de lectura en horas
+                    // Usar updatedAt como momento de lectura ya que no hay campo viewedAt
                     const createdAt = new Date(alert.createdAt);
-                    const viewedAt = new Date(alert.viewedAt);
-                    const readTimeHours = (viewedAt - createdAt) / (1000 * 60 * 60);
+                    const readAt = new Date(alert.updatedAt);
+                    const readTimeHours = (readAt - createdAt) / (1000 * 60 * 60);
 
                     // Solo considerar tiempos razonables (menos de 7 días)
                     if (readTimeHours >= 0 && readTimeHours < 168) {
@@ -674,9 +680,10 @@ async function generateNotificationAnalytics(userId) {
                 ? Math.round(totalReadTime / readAlerts * 10) / 10
                 : 0;
 
-            // Calcular tasa de respuesta
+            // Calcular tasa de respuesta (porcentaje de alertas leídas)
+            const readCount = alerts.length - notificationStats.unreadCount;
             notificationStats.responseRate = Math.round(
-                ((alerts.length - notificationStats.unreadCount) / alerts.length) * 100
+                (readCount / alerts.length) * 100
             );
         }
 
@@ -684,6 +691,7 @@ async function generateNotificationAnalytics(userId) {
     } catch (error) {
         logger.error(`Error al generar estadísticas de notificaciones: ${error.message}`);
         return {
+            totalCount: 0,
             unreadCount: 0,
             averageReadTime: 0,
             responseRate: 0
