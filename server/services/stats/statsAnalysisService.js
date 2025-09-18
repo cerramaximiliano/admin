@@ -95,12 +95,8 @@ async function generateUserAnalytics(userId) {
             analyticsVersion: '1.0'
         };
 
-        // Guardar o actualizar en la base de datos
-        await UserAnalytics.findOneAndUpdate(
-            { userId: userIdObj },
-            analytics,
-            { upsert: true, new: true }
-        );
+        // Crear nuevo documento en la base de datos (no actualizar)
+        await UserAnalytics.create(analytics);
 
         logger.info(`Analíticas generadas y guardadas para usuario ${userId}`);
         return { success: true, analytics };
