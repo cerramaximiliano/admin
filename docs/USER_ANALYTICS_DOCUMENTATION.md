@@ -318,7 +318,35 @@ trendData: {
 **dataQuality**
 - Tipo: Number (0-100)
 - Descripción: Porcentaje de calidad/completitud de los datos
-- Cálculo: Basado en la presencia de datos en las métricas principales
+- Cálculo: Evaluación de la completitud de datos esenciales
+
+**Cálculo detallado:**
+- **Inicio:** 100%
+- **Penalizaciones:**
+  - `-30%` si no hay carpetas (totalFolders = 0)
+  - `-20%` si no hay montos financieros (totalActiveAmount = 0)
+  - `-20%` si no hay actividad reciente (monthlyAverage = 0)
+
+**Interpretación de valores:**
+| Rango | Significado | Confiabilidad del análisis |
+|-------|-------------|----------------------------|
+| 100% | Datos completos | Análisis totalmente confiable |
+| 70-99% | Buenos datos | Análisis confiable, falta algún componente |
+| 50-69% | Datos parciales | Análisis limitado pero útil |
+| 30-49% | Datos incompletos | Análisis muy básico |
+| 0-29% | Datos insuficientes | Análisis no recomendado |
+
+**Ejemplo de cálculo:**
+```javascript
+// Usuario con carpetas y montos, pero sin actividad reciente
+dataQuality = 100 - 0 - 0 - 20 = 80%
+
+// Usuario con carpetas pero sin montos ni actividad
+dataQuality = 100 - 0 - 20 - 20 = 60%
+
+// Usuario sin datos
+dataQuality = 100 - 30 - 20 - 20 = 30%
+```
 
 **analyticsVersion**
 - Tipo: String

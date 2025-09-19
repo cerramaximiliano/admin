@@ -84,6 +84,7 @@ const UserAnalyticsSchema = new mongoose.Schema({
   
   // Métricas de notificaciones y alertas
   notificationMetrics: {
+    totalCount: { type: Number, default: 0 }, // Total de alertas
     unreadCount: { type: Number, default: 0 },
     averageReadTime: { type: Number, default: 0 }, // En horas
     responseRate: { type: Number, default: 0 } // Porcentaje de notificaciones atendidas
@@ -94,7 +95,8 @@ const UserAnalyticsSchema = new mongoose.Schema({
     newFolders: [{ month: String, count: Number }],
     closedFolders: [{ month: String, count: Number }],
     movements: [{ month: String, count: Number }],
-    calculators: [{ month: String, count: Number }]
+    calculators: [{ month: String, count: Number }],
+    tasks: [{ month: String, count: Number }]
   },
   
   // Metadata

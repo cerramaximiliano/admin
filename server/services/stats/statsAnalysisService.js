@@ -20,7 +20,7 @@ const COLLECTIONS = {
     events: 'events',
     contacts: 'contacts',
     tasks: 'tasks',
-    alerts: 'alets'
+    alerts: 'alerts'
 };
 
 /**
@@ -492,8 +492,13 @@ async function generateTaskAnalytics(userId) {
         const tasksCollection = mongoose.connection.collection(COLLECTIONS.tasks);
 
         // Buscar todas las tareas del usuario
+        // Convertir userId a string ya que las tareas lo guardan como string
+        const userIdString = userId.toString();
         const tasks = await tasksCollection.find({
-            userId: userId // Nota: puede ser que se guarde como string
+            $or: [
+                { userId: userId },        // Buscar como ObjectId
+                { userId: userIdString }   // Buscar como string
+            ]
         }).toArray();
 
         // Inicializar estadísticas de tareas
@@ -636,8 +641,12 @@ async function generateNotificationAnalytics(userId) {
         const alertsCollection = mongoose.connection.collection(COLLECTIONS.alerts);
 
         // Buscar alertas del usuario
+        // Buscar userId tanto como ObjectId como string para compatibilidad
         const alerts = await alertsCollection.find({
-            userId: userId
+            $or: [
+                { userId: userId },           // Buscar como ObjectId
+                { userId: userId.toString() } // Buscar como string
+            ]
         }).toArray();
 
         // Inicializar estadísticas de notificaciones
@@ -682,8 +691,9 @@ async function generateNotificationAnalytics(userId) {
 
             // Calcular tasa de respuesta (porcentaje de alertas leídas)
             const readCount = alerts.length - notificationStats.unreadCount;
-            notificationStats.responseRate = Math.round(
-                (readCount / alerts.length) * 100
+            // Mostrar porcentaje exacto con 2 decimales
+            notificationStats.responseRate = parseFloat(
+                ((readCount / alerts.length) * 100).toFixed(2)
             );
         }
 
@@ -729,8 +739,10 @@ async function generateTrendAnalytics(userId) {
                 createdAt: { $gte: sixMonthsAgo.toDate() }
             }).toArray(),
             tasksCollection.find({
-                userId: userId,
-                createdAt: { $gte: sixMonthsAgo.toDate() }
+                $or: [
+                    { userId: userId, createdAt: { $gte: sixMonthsAgo.toDate() } },        // Como ObjectId
+                    { userId: userId.toString(), createdAt: { $gte: sixMonthsAgo.toDate() } }   // Como string
+                ]
             }).toArray()
         ]);
 
@@ -821,12 +833,25 @@ async function generateMatterAnalytics(userId) {
     try {
         const foldersCollection = mongoose.connection.collection(COLLECTIONS.folders);
 
-        // Obtener carpetas agrupadas por materia
+        // Obtener carpetas agrupadas por materia (normalizando a minúsculas y quitando espacios extra)
         const matterStats = await foldersCollection.aggregate([
             { $match: { userId: userId } },
             {
+                $addFields: {
+                    // Normalizar materia: convertir a minúsculas y quitar espacios extra
+                    materiaOriginal: '$materia',
+                    materiaNormalizada: {
+                        $trim: {
+                            input: { $toLower: { $ifNull: ['$materia', ''] } }
+                        }
+                    }
+                }
+            },
+            {
                 $group: {
-                    _id: '$materia',
+                    _id: '$materiaNormalizada',
+                    // Mantener la versión original más común para display
+                    materiaDisplay: { $first: '$materiaOriginal' },
                     count: { $sum: 1 },
                     totalAmount: { $sum: { $ifNull: ['$amount', 0] } },
                     avgResolutionDays: {
@@ -844,8 +869,18 @@ async function generateMatterAnalytics(userId) {
                                     $divide: [
                                         {
                                             $subtract: [
-                                                { $dateFromString: { dateString: '$finalDateFolder', format: '%Y-%m-%d' } },
-                                                { $dateFromString: { dateString: '$initialDateFolder', format: '%Y-%m-%d' } }
+                                                { $dateFromString: {
+                                                    dateString: '$finalDateFolder',
+                                                    format: '%Y-%m-%d',
+                                                    onError: null,
+                                                    onNull: null
+                                                } },
+                                                { $dateFromString: {
+                                                    dateString: '$initialDateFolder',
+                                                    format: '%Y-%m-%d',
+                                                    onError: null,
+                                                    onNull: null
+                                                } }
                                             ]
                                         },
                                         86400000 // milisegundos en un día
@@ -867,17 +902,27 @@ async function generateMatterAnalytics(userId) {
         // Procesar resultados
         matterStats.forEach(stat => {
             if (stat._id && stat._id !== '') {
-                distribution.set(stat._id, stat.count);
+                // Usar la versión display (original) para mostrar, pero agrupados por la normalizada
+                const materiaKey = stat.materiaDisplay || stat._id;
+
+                // Capitalizar primera letra de cada palabra para consistencia visual
+                const materiaFormateada = materiaKey
+                    .toLowerCase()
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+
+                distribution.set(materiaFormateada, stat.count);
 
                 // Calcular monto promedio por materia
                 const avg = stat.count > 0 ? Math.round(stat.totalAmount / stat.count) : 0;
-                averageAmount.set(stat._id, avg);
+                averageAmount.set(materiaFormateada, avg);
 
                 // Tiempo de resolución promedio (redondeado a días enteros)
                 if (stat.avgResolutionDays) {
-                    resolutionTime.set(stat._id, Math.round(stat.avgResolutionDays));
+                    resolutionTime.set(materiaFormateada, Math.round(stat.avgResolutionDays));
                 } else {
-                    resolutionTime.set(stat._id, 0);
+                    resolutionTime.set(materiaFormateada, 0);
                 }
             }
         });
