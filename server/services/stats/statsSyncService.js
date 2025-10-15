@@ -62,13 +62,27 @@ async function repairNegativeCounters() {
 
             // Si es un contador Total o si la colección no debe filtrar, contar todos
             if (entityType.endsWith('Total') || !archivedCollections.includes(collectionName)) {
-              actualCount = await collection.countDocuments({ userId: userIdForQuery });
+              const filter = { userId: userIdForQuery };
+
+              // Para calculators, solo contar tipo "Calculado"
+              if (collectionName === 'calculators') {
+                filter.type = 'Calculado';
+              }
+
+              actualCount = await collection.countDocuments(filter);
             } else {
               // Si es folders, calculators o contacts, contar solo activos
-              actualCount = await collection.countDocuments({
+              const filter = {
                 userId: userIdForQuery,
                 archived: false
-              });
+              };
+
+              // Para calculators, solo contar tipo "Calculado"
+              if (collectionName === 'calculators') {
+                filter.type = 'Calculado';
+              }
+
+              actualCount = await collection.countDocuments(filter);
             }
 
             updatedCounts[entityType] = actualCount;
@@ -147,16 +161,29 @@ async function updateUserStats(userId) {
         try {
           // Para folders, calculators y contacts: contar solo activos (archived: false)
           if (archivedCollections.includes(name)) {
-            const activeCount = await mongoose.connection.collection(collection).countDocuments({
+            // Filtro base para activos
+            const activeFilter = {
               userId: userIdObj,
               archived: false
-            });
+            };
+
+            // Para calculators, solo contar tipo "Calculado"
+            if (name === 'calculators') {
+              activeFilter.type = 'Calculado';
+            }
+
+            const activeCount = await mongoose.connection.collection(collection).countDocuments(activeFilter);
             counts[name] = activeCount;
 
             // También contar TODOS (activos + archivados) para el campo Total
-            const totalCount = await mongoose.connection.collection(collection).countDocuments({
-              userId: userIdObj
-            });
+            const totalFilter = { userId: userIdObj };
+
+            // Para calculators, solo contar tipo "Calculado"
+            if (name === 'calculators') {
+              totalFilter.type = 'Calculado';
+            }
+
+            const totalCount = await mongoose.connection.collection(collection).countDocuments(totalFilter);
             counts[`${name}Total`] = totalCount;
           } else {
             // Para otras colecciones, contar todos sin filtro
