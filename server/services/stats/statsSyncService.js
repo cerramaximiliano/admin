@@ -40,25 +40,41 @@ async function repairNegativeCounters() {
       const updatedCounts = { ...(userStat.counts || {}) };
       
       // Comprobar cada contador
+      const archivedCollections = ['folders', 'calculators', 'contacts'];
+
       for (const [entityType, count] of Object.entries(updatedCounts)) {
         if (count < 0) {
           logger.warn(`Contador negativo detectado: ${entityType} = ${count} para usuario ${userStat.userId}`);
-          
+
           // Obtener el recuento real de la colección correspondiente
-          if (COLLECTIONS[entityType]) {
-            const collection = mongoose.connection.collection(COLLECTIONS[entityType]);
+          // Extraer el nombre de la colección (sin el sufijo "Total" si existe)
+          const collectionName = entityType.replace(/Total$/, '');
+
+          if (COLLECTIONS[collectionName]) {
+            const collection = mongoose.connection.collection(COLLECTIONS[collectionName]);
             const userId = userStat.userId;
             // Convertir a ObjectId si es necesario
-            const userIdForQuery = typeof userId === 'string' 
-              ? new mongoose.Types.ObjectId(userId) 
+            const userIdForQuery = typeof userId === 'string'
+              ? new mongoose.Types.ObjectId(userId)
               : userId;
-            
-            const actualCount = await collection.countDocuments({ userId: userIdForQuery });
-            
+
+            let actualCount;
+
+            // Si es un contador Total o si la colección no debe filtrar, contar todos
+            if (entityType.endsWith('Total') || !archivedCollections.includes(collectionName)) {
+              actualCount = await collection.countDocuments({ userId: userIdForQuery });
+            } else {
+              // Si es folders, calculators o contacts, contar solo activos
+              actualCount = await collection.countDocuments({
+                userId: userIdForQuery,
+                archived: false
+              });
+            }
+
             updatedCounts[entityType] = actualCount;
             needsUpdate = true;
             repairCount++;
-            
+
             logger.info(`Contador ${entityType} corregido: ${count} → ${actualCount}`);
           }
         }
@@ -120,22 +136,46 @@ async function updateUserStats(userId) {
     
     // Calcular contadores para cada tipo de entidad
     const counts = {};
-    
+
+    // Colecciones que deben filtrar por archived: false
+    const archivedCollections = ['folders', 'calculators', 'contacts'];
+
     // Obtener contadores en paralelo
     const countPromises = Object.entries(COLLECTIONS)
       .filter(([name]) => name !== 'users' && name !== 'stats')
       .map(async ([name, collection]) => {
         try {
-          const count = await mongoose.connection.collection(collection).countDocuments({ userId: userIdObj });
-          counts[name] = count;
+          // Para folders, calculators y contacts: contar solo activos (archived: false)
+          if (archivedCollections.includes(name)) {
+            const activeCount = await mongoose.connection.collection(collection).countDocuments({
+              userId: userIdObj,
+              archived: false
+            });
+            counts[name] = activeCount;
+
+            // También contar TODOS (activos + archivados) para el campo Total
+            const totalCount = await mongoose.connection.collection(collection).countDocuments({
+              userId: userIdObj
+            });
+            counts[`${name}Total`] = totalCount;
+          } else {
+            // Para otras colecciones, contar todos sin filtro
+            const count = await mongoose.connection.collection(collection).countDocuments({
+              userId: userIdObj
+            });
+            counts[name] = count;
+          }
           return true;
         } catch (error) {
           logger.error(`Error al contar ${name}: ${error.message}`);
           counts[name] = 0;
+          if (archivedCollections.includes(name)) {
+            counts[`${name}Total`] = 0;
+          }
           return false;
         }
       });
-    
+
     await Promise.all(countPromises);
     
     // Actualizar estadísticas
